@@ -1,0 +1,458 @@
+'use client';
+
+import React from 'react';
+import { WorkflowUIProps } from '../types';
+import { UploadArea } from '@/components/UploadArea';
+import { BeforeAfterSlider } from '@/components/BeforeAfterSlider';
+import { PageGrid } from '@/components/PageGrid';
+import { PageSequencePreview } from '@/components/PageSequencePreview';
+import { EngineSelector } from '@/components/EngineSelector';
+import { InfoTooltip } from '@/components/InfoTooltip';
+import {
+  Download,
+  ArrowLeft,
+  Trash2,
+  ArrowUp,
+  ArrowDown,
+  CheckCircle2,
+  Star,
+  RotateCcw,
+  Check,
+  Tablet,
+} from 'lucide-react';
+
+export const TabletWorkflowUI: React.FC<WorkflowUIProps> = (props) => {
+  const {
+    currentPhase,
+    setCurrentPhase,
+    isProcessing,
+    uploadedItems,
+    mergedPdfBlob,
+    mergedPdfBytes,
+    mergedPageDataUrls,
+    selectedEngineVersion,
+    setSelectedEngineVersion,
+    onFilesUpload,
+    onLoadSample,
+    onMoveItem,
+    onRemoveItem,
+    onDownloadMerged,
+    onProceedToPhase2,
+    processedPages,
+    selectedPageIndex,
+    setSelectedPageIndex,
+    excludedPages,
+    onToggleExcludePage,
+    onToggleExcludeAll,
+    onProceedToPhase3,
+    layoutConfig,
+    finalSheetPreviews,
+    finalMetrics,
+    finalPrintPdfBlob,
+    onSelectLayoutFormat,
+    onToggleOrientation,
+    onToggleBorders,
+    onTogglePageNumbers,
+    onDownloadFinalPrintPdf,
+    onProceedToPhase4,
+    rating,
+    setRating,
+    feedbackText,
+    setFeedbackText,
+    feedbackSubmitted,
+    onSendFeedback,
+    onResetWorkflow,
+  } = props;
+
+  return (
+    <div className="flex flex-col gap-5 pb-12 w-full max-w-full">
+      {/* Platform Badge Indicator */}
+      <div className="flex items-center justify-between px-1 text-[10px] text-slate-400 font-mono">
+        <span className="flex items-center gap-1.5 bg-slate-900/80 border border-slate-800 px-2.5 py-0.5 rounded-full">
+          <Tablet className="h-3.5 w-3.5 text-indigo-400" />
+          Tablet UI Viewport
+        </span>
+        <span>Dual-Pane Fluid Layout</span>
+      </div>
+
+      {/* PHASE 1: UPLOAD & MERGE */}
+      {currentPhase === 1 && (
+        <div className="flex flex-col gap-4 animate-in fade-in duration-200">
+          <UploadArea
+            onFilesUpload={onFilesUpload}
+            onLoadSample={onLoadSample}
+            isProcessing={isProcessing}
+          />
+
+          {uploadedItems.length > 0 && (
+            <div className="grid grid-cols-1 md:grid-cols-12 gap-4">
+              {/* Left Column: File Queue (5 cols) */}
+              <div className="md:col-span-5 flex flex-col gap-3 rounded-2xl border border-slate-800 bg-slate-900/90 p-4 shadow-xl">
+                <div className="flex items-center justify-between border-b border-slate-800 pb-2">
+                  <h3 className="text-xs font-bold text-white">Files ({uploadedItems.length})</h3>
+                  <span className="rounded-full bg-indigo-500/20 px-2 py-0.5 text-[10px] font-bold text-indigo-300">
+                    Step 1 of 4
+                  </span>
+                </div>
+
+                <div className="flex flex-col gap-2 max-h-[380px] overflow-y-auto p-1 scrollbar-thin">
+                  {uploadedItems.map((item, idx) => (
+                    <div
+                      key={item.id}
+                      className="flex items-center justify-between rounded-xl border border-slate-800 bg-slate-950 p-2.5 hover:bg-slate-800/60 transition-colors"
+                    >
+                      <div className="flex items-center gap-2.5 min-w-0">
+                        <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-indigo-600/30 text-indigo-300 font-bold text-xs border border-indigo-500/30">
+                          {idx + 1}
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <p className="text-xs font-bold text-slate-100 truncate">{item.name}</p>
+                          <p className="text-[10px] text-slate-400">{item.sizeMB} MB</p>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center gap-1 shrink-0">
+                        <button
+                          type="button"
+                          onClick={() => onMoveItem(idx, 'UP')}
+                          disabled={idx === 0}
+                          className="flex h-8 w-8 items-center justify-center rounded-lg text-slate-400 hover:bg-slate-800 disabled:opacity-20"
+                        >
+                          <ArrowUp className="h-3.5 w-3.5" />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => onMoveItem(idx, 'DOWN')}
+                          disabled={idx === uploadedItems.length - 1}
+                          className="flex h-8 w-8 items-center justify-center rounded-lg text-slate-400 hover:bg-slate-800 disabled:opacity-20"
+                        >
+                          <ArrowDown className="h-3.5 w-3.5" />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => onRemoveItem(idx)}
+                          className="flex h-8 w-8 items-center justify-center rounded-lg text-red-400 hover:bg-red-950/60"
+                        >
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Right Column: Engine Selector & Sequence Preview (7 cols) */}
+              <div className="md:col-span-7 flex flex-col gap-3 rounded-2xl border border-slate-800 bg-slate-900/90 p-4 shadow-xl">
+                <EngineSelector
+                  selectedVersion={selectedEngineVersion}
+                  onSelectVersion={setSelectedEngineVersion}
+                  disabled={isProcessing}
+                />
+
+                <PageSequencePreview pageUrls={mergedPageDataUrls} />
+
+                <div className="flex items-center justify-between gap-2 pt-3 border-t border-slate-800 mt-auto">
+                  <button
+                    type="button"
+                    onClick={onDownloadMerged}
+                    disabled={!mergedPdfBlob}
+                    className="inline-flex items-center gap-1.5 rounded-xl border border-slate-700 bg-slate-800 px-3.5 py-2 text-xs font-bold text-slate-200 hover:bg-slate-700 disabled:opacity-40"
+                  >
+                    <Download className="h-3.5 w-3.5 text-slate-400" />
+                    <span>Download Merged</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={onProceedToPhase2}
+                    disabled={!mergedPdfBytes || isProcessing}
+                    className="inline-flex h-11 items-center gap-2 rounded-xl bg-indigo-600 px-5 text-xs font-bold text-white shadow-lg hover:bg-indigo-500 disabled:opacity-50"
+                  >
+                    <span>Proceed to Optimize →</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* PHASE 2: ANALYZE & OPTIMIZE */}
+      {currentPhase === 2 && processedPages.length > 0 && (
+        <div className="flex flex-col gap-4 animate-in fade-in duration-200">
+          <div className="flex items-center justify-between gap-3 rounded-2xl border border-emerald-500/30 bg-emerald-950/40 p-4 shadow-lg">
+            <div className="flex items-center gap-3 min-w-0">
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-emerald-600 text-slate-950 font-bold shadow-md">
+                <CheckCircle2 className="h-5 w-5" />
+              </div>
+              <div className="min-w-0">
+                <h3 className="text-xs font-bold text-emerald-300">Dark Backgrounds Stripped</h3>
+                <p className="text-[11px] text-slate-300 truncate">
+                  Stripped dark slides across {processedPages.length} pages.
+                </p>
+              </div>
+            </div>
+            <span className="rounded-lg bg-emerald-500/20 px-3 py-1 text-xs font-bold text-emerald-300 border border-emerald-500/30 shrink-0">
+              ~82% Ink Saved
+            </span>
+          </div>
+
+          {processedPages[selectedPageIndex] && (
+            <BeforeAfterSlider page={processedPages[selectedPageIndex]} />
+          )}
+
+          <PageGrid
+            pages={processedPages}
+            selectedPageIndex={selectedPageIndex}
+            onSelectPage={setSelectedPageIndex}
+            excludedPages={excludedPages}
+            onToggleExcludePage={onToggleExcludePage}
+            onToggleExcludeAll={onToggleExcludeAll}
+          />
+
+          <div className="flex items-center justify-between rounded-2xl border border-slate-800 bg-slate-900/90 p-4 shadow-xl">
+            <button
+              type="button"
+              onClick={() => setCurrentPhase(1)}
+              className="inline-flex items-center gap-1.5 rounded-xl border border-slate-700 bg-slate-800 px-4 py-2.5 text-xs font-bold text-slate-300 hover:bg-slate-700"
+            >
+              <ArrowLeft className="h-4 w-4" />
+              <span>Back</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={onProceedToPhase3}
+              disabled={isProcessing}
+              className="inline-flex h-11 items-center gap-2 rounded-xl bg-indigo-600 px-5 text-xs font-bold text-white shadow-lg hover:bg-indigo-500"
+            >
+              <span>Choose Grid Layout →</span>
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* PHASE 3: LAYOUT & GENERATE */}
+      {currentPhase === 3 && (
+        <div className="flex flex-col gap-4 animate-in fade-in duration-200">
+          <div className="flex flex-col gap-4 rounded-2xl border border-slate-800 bg-slate-900/90 p-4 shadow-xl">
+            <div className="flex items-center justify-between border-b border-slate-800 pb-2">
+              <div>
+                <h3 className="text-xs font-bold text-white">N-Up Grid Layout & Paper Format</h3>
+                <p className="text-[11px] text-slate-400">Select slide density per printed sheet.</p>
+              </div>
+              <span className="rounded-full bg-indigo-500/20 px-2.5 py-0.5 text-[10px] font-bold text-indigo-300">
+                Step 3 of 4
+              </span>
+            </div>
+
+            <div className="grid grid-cols-3 gap-3">
+              {[
+                { format: '2x2', label: '4-Up (2x2)', desc: '4 slides / sheet', recommended: true },
+                { format: '1x2', label: '2-Up (1x2)', desc: '2 slides / sheet', recommended: false },
+                { format: '2x3', label: '6-Up (2x3)', desc: '6 slides / sheet', recommended: false },
+                { format: '2x4', label: '8-Up (2x4)', desc: '8 slides / sheet', recommended: false },
+                { format: '2x5', label: '10-Up (2x5)', desc: '10 slides / sheet', recommended: false },
+                { format: '1x1', label: '1-Up (1x1)', desc: '1 slide / sheet', recommended: false },
+              ].map((item) => {
+                const isSelected = layoutConfig.gridFormat === item.format || (item.format === '2x2' && layoutConfig.gridFormat === '4up');
+                return (
+                  <div
+                    key={item.format}
+                    role="button"
+                    tabIndex={0}
+                    onClick={() => onSelectLayoutFormat(item.format as any)}
+                    className={`flex flex-col justify-between rounded-xl border p-3 text-left cursor-pointer transition-all ${
+                      isSelected
+                        ? 'border-indigo-500 bg-indigo-950/60 ring-2 ring-indigo-500 shadow-md'
+                        : 'border-slate-800 bg-slate-950/60 hover:border-slate-700'
+                    }`}
+                  >
+                    <div>
+                      {item.recommended && (
+                        <span className="mb-1 inline-block rounded-xs bg-indigo-600 px-1.5 py-0.5 text-[8px] font-bold text-white">
+                          RECOMMENDED
+                        </span>
+                      )}
+                      <h4 className="text-xs font-bold text-white">{item.label}</h4>
+                      <p className="text-[10px] text-slate-400">{item.desc}</p>
+                    </div>
+                    {isSelected && (
+                      <div className="mt-2 flex justify-end">
+                        <Check className="h-3.5 w-3.5 text-indigo-400" />
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+
+            <div className="flex flex-wrap items-center justify-between gap-3 pt-3 border-t border-slate-800 text-xs">
+              <button
+                type="button"
+                onClick={onToggleOrientation}
+                className="flex h-10 items-center gap-1.5 rounded-xl border border-slate-700 bg-slate-800 px-3 font-semibold text-slate-200"
+              >
+                <span>Orientation: <strong className="text-indigo-300">{layoutConfig.orientation}</strong></span>
+              </button>
+
+              <div className="flex items-center gap-4 font-medium text-slate-300">
+                <label className="flex items-center gap-2 cursor-pointer select-none">
+                  <input
+                    type="checkbox"
+                    checked={layoutConfig.showSlideBorders}
+                    onChange={onToggleBorders}
+                    className="h-4 w-4 rounded-xs border-slate-700 text-indigo-600"
+                  />
+                  <span>Slide Borders</span>
+                </label>
+
+                <label className="flex items-center gap-2 cursor-pointer select-none">
+                  <input
+                    type="checkbox"
+                    checked={layoutConfig.showPageNumbers}
+                    onChange={onTogglePageNumbers}
+                    className="h-4 w-4 rounded-xs border-slate-700 text-indigo-600"
+                  />
+                  <span>Page Numbers</span>
+                </label>
+              </div>
+            </div>
+          </div>
+
+          {finalSheetPreviews.length > 0 && (
+            <div className="flex flex-col gap-3 rounded-2xl border border-slate-800 bg-slate-900/90 p-4 shadow-xl">
+              <h3 className="text-xs font-bold text-white border-b border-slate-800 pb-2">
+                Print Sheet Previews ({finalSheetPreviews.length} Sheets)
+              </h3>
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-3 max-h-[380px] overflow-y-auto p-1">
+                {finalSheetPreviews.map((previewUrl, sIdx) => (
+                  <div key={sIdx} className="flex flex-col rounded-xl border border-slate-800 bg-slate-950 p-2">
+                    <div className="mb-1 flex justify-between text-[10px] font-bold text-slate-300">
+                      <span>Sheet {sIdx + 1}</span>
+                      <span>{layoutConfig.gridFormat}</span>
+                    </div>
+                    <div className="relative w-full overflow-hidden rounded-lg bg-white border border-slate-200 flex items-center justify-center p-1 aspect-[1.414/1]">
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img src={previewUrl} alt={`Sheet ${sIdx + 1}`} className="max-h-full max-w-full object-contain" />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          <div className="flex items-center justify-between rounded-2xl border border-slate-800 bg-slate-900/90 p-4 shadow-xl">
+            <button
+              type="button"
+              onClick={() => setCurrentPhase(2)}
+              className="inline-flex items-center gap-1.5 rounded-xl border border-slate-700 bg-slate-800 px-4 py-2 text-xs font-bold text-slate-300 hover:bg-slate-700"
+            >
+              <ArrowLeft className="h-4 w-4" />
+              <span>Back</span>
+            </button>
+
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={onDownloadFinalPrintPdf}
+                disabled={!finalPrintPdfBlob}
+                className="inline-flex h-11 items-center gap-2 rounded-xl bg-indigo-600 px-5 text-xs font-bold text-white shadow-lg hover:bg-indigo-500 disabled:opacity-50"
+              >
+                <Download className="h-4 w-4" />
+                <span>Download Print PDF</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={onProceedToPhase4}
+                className="inline-flex h-11 items-center gap-1 rounded-xl bg-slate-800 px-3.5 text-xs font-bold text-slate-200 hover:bg-slate-700"
+              >
+                <span>Finish →</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* PHASE 4: DONE */}
+      {currentPhase === 4 && (
+        <div className="flex flex-col items-center gap-5 text-center animate-in fade-in duration-200 max-w-lg mx-auto">
+          <div className="flex flex-col items-center gap-3 rounded-2xl border border-emerald-500/30 bg-slate-900/90 p-6 shadow-xl w-full">
+            <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
+              <CheckCircle2 className="h-9 w-9" />
+            </div>
+            <h2 className="text-lg font-bold text-white">Your PDF is Ready for Print!</h2>
+            {finalMetrics && (
+              <div className="flex gap-2 text-xs font-bold">
+                <span className="rounded-lg bg-emerald-500/20 px-3 py-1 text-emerald-300 border border-emerald-500/30">
+                  Paper Saved: ~75%
+                </span>
+                <span className="rounded-lg bg-indigo-500/20 px-3 py-1 text-indigo-300 border border-indigo-500/30">
+                  Ink Saved: ~{finalMetrics.inkSavedPct}%
+                </span>
+              </div>
+            )}
+            {finalPrintPdfBlob && (
+              <button
+                type="button"
+                onClick={onDownloadFinalPrintPdf}
+                className="mt-3 flex h-11 w-full max-w-xs items-center justify-center gap-2 rounded-xl bg-indigo-600 text-xs font-bold text-white shadow-lg hover:bg-indigo-500"
+              >
+                <Download className="h-4 w-4" />
+                <span>Download Print PDF Again</span>
+              </button>
+            )}
+          </div>
+
+          <div className="flex flex-col gap-3 rounded-2xl border border-slate-800 bg-slate-900/90 p-4 shadow-xl w-full text-left">
+            <h3 className="text-xs font-bold text-white border-b border-slate-800 pb-1.5">Rate Experience</h3>
+            {!feedbackSubmitted ? (
+              <div className="flex flex-col gap-3">
+                <div className="flex justify-center gap-2">
+                  {[1, 2, 3, 4, 5].map((star) => (
+                    <button
+                      key={star}
+                      type="button"
+                      onClick={() => setRating(star)}
+                      className="p-1 text-amber-400"
+                    >
+                      <Star className={`h-6 w-6 ${star <= rating ? 'fill-amber-400 text-amber-400' : 'text-slate-700'}`} />
+                    </button>
+                  ))}
+                </div>
+                <textarea
+                  rows={2}
+                  value={feedbackText}
+                  onChange={(e) => setFeedbackText(e.target.value)}
+                  placeholder="Feedback..."
+                  className="w-full rounded-xl border border-slate-800 bg-slate-950 p-2.5 text-xs text-slate-200"
+                />
+                <button
+                  type="button"
+                  onClick={onSendFeedback}
+                  className="flex h-10 items-center justify-center rounded-xl bg-slate-800 text-xs font-bold text-white hover:bg-slate-700"
+                >
+                  Send Feedback
+                </button>
+              </div>
+            ) : (
+              <div className="rounded-xl bg-emerald-950/60 p-3 border border-emerald-500/30 text-emerald-300 text-xs font-bold text-center">
+                Thank you! ❤️
+              </div>
+            )}
+          </div>
+
+          <button
+            type="button"
+            onClick={onResetWorkflow}
+            className="flex h-11 items-center gap-2 rounded-xl border border-slate-700 bg-slate-800/80 px-6 text-xs font-bold text-slate-200 hover:bg-slate-700"
+          >
+            <RotateCcw className="h-4 w-4" />
+            <span>Optimize Another PDF</span>
+          </button>
+        </div>
+      )}
+    </div>
+  );
+};

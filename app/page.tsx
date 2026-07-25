@@ -6,7 +6,7 @@ import { UploadArea } from '@/components/UploadArea';
 import { BeforeAfterSlider } from '@/components/BeforeAfterSlider';
 import { PageGrid } from '@/components/PageGrid';
 import { ProcessingModal } from '@/components/ProcessingModal';
-import { WorkflowUI } from '@/components/views/WorkflowUI';
+import { PlatformUIOrchestrator } from '@/components/views/PlatformUIOrchestrator';
 import { InfoTooltip } from '@/components/InfoTooltip';
 import { PageSequencePreview } from '@/components/PageSequencePreview';
 import { EngineSelector } from '@/components/EngineSelector';
@@ -526,7 +526,7 @@ export default function HomePage() {
 
       {/* MAIN PHASE CONTENT CONTAINER WITH MODULAR PLATFORM UI ORCHESTRATOR */}
       <main className="mx-auto w-full max-w-5xl flex-1 px-3 py-4 sm:px-6 sm:py-6 pb-28 md:pb-8">
-        <WorkflowUI
+        <PlatformUIOrchestrator
           currentPhase={currentPhase}
           setCurrentPhase={setCurrentPhase}
           isProcessing={isProcessing}
