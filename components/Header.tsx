@@ -1,0 +1,389 @@
+'use client';
+
+import React, { useState, useEffect } from 'react';
+import {
+  Menu,
+  X,
+  ShieldCheck,
+  CheckCircle2,
+  Sparkles,
+  RefreshCw,
+  Download,
+  Smartphone,
+  Info,
+  Zap,
+  HardDrive,
+  FileText,
+} from 'lucide-react';
+import { AppLogo } from './AppLogo';
+import { motion, AnimatePresence } from 'motion/react';
+
+export type WorkflowPhase = 1 | 2 | 3 | 4;
+
+interface HeaderProps {
+  currentPhase: WorkflowPhase;
+  onReset?: () => void;
+  onLoadSample?: () => void;
+  onNavigatePhase?: (phase: WorkflowPhase) => void;
+  isProcessing?: boolean;
+}
+
+export const Header: React.FC<HeaderProps> = ({
+  currentPhase,
+  onReset,
+  onLoadSample,
+  onNavigatePhase,
+  isProcessing = false,
+}) => {
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
+  const [isAppInstalled, setIsAppInstalled] = useState<boolean>(() => {
+    if (typeof window !== 'undefined') {
+      return window.matchMedia('(display-mode: standalone)').matches;
+    }
+    return false;
+  });
+
+  useEffect(() => {
+    // Listen for PWA installation event
+    const handleBeforeInstallPrompt = (e: Event) => {
+      e.preventDefault();
+      setDeferredPrompt(e);
+    };
+
+    const handleAppInstalled = () => {
+      setIsAppInstalled(true);
+      setDeferredPrompt(null);
+    };
+
+    window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+    window.addEventListener('appinstalled', handleAppInstalled);
+
+    return () => {
+      window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+      window.removeEventListener('appinstalled', handleAppInstalled);
+    };
+  }, []);
+
+  const handleInstallClick = async () => {
+    if (!deferredPrompt) return;
+    deferredPrompt.prompt();
+    const { outcome } = await deferredPrompt.userChoice;
+    if (outcome === 'accepted') {
+      setIsAppInstalled(true);
+    }
+    setDeferredPrompt(null);
+  };
+
+  const steps = [
+    { phase: 1 as WorkflowPhase, label: 'Upload' },
+    { phase: 2 as WorkflowPhase, label: 'Optimize' },
+    { phase: 3 as WorkflowPhase, label: 'Layout' },
+    { phase: 4 as WorkflowPhase, label: 'Download' },
+  ];
+
+  return (
+    <>
+      <header id="app-header" className="sticky top-0 z-40 w-full bg-slate-900/95 backdrop-blur-md border-b border-slate-800 text-white pt-safe">
+        <div className="mx-auto max-w-7xl px-3 py-2.5 sm:px-6">
+          <div className="flex items-center justify-between gap-2">
+            {/* Left: Hamburger Menu Button & Logo */}
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => setIsMenuOpen(!isMenuOpen)}
+                className="flex h-11 w-11 items-center justify-center rounded-xl bg-slate-800/80 text-slate-200 hover:bg-slate-700 active:scale-95 transition-all border border-slate-700/60"
+                aria-label="Toggle App Menu"
+              >
+                {isMenuOpen ? <X className="h-5 w-5 text-amber-400" /> : <Menu className="h-5 w-5 text-indigo-400" />}
+              </button>
+
+              <div className="flex items-center gap-2">
+                <AppLogo className="h-9 w-9 text-indigo-400 drop-shadow-md" />
+                <div className="flex flex-col">
+                  <div className="flex items-center gap-1.5">
+                    <h1 className="text-sm font-bold tracking-tight text-white sm:text-base">
+                      PW Optimizer
+                    </h1>
+                    <span className="rounded-md bg-indigo-500/20 px-1.5 py-0.5 text-[10px] font-bold text-indigo-300 border border-indigo-500/30">
+                      PWA
+                    </span>
+                  </div>
+                  <span className="text-[10px] text-slate-400 font-medium hidden sm:inline">
+                    Android & Web Print Engine
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            {/* Middle: Compact Stepper Indicator for Mobile & Tablet */}
+            <nav aria-label="Progress Stepper" className="flex items-center rounded-xl bg-slate-800/70 p-1 border border-slate-700/50">
+              {steps.map((step, idx) => {
+                const isActive = currentPhase === step.phase;
+                const isCompleted = currentPhase > step.phase;
+
+                return (
+                  <button
+                    key={step.phase}
+                    onClick={() => {
+                      if (isCompleted && onNavigatePhase) {
+                        onNavigatePhase(step.phase);
+                      }
+                    }}
+                    disabled={!isCompleted && !isActive}
+                    className={`flex items-center gap-1 rounded-lg px-2 py-1 text-xs font-semibold transition-all ${
+                      isActive
+                        ? 'bg-indigo-600 text-white shadow-xs'
+                        : isCompleted
+                        ? 'text-emerald-400 hover:bg-slate-700/60'
+                        : 'text-slate-500 cursor-not-allowed'
+                    }`}
+                  >
+                    <span
+                      className={`flex h-4 w-4 items-center justify-center rounded-full text-[10px] font-bold ${
+                        isActive
+                          ? 'bg-white text-indigo-700'
+                          : isCompleted
+                          ? 'bg-emerald-500 text-slate-950'
+                          : 'bg-slate-700 text-slate-400'
+                      }`}
+                    >
+                      {isCompleted ? <CheckCircle2 className="h-3 w-3" /> : step.phase}
+                    </span>
+                    <span className="hidden min-[400px]:inline text-[11px] sm:text-xs">{step.label}</span>
+                  </button>
+                );
+              })}
+            </nav>
+
+            {/* Right: Quick Action Buttons for Desktop / Tablet */}
+            <div className="hidden md:flex items-center gap-2">
+              <div className="flex items-center gap-1.5 rounded-lg border border-emerald-500/30 bg-emerald-500/10 px-2.5 py-1 text-xs font-medium text-emerald-300">
+                <ShieldCheck className="h-3.5 w-3.5 text-emerald-400" />
+                <span>100% Offline</span>
+              </div>
+
+              {currentPhase === 1 && onLoadSample && (
+                <button
+                  type="button"
+                  onClick={onLoadSample}
+                  disabled={isProcessing}
+                  className="flex h-9 items-center gap-1.5 rounded-lg border border-indigo-500/40 bg-indigo-600/20 px-3 text-xs font-semibold text-indigo-300 hover:bg-indigo-600/30 transition-colors disabled:opacity-50"
+                >
+                  <Sparkles className="h-3.5 w-3.5 text-indigo-400" />
+                  <span>Sample PDF</span>
+                </button>
+              )}
+
+              {currentPhase > 1 && onReset && (
+                <button
+                  type="button"
+                  onClick={onReset}
+                  className="flex h-9 items-center gap-1.5 rounded-lg border border-slate-700 bg-slate-800 px-3 text-xs font-medium text-slate-300 hover:bg-slate-700 hover:text-white transition-colors"
+                >
+                  <RefreshCw className="h-3.5 w-3.5" />
+                  <span>Start Over</span>
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* Top Progress Line Indicator */}
+        <div className="h-0.5 w-full bg-slate-800">
+          <motion.div
+            className="h-full bg-gradient-to-r from-indigo-500 via-sky-400 to-emerald-400"
+            initial={{ width: '25%' }}
+            animate={{ width: `${(currentPhase / 4) * 100}%` }}
+            transition={{ duration: 0.3, ease: 'easeInOut' }}
+          />
+        </div>
+      </header>
+
+      {/* Mobile Drawer (Hamburger Side Sheet) */}
+      <AnimatePresence>
+        {isMenuOpen && (
+          <div className="fixed inset-0 z-50 flex">
+            {/* Backdrop */}
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setIsMenuOpen(false)}
+              className="fixed inset-0 bg-slate-950/70 backdrop-blur-xs"
+            />
+
+            {/* Side Drawer Content */}
+            <motion.aside
+              initial={{ x: '-100%' }}
+              animate={{ x: 0 }}
+              exit={{ x: '-100%' }}
+              transition={{ type: 'spring', damping: 25, stiffness: 220 }}
+              className="relative flex w-80 max-w-[85vw] flex-col bg-slate-900 border-r border-slate-800 text-slate-100 shadow-2xl pt-safe pb-safe"
+            >
+              {/* Drawer Header */}
+              <div className="flex items-center justify-between border-b border-slate-800 p-4">
+                <div className="flex items-center gap-2.5">
+                  <AppLogo className="h-8 w-8 text-indigo-400" />
+                  <div>
+                    <h2 className="text-sm font-bold text-white">PW Print Optimizer</h2>
+                    <p className="text-[11px] text-slate-400">Mobile PWA Engine v1.2</p>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setIsMenuOpen(false)}
+                  className="flex h-9 w-9 items-center justify-center rounded-lg bg-slate-800 text-slate-400 hover:text-white"
+                  aria-label="Close menu"
+                >
+                  <X className="h-5 w-5" />
+                </button>
+              </div>
+
+              {/* Drawer Body */}
+              <div className="flex-1 overflow-y-auto p-4 space-y-5">
+                {/* PWA Install Banner inside Drawer */}
+                {deferredPrompt && !isAppInstalled && (
+                  <div className="rounded-xl border border-indigo-500/40 bg-gradient-to-br from-indigo-950 to-slate-900 p-3.5 shadow-lg">
+                    <div className="flex items-center gap-2.5 text-indigo-300 font-semibold text-xs mb-1">
+                      <Smartphone className="h-4 w-4 text-indigo-400" />
+                      <span>Install Android App</span>
+                    </div>
+                    <p className="text-[11px] text-slate-300 mb-3 leading-relaxed">
+                      Install PW Optimizer on your phone for home screen access, offline support, and full-screen workspace.
+                    </p>
+                    <button
+                      type="button"
+                      onClick={handleInstallClick}
+                      className="w-full flex items-center justify-center gap-2 rounded-lg bg-indigo-600 px-3 py-2 text-xs font-bold text-white shadow-md active:scale-98 transition-all hover:bg-indigo-500"
+                    >
+                      <Download className="h-3.5 w-3.5" />
+                      <span>Add to Home Screen</span>
+                    </button>
+                  </div>
+                )}
+
+                {/* Workflow Navigation Shortcuts */}
+                <div>
+                  <h3 className="text-[11px] font-bold uppercase tracking-wider text-slate-400 mb-2">
+                    Workflow Stages
+                  </h3>
+                  <div className="space-y-1">
+                    {steps.map((step) => {
+                      const isActive = currentPhase === step.phase;
+                      const isCompleted = currentPhase > step.phase;
+                      return (
+                        <button
+                          key={step.phase}
+                          type="button"
+                          onClick={() => {
+                            if ((isCompleted || isActive) && onNavigatePhase) {
+                              onNavigatePhase(step.phase);
+                              setIsMenuOpen(false);
+                            }
+                          }}
+                          disabled={!isCompleted && !isActive}
+                          className={`w-full flex items-center justify-between rounded-lg px-3 py-2.5 text-xs font-medium transition-colors ${
+                            isActive
+                              ? 'bg-indigo-600 text-white font-semibold'
+                              : isCompleted
+                              ? 'bg-slate-800/80 text-slate-200 hover:bg-slate-800'
+                              : 'text-slate-500 cursor-not-allowed opacity-60'
+                          }`}
+                        >
+                          <div className="flex items-center gap-2.5">
+                            <span
+                              className={`flex h-5 w-5 items-center justify-center rounded-full text-[10px] font-bold ${
+                                isActive
+                                  ? 'bg-white text-indigo-700'
+                                  : isCompleted
+                                  ? 'bg-emerald-500 text-slate-950'
+                                  : 'bg-slate-700 text-slate-400'
+                              }`}
+                            >
+                              {step.phase}
+                            </span>
+                            <span>
+                              {step.phase === 1 && '1. Upload & Merge PDFs'}
+                              {step.phase === 2 && '2. Adaptive Optimization'}
+                              {step.phase === 3 && '3. N-Up Page Grid Layout'}
+                              {step.phase === 4 && '4. Export & Print PDF'}
+                            </span>
+                          </div>
+                          {isCompleted && <CheckCircle2 className="h-4 w-4 text-emerald-400" />}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* Quick Actions */}
+                <div>
+                  <h3 className="text-[11px] font-bold uppercase tracking-wider text-slate-400 mb-2">
+                    Quick Tools
+                  </h3>
+                  <div className="space-y-2">
+                    {currentPhase === 1 && onLoadSample && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          onLoadSample();
+                          setIsMenuOpen(false);
+                        }}
+                        disabled={isProcessing}
+                        className="w-full flex items-center gap-2.5 rounded-lg border border-indigo-500/30 bg-indigo-950/40 px-3 py-2 text-xs font-semibold text-indigo-300 hover:bg-indigo-900/50 transition-colors"
+                      >
+                        <Sparkles className="h-4 w-4 text-indigo-400" />
+                        <span>Load Sample Physics Notes</span>
+                      </button>
+                    )}
+
+                    {currentPhase > 1 && onReset && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          onReset();
+                          setIsMenuOpen(false);
+                        }}
+                        className="w-full flex items-center gap-2.5 rounded-lg border border-slate-700 bg-slate-800/60 px-3 py-2 text-xs font-medium text-slate-300 hover:bg-slate-800 hover:text-white transition-colors"
+                      >
+                        <RefreshCw className="h-4 w-4 text-amber-400" />
+                        <span>Start Over / Clear RAM</span>
+                      </button>
+                    )}
+                  </div>
+                </div>
+
+                {/* Local Privacy & RAM Engine Badge */}
+                <div className="rounded-xl bg-slate-800/50 p-3 border border-slate-800 text-xs space-y-2">
+                  <div className="flex items-center gap-2 text-emerald-400 font-semibold">
+                    <ShieldCheck className="h-4 w-4" />
+                    <span>100% Client-Side Privacy</span>
+                  </div>
+                  <p className="text-[11px] text-slate-400 leading-relaxed">
+                    Your PDF files are processed locally inside your phone browser using WebAssembly and Canvas API. No data is ever uploaded to external servers.
+                  </p>
+                  <div className="flex items-center justify-between text-[10px] text-slate-500 pt-1 border-t border-slate-700/50">
+                    <span className="flex items-center gap-1">
+                      <Zap className="h-3 w-3 text-amber-400" /> Memory Garbage Collected
+                    </span>
+                    <span className="flex items-center gap-1">
+                      <HardDrive className="h-3 w-3 text-sky-400" /> Auto-Purge
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Drawer Footer */}
+              <div className="border-t border-slate-800 p-3 text-center text-[10px] text-slate-500">
+                PW Notes Print Optimizer &bull; Native PWA Shell
+              </div>
+            </motion.aside>
+          </div>
+        )}
+      </AnimatePresence>
+    </>
+  );
+};
+
+
