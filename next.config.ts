@@ -12,7 +12,7 @@ const nextConfig: NextConfig = {
     ignoreBuildErrors: false,
   },
   images: {
-    unoptimized: isGitHubActions ? true : undefined,
+    unoptimized: true,
     remotePatterns: [
       {
         protocol: 'https',
