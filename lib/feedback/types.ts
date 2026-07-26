@@ -22,6 +22,8 @@ export interface OsInfo {
 export interface PdfStats {
   originalFilesCount: number;
   originalFileNames: string[];
+  originalFileSizesMB?: number[];
+  mergedPdfSizeMB?: number;
   totalInputPages: number;
   totalOutputPages: number;
   excludedPagesCount: number;
@@ -29,6 +31,9 @@ export interface PdfStats {
   optimizedSizeMB: number;
   inkSavedPct?: number;
   processingTimeMs?: number;
+  analysisTimeMs?: number;
+  optimizationTimeMs?: number;
+  layoutTimeMs?: number;
 }
 
 export interface ProcessingSettings {

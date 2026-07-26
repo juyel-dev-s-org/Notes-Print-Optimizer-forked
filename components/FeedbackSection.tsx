@@ -28,6 +28,8 @@ interface FeedbackSectionProps {
   selectedEngineVersion: EngineVersion;
   uploadedItemsCount: number;
   uploadedFileNames: string[];
+  uploadedFileSizesMB?: number[];
+  mergedPdfSizeMB?: number;
   totalInputPages: number;
   totalOutputPages: number;
   excludedPagesCount: number;
@@ -35,6 +37,9 @@ interface FeedbackSectionProps {
   finalMetrics: OptimizationMetrics | null;
   layoutConfig: LayoutConfig;
   finalPrintPdfBlob: Blob | null;
+  analysisTimeMs?: number;
+  optimizationTimeMs?: number;
+  layoutTimeMs?: number;
   endpointUrl?: string;
 }
 
@@ -43,6 +48,8 @@ export const FeedbackSection: React.FC<FeedbackSectionProps> = ({
   selectedEngineVersion,
   uploadedItemsCount,
   uploadedFileNames,
+  uploadedFileSizesMB,
+  mergedPdfSizeMB,
   totalInputPages,
   totalOutputPages,
   excludedPagesCount,
@@ -50,6 +57,9 @@ export const FeedbackSection: React.FC<FeedbackSectionProps> = ({
   finalMetrics,
   layoutConfig,
   finalPrintPdfBlob,
+  analysisTimeMs,
+  optimizationTimeMs,
+  layoutTimeMs,
   endpointUrl = 'https://script.google.com/macros/s/AKfycbxQ-ENm_QT9lUD9wwX-GhSc-apEW_myrocrys46zX1Kj28q5xXZ4QCNYHIJk7lB3-DX9w/exec',
 }) => {
   // Form State
@@ -91,13 +101,18 @@ export const FeedbackSection: React.FC<FeedbackSectionProps> = ({
   const getPdfStats = (): PdfStats => ({
     originalFilesCount: uploadedItemsCount || 0,
     originalFileNames: uploadedFileNames || [],
+    originalFileSizesMB: uploadedFileSizesMB || [],
+    mergedPdfSizeMB,
     totalInputPages: totalInputPages || 0,
     totalOutputPages: totalOutputPages || 0,
     excludedPagesCount: excludedPagesCount || 0,
     originalSizeMB: totalOriginalSizeMB || 0,
     optimizedSizeMB: finalMetrics?.totalOptimizedSizeMB || 0,
     inkSavedPct: finalMetrics?.inkSavedPct || 0,
-    processingTimeMs: finalMetrics?.processingTimeMs || 0,
+    processingTimeMs: (analysisTimeMs || 0) + (optimizationTimeMs || 0) + (layoutTimeMs || 0) || finalMetrics?.processingTimeMs || 0,
+    analysisTimeMs,
+    optimizationTimeMs,
+    layoutTimeMs,
   });
 
   // Compile Processing Settings

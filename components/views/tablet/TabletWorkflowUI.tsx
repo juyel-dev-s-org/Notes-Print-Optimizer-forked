@@ -21,6 +21,7 @@ import {
   Check,
   Tablet,
 } from 'lucide-react';
+import { FullPdfViewerPreview } from '@/components/preview/FullPdfViewerPreview';
 
 export const TabletWorkflowUI: React.FC<WorkflowUIProps> = (props) => {
   const {
@@ -322,25 +323,11 @@ export const TabletWorkflowUI: React.FC<WorkflowUIProps> = (props) => {
           </div>
 
           {finalSheetPreviews.length > 0 && (
-            <div className="flex flex-col gap-3 rounded-2xl border border-slate-800 bg-slate-900/90 p-4 shadow-xl">
-              <h3 className="text-xs font-bold text-white border-b border-slate-800 pb-2">
-                Print Sheet Previews ({finalSheetPreviews.length} Sheets)
-              </h3>
-              <div className="grid grid-cols-2 md:grid-cols-3 gap-3 max-h-[380px] overflow-y-auto p-1">
-                {finalSheetPreviews.map((previewUrl, sIdx) => (
-                  <div key={sIdx} className="flex flex-col rounded-xl border border-slate-800 bg-slate-950 p-2">
-                    <div className="mb-1 flex justify-between text-[10px] font-bold text-slate-300">
-                      <span>Sheet {sIdx + 1}</span>
-                      <span>{layoutConfig.gridFormat}</span>
-                    </div>
-                    <div className="relative w-full overflow-hidden rounded-lg bg-white border border-slate-200 flex items-center justify-center p-1 aspect-[1.414/1]">
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img src={previewUrl} alt={`Sheet ${sIdx + 1}`} className="max-h-full max-w-full object-contain" />
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
+            <FullPdfViewerPreview
+              sheetPreviews={finalSheetPreviews}
+              layoutConfig={layoutConfig}
+              title="A4 Print Sheet Preview"
+            />
           )}
 
           <div className="flex items-center justify-between rounded-2xl border border-slate-800 bg-slate-900/90 p-4 shadow-xl">
@@ -411,6 +398,8 @@ export const TabletWorkflowUI: React.FC<WorkflowUIProps> = (props) => {
             selectedEngineVersion={selectedEngineVersion}
             uploadedItemsCount={uploadedItems.length}
             uploadedFileNames={uploadedItems.map((item) => item.name)}
+            uploadedFileSizesMB={uploadedItems.map((item) => (item.file?.size || 0) / (1024 * 1024))}
+            mergedPdfSizeMB={(mergedPdfBlob?.size || 0) / (1024 * 1024)}
             totalInputPages={processedPages.length || mergedPageDataUrls.length}
             totalOutputPages={finalSheetPreviews.length}
             excludedPagesCount={excludedPages.size}
@@ -420,6 +409,9 @@ export const TabletWorkflowUI: React.FC<WorkflowUIProps> = (props) => {
             finalMetrics={finalMetrics}
             layoutConfig={layoutConfig}
             finalPrintPdfBlob={finalPrintPdfBlob}
+            analysisTimeMs={props.analysisTimeMs}
+            optimizationTimeMs={props.optimizationTimeMs}
+            layoutTimeMs={props.layoutTimeMs}
           />
 
           <button

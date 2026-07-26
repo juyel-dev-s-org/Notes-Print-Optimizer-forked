@@ -99,9 +99,19 @@ export function buildTelegramMarkdownMessage(
     if (diagnostics.pdfStats) {
       const stats = diagnostics.pdfStats;
       msg += `📄 *PDF*\n`;
-      msg += `• *Files:* ${stats.originalFilesCount}\n`;
-      msg += `• *Pages:* ${stats.totalInputPages} → ${stats.totalOutputPages}\n`;
-      msg += `• *Size:* ${stats.originalSizeMB.toFixed(1)} MB → ${stats.optimizedSizeMB.toFixed(1)} MB\n`;
+      msg += `• *Raw PDFs:* ${stats.originalFilesCount} file${stats.originalFilesCount === 1 ? '' : 's'}\n`;
+      if (stats.originalFileNames && stats.originalFileNames.length > 0) {
+        const fileList = stats.originalFileNames.map((name, idx) => {
+          const sz = stats.originalFileSizesMB?.[idx];
+          return sz ? `${name} (${sz.toFixed(2)} MB)` : name;
+        }).join(', ');
+        msg += `• *Raw Files:* ${fileList}\n`;
+      }
+      if (stats.mergedPdfSizeMB) {
+        msg += `• *After Merged Size:* ${stats.mergedPdfSizeMB.toFixed(2)} MB\n`;
+      }
+      msg += `• *Pages:* ${stats.totalInputPages} input → ${stats.totalOutputPages} output\n`;
+      msg += `• *Size Reduction:* ${stats.originalSizeMB.toFixed(1)} MB → ${stats.optimizedSizeMB.toFixed(1)} MB\n`;
       if (stats.inkSavedPct !== undefined && stats.inkSavedPct > 0) {
         msg += `• *Ink Saved:* ~${stats.inkSavedPct.toFixed(0)}%\n`;
       }
@@ -110,6 +120,7 @@ export function buildTelegramMarkdownMessage(
 
     if (diagnostics.processingSettings) {
       const s = diagnostics.processingSettings;
+      const stats = diagnostics.pdfStats;
       const statusStr = diagnostics.currentPhase >= 4 ? 'Success' : `Phase ${diagnostics.currentPhase}`;
       msg += `⚙️ *Processing*\n`;
       msg += `• *Status:* ${statusStr}\n`;
@@ -118,7 +129,23 @@ export function buildTelegramMarkdownMessage(
       msg += `• *Paper:* ${s.paperSize}\n`;
       msg += `• *Orientation:* ${s.orientation.charAt(0).toUpperCase() + s.orientation.slice(1)}\n`;
       msg += `• *Borders:* ${s.showBorders ? 'On' : 'Off'}\n`;
-      msg += `• *Numbers:* ${s.showPageNumbers ? 'On' : 'Off'}\n\n`;
+      msg += `• *Numbers:* ${s.showPageNumbers ? 'On' : 'Off'}\n`;
+
+      if (stats) {
+        if (stats.analysisTimeMs) {
+          msg += `• *Analyzing Slide Structure:* ${(stats.analysisTimeMs / 1000).toFixed(2)} s\n`;
+        }
+        if (stats.optimizationTimeMs) {
+          msg += `• *Optimizing Slides:* ${(stats.optimizationTimeMs / 1000).toFixed(2)} s\n`;
+        }
+        if (stats.layoutTimeMs) {
+          msg += `• *Layout Processing:* ${(stats.layoutTimeMs / 1000).toFixed(2)} s\n`;
+        }
+        if (stats.processingTimeMs) {
+          msg += `• *Total Processing Time:* ${(stats.processingTimeMs / 1000).toFixed(2)} s\n`;
+        }
+      }
+      msg += `\n`;
     }
   }
 

@@ -63,6 +63,11 @@ export interface WorkflowUIProps {
   onDownloadFinalPrintPdf: () => void;
   onProceedToPhase4: () => void;
 
+  // Diagnostics & Performance Timings
+  analysisTimeMs?: number;
+  optimizationTimeMs?: number;
+  layoutTimeMs?: number;
+
   // Phase 4: Feedback & Completion
   rating: number;
   setRating: (rating: number) => void;

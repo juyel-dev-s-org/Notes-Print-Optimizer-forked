@@ -21,6 +21,7 @@ import {
   Check,
   Monitor,
 } from 'lucide-react';
+import { FullPdfViewerPreview } from '@/components/preview/FullPdfViewerPreview';
 
 export const DesktopWorkflowUI: React.FC<WorkflowUIProps> = (props) => {
   const {
@@ -342,33 +343,11 @@ export const DesktopWorkflowUI: React.FC<WorkflowUIProps> = (props) => {
           </div>
 
           {finalSheetPreviews.length > 0 && (
-            <div className="flex flex-col gap-3 rounded-2xl border border-slate-800 bg-slate-900/90 p-5 shadow-xl">
-              <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-800 pb-2">
-                <h3 className="text-sm font-bold text-white">
-                  Print Sheet Preview ({finalSheetPreviews.length} Sheet{finalSheetPreviews.length > 1 ? 's' : ''})
-                </h3>
-                {finalMetrics && (
-                  <span className="text-xs font-semibold text-emerald-300 bg-emerald-500/20 px-3 py-1 rounded-full border border-emerald-500/30">
-                    Paper Saved: ~75% &bull; Ink Saved: ~{finalMetrics.inkSavedPct}%
-                  </span>
-                )}
-              </div>
-
-              <div className="grid grid-cols-3 gap-4 max-h-[440px] overflow-y-auto p-1">
-                {finalSheetPreviews.map((previewUrl, sIdx) => (
-                  <div key={sIdx} className="flex flex-col rounded-xl border border-slate-800 bg-slate-950 p-2 shadow-md">
-                    <div className="mb-1.5 flex items-center justify-between text-[11px] font-bold text-slate-300">
-                      <span>Sheet {sIdx + 1} of {finalSheetPreviews.length}</span>
-                      <span className="text-[10px] text-slate-400">{layoutConfig.gridFormat} Grid</span>
-                    </div>
-                    <div className="relative w-full overflow-hidden rounded-lg bg-white border border-slate-200 flex items-center justify-center p-1 aspect-[1.414/1]">
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img src={previewUrl} alt={`Sheet ${sIdx + 1}`} className="max-h-full max-w-full object-contain" />
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
+            <FullPdfViewerPreview
+              sheetPreviews={finalSheetPreviews}
+              layoutConfig={layoutConfig}
+              title="A4 Print Sheet Preview"
+            />
           )}
 
           <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-slate-800 bg-slate-900/90 p-4 shadow-xl">
@@ -445,6 +424,8 @@ export const DesktopWorkflowUI: React.FC<WorkflowUIProps> = (props) => {
             selectedEngineVersion={selectedEngineVersion}
             uploadedItemsCount={uploadedItems.length}
             uploadedFileNames={uploadedItems.map((item) => item.name)}
+            uploadedFileSizesMB={uploadedItems.map((item) => (item.file?.size || 0) / (1024 * 1024))}
+            mergedPdfSizeMB={(mergedPdfBlob?.size || 0) / (1024 * 1024)}
             totalInputPages={processedPages.length || mergedPageDataUrls.length}
             totalOutputPages={finalSheetPreviews.length}
             excludedPagesCount={excludedPages.size}
@@ -454,6 +435,9 @@ export const DesktopWorkflowUI: React.FC<WorkflowUIProps> = (props) => {
             finalMetrics={finalMetrics}
             layoutConfig={layoutConfig}
             finalPrintPdfBlob={finalPrintPdfBlob}
+            analysisTimeMs={props.analysisTimeMs}
+            optimizationTimeMs={props.optimizationTimeMs}
+            layoutTimeMs={props.layoutTimeMs}
           />
 
           <button

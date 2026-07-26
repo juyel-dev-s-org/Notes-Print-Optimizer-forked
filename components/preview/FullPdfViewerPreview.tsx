@@ -1,0 +1,340 @@
+'use client';
+
+import React, { useState } from 'react';
+import {
+  ChevronLeft,
+  ChevronRight,
+  Grid,
+  Layers,
+  Maximize2,
+  Minimize2,
+  ZoomIn,
+  ZoomOut,
+  RotateCcw,
+} from 'lucide-react';
+import { LayoutConfig } from '@/lib/optimizer/types';
+
+interface FullPdfViewerPreviewProps {
+  sheetPreviews: string[];
+  layoutConfig: LayoutConfig;
+  title?: string;
+}
+
+export const FullPdfViewerPreview: React.FC<FullPdfViewerPreviewProps> = ({
+  sheetPreviews,
+  layoutConfig,
+  title = 'A4 Print Sheet Preview',
+}) => {
+  const [currentSheetIdx, setCurrentSheetIdx] = useState(0);
+  const [viewMode, setViewMode] = useState<'single' | 'grid'>('single');
+  const [zoomLevel, setZoomLevel] = useState(100);
+  const [isFullscreen, setIsFullscreen] = useState(false);
+
+  if (!sheetPreviews || sheetPreviews.length === 0) {
+    return null;
+  }
+
+  const isLandscape = layoutConfig.orientation === 'LANDSCAPE';
+  const totalSheets = sheetPreviews.length;
+
+  const handlePrevSheet = () => {
+    setCurrentSheetIdx((prev) => (prev > 0 ? prev - 1 : totalSheets - 1));
+  };
+
+  const handleNextSheet = () => {
+    setCurrentSheetIdx((prev) => (prev < totalSheets - 1 ? prev + 1 : 0));
+  };
+
+  const handleZoomIn = () => {
+    setZoomLevel((prev) => Math.min(prev + 25, 200));
+  };
+
+  const handleZoomOut = () => {
+    setZoomLevel((prev) => Math.max(prev - 25, 50));
+  };
+
+  const handleResetZoom = () => {
+    setZoomLevel(100);
+  };
+
+  return (
+    <div className="flex flex-col gap-3 rounded-2xl border border-slate-800 bg-slate-900/90 p-3 sm:p-4 shadow-2xl">
+      {/* Top PDF Viewer Header Bar */}
+      <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-800 pb-3">
+        <div className="flex items-center gap-2">
+          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-indigo-500/20 text-indigo-400 border border-indigo-500/30">
+            <Layers className="h-4 w-4" />
+          </div>
+          <div>
+            <h3 className="text-xs sm:text-sm font-bold text-white flex items-center gap-2">
+              <span>{title}</span>
+              <span className="rounded-md bg-indigo-600/30 px-2 py-0.5 text-[10px] font-bold text-indigo-300 border border-indigo-500/30">
+                {layoutConfig.gridFormat} Grid
+              </span>
+            </h3>
+            <p className="text-[10px] sm:text-xs text-slate-400">
+              Sheet {currentSheetIdx + 1} of {totalSheets} &bull; A4 {layoutConfig.orientation}
+            </p>
+          </div>
+        </div>
+
+        {/* Viewer Controls */}
+        <div className="flex items-center gap-1.5 flex-wrap">
+          {/* View Mode Switcher */}
+          <div className="flex items-center rounded-lg bg-slate-950 p-1 border border-slate-800">
+            <button
+              type="button"
+              onClick={() => setViewMode('single')}
+              className={`flex items-center gap-1 px-2 py-1 rounded-md text-[10px] font-bold transition-all ${
+                viewMode === 'single'
+                  ? 'bg-indigo-600 text-white shadow-xs'
+                  : 'text-slate-400 hover:text-slate-200'
+              }`}
+              title="Single Sheet Viewer"
+            >
+              <Layers className="h-3 w-3" />
+              <span className="hidden sm:inline">Sheet</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setViewMode('grid')}
+              className={`flex items-center gap-1 px-2 py-1 rounded-md text-[10px] font-bold transition-all ${
+                viewMode === 'grid'
+                  ? 'bg-indigo-600 text-white shadow-xs'
+                  : 'text-slate-400 hover:text-slate-200'
+              }`}
+              title="Grid Overview"
+            >
+              <Grid className="h-3 w-3" />
+              <span className="hidden sm:inline">Grid ({totalSheets})</span>
+            </button>
+          </div>
+
+          {/* Zoom controls (Single Sheet Mode) */}
+          {viewMode === 'single' && (
+            <div className="hidden sm:flex items-center gap-1 rounded-lg bg-slate-950 p-1 border border-slate-800 text-[10px]">
+              <button
+                type="button"
+                onClick={handleZoomOut}
+                disabled={zoomLevel <= 50}
+                className="p-1 text-slate-400 hover:text-white disabled:opacity-30"
+                title="Zoom Out"
+              >
+                <ZoomOut className="h-3.5 w-3.5" />
+              </button>
+              <span className="w-10 text-center font-bold text-indigo-300">{zoomLevel}%</span>
+              <button
+                type="button"
+                onClick={handleZoomIn}
+                disabled={zoomLevel >= 200}
+                className="p-1 text-slate-400 hover:text-white disabled:opacity-30"
+                title="Zoom In"
+              >
+                <ZoomIn className="h-3.5 w-3.5" />
+              </button>
+              {zoomLevel !== 100 && (
+                <button
+                  type="button"
+                  onClick={handleResetZoom}
+                  className="p-1 text-slate-400 hover:text-white"
+                  title="Reset Zoom"
+                >
+                  <RotateCcw className="h-3 w-3" />
+                </button>
+              )}
+            </div>
+          )}
+
+          {/* Fullscreen Modal Toggle */}
+          <button
+            type="button"
+            onClick={() => setIsFullscreen(true)}
+            className="flex items-center gap-1 rounded-lg border border-slate-700 bg-slate-800 px-2.5 py-1.5 text-[11px] font-bold text-slate-200 hover:bg-slate-700 hover:text-white transition-all"
+            title="Expand Full Screen PDF Viewer"
+          >
+            <Maximize2 className="h-3.5 w-3.5 text-indigo-400" />
+            <span className="hidden xs:inline">Expand</span>
+          </button>
+        </div>
+      </div>
+
+      {/* Main Preview Container */}
+      {viewMode === 'single' ? (
+        <div className="relative w-full overflow-hidden rounded-xl bg-slate-950 p-3 sm:p-6 border border-slate-800/80 flex flex-col items-center justify-center min-h-[320px] sm:min-h-[460px]">
+          {/* Edge-to-edge A4 Paper Stage */}
+          <div
+            className="transition-all duration-200 ease-out flex items-center justify-center max-w-full"
+            style={{ transform: `scale(${zoomLevel / 100})`, transformOrigin: 'center center' }}
+          >
+            {/* Realistic A4 Paper */}
+            <div
+              className={`relative bg-white rounded-xs shadow-[0_20px_50px_rgba(0,0,0,0.7)] border border-slate-300 overflow-hidden flex items-center justify-center p-1 sm:p-2 transition-all ${
+                isLandscape
+                  ? 'w-full max-w-[620px] aspect-[1.414/1]'
+                  : 'w-full max-w-[440px] aspect-[1/1.414]'
+              }`}
+            >
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={sheetPreviews[currentSheetIdx]}
+                alt={`A4 Print Sheet ${currentSheetIdx + 1}`}
+                className="max-h-full max-w-full object-contain pointer-events-none rounded-xs select-none"
+              />
+
+              {/* Watermark/Edge Marker for paper authenticity */}
+              <div className="absolute top-1 right-2 text-[8px] font-bold text-slate-400 opacity-40 select-none uppercase tracking-wider">
+                A4 {layoutConfig.paperSize} &bull; PRINT READY
+              </div>
+            </div>
+          </div>
+
+          {/* Carousel Next/Prev Navigation Buttons overlay */}
+          {totalSheets > 1 && (
+            <>
+              <button
+                type="button"
+                onClick={handlePrevSheet}
+                className="absolute left-2 top-1/2 -translate-y-1/2 flex h-10 w-10 items-center justify-center rounded-full border border-slate-700 bg-slate-900/90 text-white shadow-xl hover:bg-indigo-600 hover:border-indigo-500 transition-all active:scale-95"
+                aria-label="Previous Sheet"
+              >
+                <ChevronLeft className="h-6 w-6" />
+              </button>
+
+              <button
+                type="button"
+                onClick={handleNextSheet}
+                className="absolute right-2 top-1/2 -translate-y-1/2 flex h-10 w-10 items-center justify-center rounded-full border border-slate-700 bg-slate-900/90 text-white shadow-xl hover:bg-indigo-600 hover:border-indigo-500 transition-all active:scale-95"
+                aria-label="Next Sheet"
+              >
+                <ChevronRight className="h-6 w-6" />
+              </button>
+            </>
+          )}
+
+          {/* Sheet Indicators */}
+          {totalSheets > 1 && (
+            <div className="mt-4 flex items-center justify-center gap-1.5 flex-wrap">
+              {sheetPreviews.map((_, idx) => (
+                <button
+                  key={idx}
+                  type="button"
+                  onClick={() => setCurrentSheetIdx(idx)}
+                  className={`h-2 rounded-full transition-all ${
+                    idx === currentSheetIdx
+                      ? 'w-6 bg-indigo-500'
+                      : 'w-2 bg-slate-700 hover:bg-slate-500'
+                  }`}
+                  aria-label={`Go to sheet ${idx + 1}`}
+                />
+              ))}
+            </div>
+          )}
+        </div>
+      ) : (
+        /* Grid Overview Gallery */
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3.5 max-h-[480px] overflow-y-auto p-1 scrollbar-thin scrollbar-thumb-slate-700">
+          {sheetPreviews.map((previewUrl, sIdx) => (
+            <div
+              key={sIdx}
+              onClick={() => {
+                setCurrentSheetIdx(sIdx);
+                setViewMode('single');
+              }}
+              className={`group relative flex flex-col rounded-xl border p-2.5 transition-all cursor-pointer ${
+                sIdx === currentSheetIdx
+                  ? 'border-indigo-500 bg-indigo-950/40 ring-2 ring-indigo-500/50 shadow-lg'
+                  : 'border-slate-800 bg-slate-950/80 hover:border-slate-700 hover:bg-slate-900'
+              }`}
+            >
+              <div className="mb-2 flex items-center justify-between text-[11px] font-bold text-slate-300">
+                <span>Sheet {sIdx + 1} of {totalSheets}</span>
+                <span className="text-[10px] text-indigo-400 font-semibold">{layoutConfig.gridFormat}</span>
+              </div>
+
+              {/* Realistic A4 Thumbnail */}
+              <div
+                className={`relative w-full overflow-hidden rounded-xs bg-white border border-slate-200 flex items-center justify-center p-1 shadow-md group-hover:shadow-xl transition-all ${
+                  isLandscape ? 'aspect-[1.414/1]' : 'aspect-[1/1.414]'
+                }`}
+              >
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={previewUrl}
+                  alt={`Sheet ${sIdx + 1}`}
+                  className="max-h-full max-w-full object-contain"
+                />
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* FULLSCREEN PDF VIEWER MODAL */}
+      {isFullscreen && (
+        <div className="fixed inset-0 z-50 flex flex-col bg-slate-950/98 backdrop-blur-xl animate-in fade-in duration-200">
+          {/* Fullscreen Header */}
+          <div className="flex items-center justify-between border-b border-slate-800 bg-slate-900 p-3 sm:px-6">
+            <div className="flex items-center gap-3">
+              <span className="rounded-lg bg-indigo-600 px-2.5 py-1 text-xs font-bold text-white shadow-sm">
+                Full-Screen A4 Viewer
+              </span>
+              <span className="text-xs font-bold text-slate-300">
+                Sheet {currentSheetIdx + 1} of {totalSheets} ({layoutConfig.gridFormat} Grid)
+              </span>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={handlePrevSheet}
+                disabled={totalSheets <= 1}
+                className="flex h-9 items-center gap-1 rounded-lg border border-slate-700 bg-slate-800 px-3 text-xs font-bold text-slate-200 hover:bg-slate-700 disabled:opacity-30"
+              >
+                <ChevronLeft className="h-4 w-4" />
+                <span className="hidden sm:inline">Prev</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={handleNextSheet}
+                disabled={totalSheets <= 1}
+                className="flex h-9 items-center gap-1 rounded-lg border border-slate-700 bg-slate-800 px-3 text-xs font-bold text-slate-200 hover:bg-slate-700 disabled:opacity-30"
+              >
+                <span className="hidden sm:inline">Next</span>
+                <ChevronRight className="h-4 w-4" />
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setIsFullscreen(false)}
+                className="flex h-9 items-center gap-1.5 rounded-lg bg-red-600 px-3.5 text-xs font-bold text-white shadow-lg hover:bg-red-500 transition-all"
+              >
+                <Minimize2 className="h-4 w-4" />
+                <span>Close</span>
+              </button>
+            </div>
+          </div>
+
+          {/* Fullscreen Paper Area */}
+          <div className="flex-1 overflow-auto p-4 sm:p-8 flex items-center justify-center bg-slate-950">
+            <div
+              className={`relative bg-white rounded-xs shadow-[0_25px_60px_rgba(0,0,0,0.8)] border border-slate-200 p-2 max-w-full max-h-full flex items-center justify-center ${
+                isLandscape
+                  ? 'w-[92vw] max-w-[1100px] aspect-[1.414/1]'
+                  : 'w-[88vw] max-w-[800px] aspect-[1/1.414]'
+              }`}
+            >
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={sheetPreviews[currentSheetIdx]}
+                alt={`Full Screen Sheet ${currentSheetIdx + 1}`}
+                className="max-h-full max-w-full object-contain rounded-xs"
+              />
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
