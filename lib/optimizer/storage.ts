@@ -8,7 +8,7 @@ const DB_NAME = 'pw_optimizer_cache_db';
 const DB_VERSION = 1;
 const STORE_NAME = 'pages_cache';
 
-export interface CachedPageRecord {
+interface CachedPageRecord {
   id: string; // e.g., `${pdfId}_page_${pageIndex}`
   pdfId: string;
   pageIndex: number;

@@ -2,14 +2,8 @@
 
 import React, { useState, useCallback, useEffect } from 'react';
 import { Header, WorkflowPhase } from '@/components/Header';
-import { UploadArea } from '@/components/UploadArea';
-import { BeforeAfterSlider } from '@/components/BeforeAfterSlider';
-import { PageGrid } from '@/components/PageGrid';
 import { ProcessingModal } from '@/components/ProcessingModal';
 import { PlatformUIOrchestrator } from '@/components/views/PlatformUIOrchestrator';
-import { InfoTooltip } from '@/components/InfoTooltip';
-import { PageSequencePreview } from '@/components/PageSequencePreview';
-import { EngineSelector } from '@/components/EngineSelector';
 
 import { SamplePdfGenerator } from '@/lib/optimizer/samplePdfGenerator';
 import { ParameterGenerator } from '@/lib/optimizer/parameterGenerator';
@@ -29,20 +23,6 @@ import {
   ProcessingParameters,
   ProcessingProgress,
 } from '@/lib/optimizer/types';
-
-import {
-  Download,
-  ArrowLeft,
-  Trash2,
-  ArrowUp,
-  ArrowDown,
-  Plus,
-  CheckCircle2,
-  Star,
-  Sparkles,
-  RotateCcw,
-  Check,
-} from 'lucide-react';
 
 interface UploadedPdfItem {
   id: string;

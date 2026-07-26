@@ -9,7 +9,7 @@ import {
   ProcessingProgress,
 } from '@/lib/optimizer/types';
 
-export interface UploadedPdfItem {
+interface UploadedPdfItem {
   id: string;
   file: File;
   name: string;

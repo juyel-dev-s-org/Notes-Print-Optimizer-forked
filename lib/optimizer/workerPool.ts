@@ -8,14 +8,14 @@ import { PageProfile, ProcessingParameters } from './types';
 import { ImageProcessingKernels } from './wasmEngine';
 import { memoryManager } from './memoryManager';
 
-export interface WorkerProcessTask {
+interface WorkerProcessTask {
   pageIndex: number;
   imageData: ImageData;
   params: ProcessingParameters;
   profile: PageProfile;
 }
 
-export interface WorkerProcessResult {
+interface WorkerProcessResult {
   pageIndex: number;
   optimizedImageData: ImageData;
   inkCoverageBeforePct: number;

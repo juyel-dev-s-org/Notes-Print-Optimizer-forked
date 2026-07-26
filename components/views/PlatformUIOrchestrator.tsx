@@ -7,7 +7,7 @@ import { TabletWorkflowUI } from './tablet/TabletWorkflowUI';
 import { DesktopWorkflowUI } from './desktop/DesktopWorkflowUI';
 import { Smartphone, Tablet, Monitor, Settings2 } from 'lucide-react';
 
-export type PlatformOverride = 'AUTO' | 'MOBILE' | 'TABLET' | 'DESKTOP';
+type PlatformOverride = 'AUTO' | 'MOBILE' | 'TABLET' | 'DESKTOP';
 
 export const PlatformUIOrchestrator: React.FC<WorkflowUIProps> = (props) => {
   const [overrideMode, setOverrideMode] = useState<PlatformOverride>('AUTO');

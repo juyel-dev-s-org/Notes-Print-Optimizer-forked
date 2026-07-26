@@ -31,7 +31,7 @@ export interface EngineProcessingOptions {
   executionMode?: 'auto' | 'parallel' | 'sequential' | 'hybrid';
 }
 
-export interface EngineProgressInfo {
+interface EngineProgressInfo {
   stage: 'ANALYZING' | 'OPTIMIZING' | 'COMPLETE' | 'ERROR';
   currentPage: number;
   totalPages: number;
