@@ -479,8 +479,31 @@ export default function HomePage() {
   };
 
   // Submit Feedback
-  const handleSendFeedback = () => {
+  const handleSendFeedback = async () => {
     setFeedbackSubmitted(true);
+    const feedbackUrl = process.env.NEXT_PUBLIC_FEEDBACK_URL || 
+      (window as unknown as Record<string, string>).__NEXT_FEEDBACK_URL || 
+      'https://script.google.com/macros/s/AKfycbxQ-ENm_QT9lUD9wwX-GhSc-apEW_myrocrys46zX1Kj28q5xXZ4QCNYHIJk7lB3-DX9w/exec';
+    
+    if (feedbackUrl) {
+      try {
+        await fetch(feedbackUrl, {
+          method: 'POST',
+          mode: 'no-cors',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            rating,
+            feedback: feedbackText,
+            timestamp: new Date().toLocaleString(),
+            source: 'Physics Wallah Notes Print Optimizer',
+          }),
+        });
+      } catch (err) {
+        console.error('Failed to dispatch feedback:', err);
+      }
+    }
   };
 
   return (
