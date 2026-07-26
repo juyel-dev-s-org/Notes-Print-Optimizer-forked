@@ -5,6 +5,11 @@ export const metadata: Metadata = {
   title: 'PW Notes Print Optimizer',
   description: 'Mobile-first adaptive print optimizer and PDF engine for Physics Wallah and lecture class notes.',
   manifest: '/manifest.webmanifest',
+  icons: {
+    icon: '/icon.svg',
+    shortcut: '/icon.svg',
+    apple: '/icon.svg',
+  },
   appleWebApp: {
     capable: true,
     statusBarStyle: 'black-translucent',
