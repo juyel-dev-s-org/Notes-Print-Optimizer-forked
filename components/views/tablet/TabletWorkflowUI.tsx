@@ -8,6 +8,7 @@ import { PageGrid } from '@/components/PageGrid';
 import { PageSequencePreview } from '@/components/PageSequencePreview';
 import { EngineSelector } from '@/components/EngineSelector';
 import { InfoTooltip } from '@/components/InfoTooltip';
+import { FeedbackSection } from '@/components/FeedbackSection';
 import {
   Download,
   ArrowLeft,
@@ -405,43 +406,21 @@ export const TabletWorkflowUI: React.FC<WorkflowUIProps> = (props) => {
             )}
           </div>
 
-          <div className="flex flex-col gap-3 rounded-2xl border border-slate-800 bg-slate-900/90 p-4 shadow-xl w-full text-left">
-            <h3 className="text-xs font-bold text-white border-b border-slate-800 pb-1.5">Rate Experience</h3>
-            {!feedbackSubmitted ? (
-              <div className="flex flex-col gap-3">
-                <div className="flex justify-center gap-2">
-                  {[1, 2, 3, 4, 5].map((star) => (
-                    <button
-                      key={star}
-                      type="button"
-                      onClick={() => setRating(star)}
-                      className="p-1 text-amber-400"
-                    >
-                      <Star className={`h-6 w-6 ${star <= rating ? 'fill-amber-400 text-amber-400' : 'text-slate-700'}`} />
-                    </button>
-                  ))}
-                </div>
-                <textarea
-                  rows={2}
-                  value={feedbackText}
-                  onChange={(e) => setFeedbackText(e.target.value)}
-                  placeholder="Feedback..."
-                  className="w-full rounded-xl border border-slate-800 bg-slate-950 p-2.5 text-xs text-slate-200"
-                />
-                <button
-                  type="button"
-                  onClick={onSendFeedback}
-                  className="flex h-10 items-center justify-center rounded-xl bg-slate-800 text-xs font-bold text-white hover:bg-slate-700"
-                >
-                  Send Feedback
-                </button>
-              </div>
-            ) : (
-              <div className="rounded-xl bg-emerald-950/60 p-3 border border-emerald-500/30 text-emerald-300 text-xs font-bold text-center">
-                Thank you! ❤️
-              </div>
-            )}
-          </div>
+          <FeedbackSection
+            currentPhase={4}
+            selectedEngineVersion={selectedEngineVersion}
+            uploadedItemsCount={uploadedItems.length}
+            uploadedFileNames={uploadedItems.map((item) => item.name)}
+            totalInputPages={processedPages.length || mergedPageDataUrls.length}
+            totalOutputPages={finalSheetPreviews.length}
+            excludedPagesCount={excludedPages.size}
+            totalOriginalSizeMB={
+              uploadedItems.reduce((acc, item) => acc + (item.file?.size || 0), 0) / (1024 * 1024)
+            }
+            finalMetrics={finalMetrics}
+            layoutConfig={layoutConfig}
+            finalPrintPdfBlob={finalPrintPdfBlob}
+          />
 
           <button
             type="button"
