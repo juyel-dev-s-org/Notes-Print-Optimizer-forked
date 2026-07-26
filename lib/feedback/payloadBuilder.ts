@@ -39,64 +39,95 @@ export function buildTelegramMarkdownMessage(
     'Print Quality': '🖨️',
     'Feature Request': '🚀',
   };
-  const icon = categoryIcons[input.category] || '💬';
+  const icon = categoryIcons[input.category] || '📂';
 
-  let msg = `🌟 *New User Feedback Received*\n\n`;
-  msg += `*Rating:* ${stars} (${input.rating}/5)\n`;
-  msg += `*Category:* ${icon} ${input.category}\n`;
-  
-  if (input.feedbackText && input.feedbackText.trim()) {
-    msg += `*Comments:*\n\`\`\`\n${input.feedbackText.trim()}\n\`\`\`\n`;
-  } else {
-    msg += `*Comments:* _No written comment provided._\n`;
+  // Format comment content
+  const commentContent = input.feedbackText && input.feedbackText.trim()
+    ? input.feedbackText.trim()
+    : '_No written comment provided._';
+
+  // Determine Platform
+  let platformStr = 'Desktop';
+  if (diagnostics) {
+    const osName = diagnostics.os.name;
+    const ua = diagnostics.device.userAgent || '';
+    if (osName === 'iOS' || ua.includes('iPhone')) {
+      platformStr = 'Mobile (iOS)';
+    } else if (ua.includes('iPad')) {
+      platformStr = 'Tablet (iPadOS)';
+    } else if (osName === 'Android') {
+      platformStr = ua.includes('Mobile') ? 'Mobile (Android)' : 'Tablet (Android)';
+    } else if (diagnostics.device.touchSupport && parseInt(diagnostics.device.viewportSize.split('x')[0] || '1000', 10) < 768) {
+      platformStr = 'Mobile';
+    }
   }
 
-  msg += `\n📌 *Version Meta*\n`;
-  msg += `• *App Version:* \`v${meta.appVersion}\`\n`;
-  msg += `• *Engine:* \`${meta.engineVersion}\`\n`;
-  msg += `• *Schema / Payload:* \`v${meta.schemaVersion}\` / \`v${meta.payloadVersion}\`\n`;
-  msg += `• *Timestamp:* ${new Date().toLocaleString()}\n`;
+  // Request ID and Timestamp
+  const requestId = Math.random().toString(36).substring(2, 10).toLowerCase();
+  const now = new Date();
+  const utcTimestamp = now.toISOString().replace('T', ' ').substring(0, 19) + ' UTC';
+  const buildDateStr = `${now.getUTCFullYear()}.${String(now.getUTCMonth() + 1).padStart(2, '0')}.${String(now.getUTCDate()).padStart(2, '0')}-01`;
+
+  let msg = `🌟 *New User Feedback*\n\n`;
+  msg += `⭐ *Rating:* ${input.rating}/5 (${stars})\n`;
+  msg += `📂 *Category:* ${icon} ${input.category}\n\n`;
+  
+  msg += `💬 *Comments*\n`;
+  msg += `────────────\n`;
+  msg += `${commentContent}\n\n`;
+
+  msg += `━━━━━━━━━━━━━━━━━━\n\n`;
+
+  msg += `📌 *Version*\n`;
+  msg += `• *App:* v${meta.appVersion}\n`;
+  msg += `• *Build:* ${buildDateStr}\n`;
+  msg += `• *Engine:* ${meta.engineVersion}\n`;
+  msg += `• *Schema:* v${meta.schemaVersion}\n`;
+  msg += `• *Payload:* v${meta.payloadVersion}\n\n`;
 
   if (diagnostics && input.includeDiagnostics) {
-    msg += `\n📱 *Environment & System*\n`;
-    msg += `• *OS:* ${diagnostics.os.name} ${diagnostics.os.version}\n`;
-    msg += `• *Browser:* ${diagnostics.browser.name} ${diagnostics.browser.version}\n`;
-    msg += `• *Display:* ${diagnostics.device.screenResolution} (Viewport: ${diagnostics.device.viewportSize})\n`;
-    msg += `• *Workflow Phase:* Phase ${diagnostics.currentPhase}\n`;
+    const browserVer = diagnostics.browser.version.split('.')[0] || diagnostics.browser.version;
+    const osVerStr = diagnostics.os.version && diagnostics.os.version !== 'Unknown' ? ` ${diagnostics.os.version}` : '';
+
+    msg += `📱 *Environment*\n`;
+    msg += `• *Platform:* ${platformStr}\n`;
+    msg += `• *OS:* ${diagnostics.os.name}${osVerStr}\n`;
+    msg += `• *Browser:* ${diagnostics.browser.name} ${browserVer}\n`;
+    msg += `• *Screen:* ${diagnostics.device.screenResolution}\n`;
+    msg += `• *Viewport:* ${diagnostics.device.viewportSize}\n\n`;
 
     if (diagnostics.pdfStats) {
       const stats = diagnostics.pdfStats;
-      msg += `\n📄 *PDF Statistics*\n`;
-      msg += `• *Input Files:* ${stats.originalFilesCount} (${stats.originalFileNames.join(', ') || 'Document'})\n`;
-      msg += `• *Pages:* ${stats.totalInputPages} input ➔ ${stats.totalOutputPages} output\n`;
-      msg += `• *Excluded Pages:* ${stats.excludedPagesCount}\n`;
-      msg += `• *Size:* ${stats.originalSizeMB.toFixed(1)} MB ➔ ${stats.optimizedSizeMB.toFixed(1)} MB\n`;
+      msg += `📄 *PDF*\n`;
+      msg += `• *Files:* ${stats.originalFilesCount}\n`;
+      msg += `• *Pages:* ${stats.totalInputPages} → ${stats.totalOutputPages}\n`;
+      msg += `• *Size:* ${stats.originalSizeMB.toFixed(1)} MB → ${stats.optimizedSizeMB.toFixed(1)} MB\n`;
       if (stats.inkSavedPct !== undefined && stats.inkSavedPct > 0) {
         msg += `• *Ink Saved:* ~${stats.inkSavedPct.toFixed(0)}%\n`;
       }
+      msg += `\n`;
     }
 
     if (diagnostics.processingSettings) {
       const s = diagnostics.processingSettings;
-      msg += `\n⚙️ *Layout Settings*\n`;
-      msg += `• *Grid:* ${s.gridFormat} | *Paper:* ${s.paperSize}\n`;
-      msg += `• *Orientation:* ${s.orientation}\n`;
-      msg += `• *Borders:* ${s.showBorders ? 'Enabled' : 'Disabled'} | *Numbers:* ${s.showPageNumbers ? 'Enabled' : 'Disabled'}\n`;
-    }
-
-    if (diagnostics.errorLogs && diagnostics.errorLogs.length > 0) {
-      msg += `\n⚠️ *Diagnostics & Errors*\n`;
-      diagnostics.errorLogs.forEach((log) => {
-        msg += `• \`[${log.level.toUpperCase()}]\` ${log.message.slice(0, 120)}\n`;
-      });
+      const statusStr = diagnostics.currentPhase >= 4 ? 'Success' : `Phase ${diagnostics.currentPhase}`;
+      msg += `⚙️ *Processing*\n`;
+      msg += `• *Status:* ${statusStr}\n`;
+      msg += `• *Phase:* ${diagnostics.currentPhase}\n`;
+      msg += `• *Layout:* ${s.gridFormat}\n`;
+      msg += `• *Paper:* ${s.paperSize}\n`;
+      msg += `• *Orientation:* ${s.orientation.charAt(0).toUpperCase() + s.orientation.slice(1)}\n`;
+      msg += `• *Borders:* ${s.showBorders ? 'On' : 'Off'}\n`;
+      msg += `• *Numbers:* ${s.showPageNumbers ? 'On' : 'Off'}\n\n`;
     }
   }
 
   if (attachmentInfo.attached) {
-    msg += `\n📎 *Attachment:* ${attachmentInfo.filename} (${attachmentInfo.sizeMB?.toFixed(2)} MB) attached.`;
-  } else if (attachmentInfo.omittedReason) {
-    msg += `\n📎 *Attachment Note:* ${attachmentInfo.omittedReason}`;
+    msg += `📎 *Attachment:* ${attachmentInfo.filename} (${attachmentInfo.sizeMB?.toFixed(2)} MB)\n\n`;
   }
+
+  msg += `🆔 *Request ID:* \`${requestId}\`\n`;
+  msg += `🕒 ${utcTimestamp}`;
 
   return msg;
 }
