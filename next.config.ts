@@ -1,7 +1,9 @@
 import type {NextConfig} from 'next';
 
+const isGitHubActions = process.env.GITHUB_ACTIONS === 'true' || process.env.GITHUB_ACTIONS === '1';
+
 const nextConfig: NextConfig = {
-  ...(process.env.GITHUB_ACTIONS ? { output: 'export' } : {}),
+  ...(isGitHubActions ? { output: 'export' } : {}),
   reactStrictMode: true,
   eslint: {
     ignoreDuringBuilds: true,
@@ -9,9 +11,8 @@ const nextConfig: NextConfig = {
   typescript: {
     ignoreBuildErrors: false,
   },
-  // Allow access to remote image placeholder and disable server optimization for static exports.
   images: {
-    unoptimized: true,
+    unoptimized: isGitHubActions ? true : undefined,
     remotePatterns: [
       {
         protocol: 'https',
