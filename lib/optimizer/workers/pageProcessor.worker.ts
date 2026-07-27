@@ -105,7 +105,7 @@ function processPage(src: Uint8ClampedArray, sw: number, sh: number, params: any
 }
 interface WorkerGlobalCtx {
   onmessage: ((e: MessageEvent) => void) | null;
-  postMessage(message: any, transfer: Transferable[]): void;
+  postMessage(message: any, transfer?: Transferable[]): void;
   close(): void;
 }
 const ctx = self as unknown as WorkerGlobalCtx;
