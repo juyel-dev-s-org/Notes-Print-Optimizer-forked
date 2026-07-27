@@ -1,69 +1,30 @@
 import { PDFDocument } from 'pdf-lib';
-import { ImageProcessingKernels } from './wasmEngine';
-import { ParameterGenerator } from './parameterGenerator';
 import { LayoutEngine } from './layoutEngine';
 import { memoryManager } from './memoryManager';
 import { pwOptimizerStorage } from './storage';
-import { workerPool } from './workerPool';
 import { getProcessingEngine, EngineVersion } from './engine';
-import {
-  DocumentProfile,
-  LayoutConfig,
-  OptimizationMetrics,
-  PageProfile,
-  PresetMode,
-  ProcessedPage,
-  ProcessingParameters,
-} from './types';
+import { DocumentProfile, LayoutConfig, OptimizationMetrics, PresetMode, ProcessedPage } from './types';
 
 export class PdfExporter {
-  /**
-   * Configure pdfjs worker if in browser (loaded via robust CDN fallback)
-   */
   public static async initPdfJs(): Promise<any> {
     if (typeof window === 'undefined') return null;
-
-    if ((window as any).pdfjsLib) {
-      return (window as any).pdfjsLib;
-    }
-
+    if ((window as any).pdfjsLib) return (window as any).pdfjsLib;
     return new Promise((resolve, reject) => {
-      const existingScript = document.getElementById('pdfjs-script');
-      if (existingScript) {
-        let attempts = 0;
-        const interval = setInterval(() => {
-          if ((window as any).pdfjsLib) {
-            clearInterval(interval);
-            resolve((window as any).pdfjsLib);
-          } else if (attempts++ > 50) {
-            clearInterval(interval);
-            reject(new Error('PDF.js script load timeout'));
-          }
-        }, 100);
-        return;
-      }
-
-      const script = document.createElement('script');
-      script.id = 'pdfjs-script';
-      script.src = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js';
-      script.onload = () => {
-        const pdfjs = (window as any).pdfjsLib;
-        if (pdfjs) {
-          pdfjs.GlobalWorkerOptions.workerSrc =
-            'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
-          resolve(pdfjs);
-        } else {
-          reject(new Error('PDF.js failed to initialize from CDN'));
-        }
-      };
-      script.onerror = () => reject(new Error('Failed to load PDF.js engine from CDN'));
-      document.head.appendChild(script);
+      const existing = document.getElementById('pdfjs-script');
+      if (existing) { let att = 0; const iv = setInterval(() => {
+        if ((window as any).pdfjsLib) { clearInterval(iv); resolve((window as any).pdfjsLib); }
+        else if (att++ > 50) { clearInterval(iv); reject(new Error('PDF.js timeout')); }
+      }, 100); return; }
+      const s = document.createElement('script'); s.id = 'pdfjs-script';
+      s.src = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js';
+      s.onload = () => { const lib = (window as any).pdfjsLib;
+        if (lib) { lib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js'; resolve(lib); }
+        else reject(new Error('PDF.js init failed')); };
+      s.onerror = () => reject(new Error('PDF.js CDN failed'));
+      document.head.appendChild(s);
     });
   }
 
-  /**
-   * Merge multiple PDF ArrayBuffers into a single merged PDF Uint8Array/Blob
-   */
   public static async mergePdfBuffers(pdfBuffers: ArrayBuffer[]): Promise<{ pdfBytes: Uint8Array; pdfBlob: Blob }> {
     const mergedPdf = await PDFDocument.create();
     for (const buffer of pdfBuffers) {
@@ -72,154 +33,57 @@ export class PdfExporter {
       copiedPages.forEach((page) => mergedPdf.addPage(page));
     }
     const pdfBytes = await mergedPdf.save();
-    const pdfBlob = new Blob([pdfBytes.buffer as ArrayBuffer], { type: 'application/pdf' });
-    return { pdfBytes, pdfBlob };
+    return { pdfBytes, pdfBlob: new Blob([pdfBytes.buffer as ArrayBuffer], { type: 'application/pdf' }) };
   }
 
-  /**
-   * Stream extract, optimize and store pages via the pluggable Processing Engine architecture
-   */
-  public static async processPdfStreaming(
-    pdfBuffer: ArrayBuffer,
-    pdfId: string,
-    presetMode: PresetMode = 'AUTO_ADAPTIVE',
-    onProgress?: (current: number, total: number, action: string) => void,
-    engineVersion?: EngineVersion
-  ): Promise<{
-    processedPages: ProcessedPage[];
-    docProfile: DocumentProfile;
-  }> {
+  public static async processPdfStreaming(pdfBuffer: ArrayBuffer, pdfId: string, presetMode: PresetMode = 'AUTO_ADAPTIVE',
+    onProgress?: (current: number, total: number, action: string) => void, engineVersion?: EngineVersion
+  ): Promise<{ processedPages: ProcessedPage[]; docProfile: DocumentProfile }> {
     const engine = getProcessingEngine(engineVersion);
-    const result = await engine.processDocument(
-      {
-        pdfBuffer,
-        pdfId,
-        presetMode,
-      },
-      {},
-      onProgress
-    );
-
-    return {
-      processedPages: result.processedPages,
-      docProfile: result.docProfile,
-    };
+    const result = await engine.processDocument({ pdfBuffer, pdfId, presetMode }, {}, onProgress);
+    return { processedPages: result.processedPages, docProfile: result.docProfile };
   }
 
-  /**
-   * Load page original and optimized ImageData on demand from IndexedDB or memory
-   */
-  public static async loadPageImageData(
-    page: ProcessedPage
-  ): Promise<{ originalImageData: ImageData; optimizedImageData: ImageData }> {
-    if (page.originalImageData && page.optimizedImageData) {
-      return {
-        originalImageData: page.originalImageData,
-        optimizedImageData: page.optimizedImageData,
-      };
-    }
-
-    if (page.storageKey) {
-      const cached = await pwOptimizerStorage.getPage(page.storageKey, page.pageIndex);
-      if (cached) {
-        const originalImageData = await memoryManager.blobToImageData(cached.originalBlob);
-        const optimizedImageData = await memoryManager.blobToImageData(cached.optimizedBlob);
-        return { originalImageData, optimizedImageData };
-      }
-    }
-
-    throw new Error(`Failed to load page image data for page ${page.pageIndex + 1}`);
+  public static async loadPageImageData(page: ProcessedPage): Promise<{ originalImageData: ImageData; optimizedImageData: ImageData }> {
+    if (page.originalImageData && page.optimizedImageData) return { originalImageData: page.originalImageData, optimizedImageData: page.optimizedImageData };
+    if (page.storageKey) { const cached = await pwOptimizerStorage.getPage(page.storageKey, page.pageIndex);
+      if (cached) return { originalImageData: await memoryManager.blobToImageData(cached.originalBlob),
+        optimizedImageData: await memoryManager.blobToImageData(cached.optimizedBlob) }; }
+    throw new Error(`Failed to load page ${page.pageIndex + 1}`);
   }
 
-  /**
-   * Load page optimized ImageData on demand
-   */
   public static async loadOptimizedImageData(page: ProcessedPage): Promise<ImageData> {
     if (page.optimizedImageData) return page.optimizedImageData;
-
-    if (page.storageKey) {
-      const cached = await pwOptimizerStorage.getPage(page.storageKey, page.pageIndex);
-      if (cached) {
-        return memoryManager.blobToImageData(cached.optimizedBlob);
-      }
-    }
-
-    throw new Error(`Failed to load optimized page image for page ${page.pageIndex + 1}`);
+    if (page.storageKey) { const cached = await pwOptimizerStorage.getPage(page.storageKey, page.pageIndex);
+      if (cached) return memoryManager.blobToImageData(cached.optimizedBlob); }
+    throw new Error(`Failed to load optimized page ${page.pageIndex + 1}`);
   }
 
-  /**
-   * Compile N-up print sheets and export final PDF Blob in a memory-safe streaming pass
-   */
-  public static async compileSheetsAndExportPdf(
-    activePages: ProcessedPage[],
-    layoutConfig: LayoutConfig,
+  public static async compileSheetsAndExportPdf(activePages: ProcessedPage[], layoutConfig: LayoutConfig,
     onProgress?: (current: number, total: number, action: string) => void
-  ): Promise<{
-    finalPdfBlob: Blob;
-    sheetPreviews: string[];
-    metrics: OptimizationMetrics;
-  }> {
+  ): Promise<{ finalPdfBlob: Blob; sheetPreviews: string[]; metrics: OptimizationMetrics }> {
     const startTime = performance.now();
-
     const { totalPerSheet } = LayoutEngine.getGridDimensions(layoutConfig.gridFormat);
     const totalSheets = Math.ceil(activePages.length / totalPerSheet);
     const sheetPreviews: string[] = [];
-
     const pdfDoc = await PDFDocument.create();
 
-    for (let sheetIdx = 0; sheetIdx < totalSheets; sheetIdx++) {
-      const sliceStart = sheetIdx * totalPerSheet;
-      const sliceEnd = Math.min(activePages.length, sliceStart + totalPerSheet);
-      const chunkPages = activePages.slice(sliceStart, sliceEnd);
-
-      if (onProgress) {
-        onProgress(sheetIdx + 1, totalSheets, `Building printable sheet ${sheetIdx + 1} of ${totalSheets}...`);
-      }
-
-      // Load chunk images on demand
+    for (let si = 0; si < totalSheets; si++) {
+      const chunk = activePages.slice(si * totalPerSheet, Math.min(activePages.length, (si + 1) * totalPerSheet));
+      if (onProgress) onProgress(si + 1, totalSheets, `Building sheet ${si + 1}/${totalSheets}...`);
       const chunkImages: ImageData[] = [];
-      for (const p of chunkPages) {
-        const optImg = await this.loadOptimizedImageData(p);
-        chunkImages.push(optImg);
-      }
-
-      // Compose sheet
-      const sheetCanvas = LayoutEngine.composeSheet(chunkImages, sheetIdx, totalSheets, layoutConfig);
-
-      // Low-res lightweight thumbnail for sheet preview in UI
-      const thumbWidth = Math.min(500, Math.round(sheetCanvas.width / 3));
-      const thumbHeight = Math.min(750, Math.round(sheetCanvas.height / 3));
-      const thumbCanvas = document.createElement('canvas');
-      thumbCanvas.width = thumbWidth;
-      thumbCanvas.height = thumbHeight;
-      const thumbCtx = thumbCanvas.getContext('2d');
-      if (thumbCtx) {
-        thumbCtx.drawImage(sheetCanvas, 0, 0, thumbWidth, thumbHeight);
-      }
-
-      const previewBlob = await new Promise<Blob>((resolve) =>
-        (thumbCanvas || sheetCanvas).toBlob((b) => resolve(b || new Blob()), 'image/jpeg', 0.6)
-      );
-      memoryManager.disposeCanvas(thumbCanvas);
-
-      const previewUrl = memoryManager.createTrackedBlobUrl(previewBlob);
-      sheetPreviews.push(previewUrl);
-
-      // Embed into PDF-lib directly from Blob ArrayBuffer (no heavy base64 strings)
-      const jpegBlob = await new Promise<Blob>((resolve) =>
-        sheetCanvas.toBlob((b) => resolve(b || new Blob()), 'image/jpeg', 0.85)
-      );
-      const jpegBytes = await jpegBlob.arrayBuffer();
-      const embeddedImage = await pdfDoc.embedJpg(jpegBytes);
+      for (const p of chunk) chunkImages.push(await this.loadOptimizedImageData(p));
+      const sheetCanvas = LayoutEngine.composeSheet(chunkImages, si, totalSheets, layoutConfig);
+      const tw = Math.min(500, Math.round(sheetCanvas.width / 3)), th = Math.min(750, Math.round(sheetCanvas.height / 3));
+      const tc = document.createElement('canvas'); tc.width = tw; tc.height = th;
+      tc.getContext('2d')!.drawImage(sheetCanvas, 0, 0, tw, th);
+      const previewBlob = await new Promise<Blob>((res) => tc.toBlob((b) => res(b || new Blob()), 'image/jpeg', 0.6));
+      memoryManager.disposeCanvas(tc);
+      sheetPreviews.push(memoryManager.createTrackedBlobUrl(previewBlob));
+      const jpegBlob = await new Promise<Blob>((res) => sheetCanvas.toBlob((b) => res(b || new Blob()), 'image/jpeg', 0.85));
+      const embedded = await pdfDoc.embedJpg(await jpegBlob.arrayBuffer());
       const pdfPage = pdfDoc.addPage([sheetCanvas.width, sheetCanvas.height]);
-      pdfPage.drawImage(embeddedImage, {
-        x: 0,
-        y: 0,
-        width: sheetCanvas.width,
-        height: sheetCanvas.height,
-      });
-
-      // Dispose sheet canvas and clear loaded chunk images
+      pdfPage.drawImage(embedded, { x: 0, y: 0, width: sheetCanvas.width, height: sheetCanvas.height });
       memoryManager.disposeCanvas(sheetCanvas);
       chunkImages.length = 0;
       await memoryManager.yieldToUI();
@@ -227,69 +91,37 @@ export class PdfExporter {
 
     const pdfBytes = await pdfDoc.save();
     const finalPdfBlob = new Blob([pdfBytes.buffer as ArrayBuffer], { type: 'application/pdf' });
-
     const elapsedMs = Math.round(performance.now() - startTime);
-
-    const avgInkBefore = activePages.reduce((sum, p) => sum + p.inkCoverageBeforePct, 0) / activePages.length;
-    const avgInkAfter = activePages.reduce((sum, p) => sum + p.inkCoverageAfterPct, 0) / activePages.length;
-    const inkSavedPct = Math.max(0, Math.round(((avgInkBefore - avgInkAfter) / avgInkBefore) * 100));
-
-    const metrics: OptimizationMetrics = {
+    const avgBefore = activePages.reduce((s, p) => s + p.inkCoverageBeforePct, 0) / activePages.length;
+    const avgAfter = activePages.reduce((s, p) => s + p.inkCoverageAfterPct, 0) / activePages.length;
+    const inkSaved = Math.max(0, Math.round(((avgBefore - avgAfter) / avgBefore) * 100));
+    return { finalPdfBlob, sheetPreviews, metrics: {
       totalOriginalSizeMB: Number((activePages.length * 0.8).toFixed(2)),
       totalOptimizedSizeMB: Number((finalPdfBlob.size / (1024 * 1024)).toFixed(2)),
-      originalInkCoveragePct: Number(avgInkBefore.toFixed(1)),
-      optimizedInkCoveragePct: Number(avgInkAfter.toFixed(1)),
-      inkSavedPct: isNaN(inkSavedPct) ? 80 : inkSavedPct,
-      processingTimeMs: elapsedMs,
+      originalInkCoveragePct: Number(avgBefore.toFixed(1)), optimizedInkCoveragePct: Number(avgAfter.toFixed(1)),
+      inkSavedPct: isNaN(inkSaved) ? 80 : inkSaved, processingTimeMs: elapsedMs,
       pagesPerSecond: Number(((activePages.length / Math.max(1, elapsedMs)) * 1000).toFixed(1)),
-      throughputMPixelsPerSec: 5,
-    };
-
-    return { finalPdfBlob, sheetPreviews, metrics };
+      throughputMPixelsPerSec: Number(((activePages.length * 2.986) / (elapsedMs / 1000)).toFixed(1)),
+    } };
   }
 
-  /**
-   * Export 1-Up Optimized PDF in a memory-safe streaming pass
-   */
-  public static async export1UpOptimizedPdf(
-    processedPages: ProcessedPage[],
-    quality: number = 0.85,
-    onProgress?: (current: number, total: number) => void
-  ): Promise<Blob> {
+  public static async export1UpOptimizedPdf(processedPages: ProcessedPage[], quality: number = 0.85,
+    onProgress?: (current: number, total: number) => void): Promise<Blob> {
     const pdfDoc = await PDFDocument.create();
-
     for (let i = 0; i < processedPages.length; i++) {
       if (onProgress) onProgress(i + 1, processedPages.length);
-
-      const pageItem = processedPages[i];
-      const optData = await this.loadOptimizedImageData(pageItem);
-
+      const optData = await this.loadOptimizedImageData(processedPages[i]);
       const canvas = document.createElement('canvas');
-      canvas.width = optData.width;
-      canvas.height = optData.height;
-      const ctx = canvas.getContext('2d');
-
-      if (ctx) {
-        ctx.putImageData(optData, 0, 0);
-        const jpegBlob = await new Promise<Blob>((resolve) =>
-          canvas.toBlob((b) => resolve(b || new Blob()), 'image/jpeg', quality)
-        );
-        const jpegBytes = await jpegBlob.arrayBuffer();
-        const embeddedImage = await pdfDoc.embedJpg(jpegBytes);
+      canvas.width = optData.width; canvas.height = optData.height;
+      const ctx = canvas.getContext('2d', { willReadFrequently: true });
+      if (ctx) { ctx.putImageData(optData, 0, 0);
+        const jpegBlob = await new Promise<Blob>((res) => canvas.toBlob((b) => res(b || new Blob()), 'image/jpeg', quality));
+        const embedded = await pdfDoc.embedJpg(await jpegBlob.arrayBuffer());
         const pdfPage = pdfDoc.addPage([canvas.width, canvas.height]);
-        pdfPage.drawImage(embeddedImage, {
-          x: 0,
-          y: 0,
-          width: canvas.width,
-          height: canvas.height,
-        });
-      }
-
+        pdfPage.drawImage(embedded, { x: 0, y: 0, width: canvas.width, height: canvas.height }); }
       memoryManager.disposeCanvas(canvas);
       await memoryManager.yieldToUI();
     }
-
-    const pdfBytes = await pdfDoc.save();
-    return new Blob([pdfBytes.buffer as ArrayBuffer], { type: 'application/pdf' });
+    return new Blob([(await pdfDoc.save()).buffer as ArrayBuffer], { type: 'application/pdf' });
   }
 }
