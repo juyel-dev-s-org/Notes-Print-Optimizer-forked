@@ -114,5 +114,5 @@ ctx.onmessage = (e: MessageEvent) => { const msg = e.data;
     const r = processPage(src, msg.width, msg.height, msg.params, msg.profile);
     ctx.postMessage({ type: 'PAGE_PROCESSED', pageIndex: msg.pageIndex, width: r.dw, height: r.dh,
       buffer: r.dst.buffer, inkCoverageBeforePct: r.inkBefore, inkCoverageAfterPct: r.inkAfter }, [r.dst.buffer]);
-  } catch (err: any) { ctx.postMessage({ type: 'PAGE_ERROR', pageIndex: msg.pageIndex, error: err?.message || 'Worker error' }); }
+  } catch (err: any) { ctx.postMessage({ type: 'PAGE_ERROR', pageIndex: msg.pageIndex, error: err?.message || 'Worker error' }, []); }
   } else if (msg.type === 'TERMINATE') { ctx.close(); } };
