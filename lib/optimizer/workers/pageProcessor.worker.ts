@@ -103,7 +103,12 @@ function processPage(src: Uint8ClampedArray, sw: number, sh: number, params: any
   if (params.sharpenAmount > 0) applyUnsharpMask(dst, dw, dh, params.sharpenAmount / 100);
   return { dst, dw, dh, inkBefore, inkAfter: calcInk(dst) };
 }
-const ctx = self as unknown as DedicatedWorkerGlobalScope;
+interface WorkerGlobalCtx {
+  onmessage: ((e: MessageEvent) => void) | null;
+  postMessage(message: any, transfer: Transferable[]): void;
+  close(): void;
+}
+const ctx = self as unknown as WorkerGlobalCtx;
 ctx.onmessage = (e: MessageEvent) => { const msg = e.data;
   if (msg.type === 'PROCESS_PAGE') { try { const src = new Uint8ClampedArray(msg.buffer);
     const r = processPage(src, msg.width, msg.height, msg.params, msg.profile);
