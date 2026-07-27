@@ -18,6 +18,7 @@ import {
   GridFormat,
   LayoutConfig,
   OptimizationMetrics,
+  OuterMarginConfig,
   PageProfile,
   ProcessedPage,
   ProcessingParameters,
@@ -69,8 +70,15 @@ export default function HomePage() {
     gridFormat: '2x2', // 4-up grid (optimal for PW Notes!)
     paperSize: 'A4',
     orientation: 'PORTRAIT',
-    marginMm: 6,
-    spacingMm: 4,
+    outerMarginMm: {
+      top: 2,
+      left: 5,
+      right: 3,
+      bottom: 2,
+    },
+    innerMarginMm: 1,
+    marginMm: 2,
+    spacingMm: 1,
     showSlideBorders: false,
     showPageNumbers: false,
     headerTitle: '',
@@ -477,6 +485,18 @@ export default function HomePage() {
     await compilePhase3PrintLayout(updated);
   };
 
+  const handleUpdateOuterMargins = async (outerMargins: OuterMarginConfig) => {
+    const updated = { ...layoutConfig, outerMarginMm: outerMargins };
+    setLayoutConfig(updated);
+    await compilePhase3PrintLayout(updated);
+  };
+
+  const handleUpdateInnerMargin = async (innerMarginMm: number) => {
+    const updated = { ...layoutConfig, innerMarginMm };
+    setLayoutConfig(updated);
+    await compilePhase3PrintLayout(updated);
+  };
+
   const handleDownloadFinalPrintPdf = () => {
     if (!finalPrintPdfBlob) return;
     const url = URL.createObjectURL(finalPrintPdfBlob);
@@ -587,6 +607,8 @@ export default function HomePage() {
           onToggleOrientation={handleToggleOrientation}
           onToggleBorders={handleToggleBorders}
           onTogglePageNumbers={handleTogglePageNumbers}
+          onUpdateOuterMargins={handleUpdateOuterMargins}
+          onUpdateInnerMargin={handleUpdateInnerMargin}
           onDownloadFinalPrintPdf={handleDownloadFinalPrintPdf}
           onProceedToPhase4={handleProceedToPhase4}
           analysisTimeMs={analysisTimeMs}

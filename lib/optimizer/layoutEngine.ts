@@ -104,16 +104,22 @@ export class LayoutEngine {
     ctx.fillStyle = '#FFFFFF';
     ctx.fillRect(0, 0, dimensions.widthPx, dimensions.heightPx);
 
-    // Notebook exact constants (300 DPI A4)
-    const marginPx = Math.round((60 * dpi) / 300); // 60px at 300 DPI
-    const gapPx = Math.round((18 * dpi) / 300);    // 18px at 300 DPI
-    const footerHeightPx = config.showPageNumbers ? Math.round(marginPx * 0.5) : 0;
+    // Convert mm margins to pixels dynamically at current canvas DPI
+    const mmToPx = (mm: number) => Math.round((mm * dpi) / 25.4);
 
-    const availableWidth = dimensions.widthPx - 2 * marginPx - (cols - 1) * gapPx;
-    const availableHeight = dimensions.heightPx - 2 * marginPx - (rows - 1) * gapPx - footerHeightPx;
+    const marginTopPx = mmToPx(config.outerMarginMm?.top ?? config.marginMm ?? 2);
+    const marginLeftPx = mmToPx(config.outerMarginMm?.left ?? config.marginMm ?? 5);
+    const marginRightPx = mmToPx(config.outerMarginMm?.right ?? config.marginMm ?? 3);
+    const marginBottomPx = mmToPx(config.outerMarginMm?.bottom ?? config.marginMm ?? 2);
+    const innerMarginPx = mmToPx(config.innerMarginMm ?? config.spacingMm ?? 1);
 
-    const cellWidth = Math.floor(availableWidth / cols);
-    const cellHeight = Math.floor(availableHeight / rows);
+    const footerHeightPx = config.showPageNumbers ? Math.max(20, Math.round(marginBottomPx * 1.5)) : 0;
+
+    const availableWidth = dimensions.widthPx - marginLeftPx - marginRightPx - (cols - 1) * innerMarginPx;
+    const availableHeight = dimensions.heightPx - marginTopPx - marginBottomPx - (rows - 1) * innerMarginPx - footerHeightPx;
+
+    const cellWidth = Math.max(10, Math.floor(availableWidth / cols));
+    const cellHeight = Math.max(10, Math.floor(availableHeight / rows));
 
     // Draw Slides in Grid
     for (let i = 0; i < slideImages.length; i++) {
@@ -121,8 +127,8 @@ export class LayoutEngine {
       const col = i % cols;
       const row = Math.floor(i / cols);
 
-      const cellX = marginPx + col * (cellWidth + gapPx);
-      const cellY = marginPx + row * (cellHeight + gapPx);
+      const cellX = marginLeftPx + col * (cellWidth + innerMarginPx);
+      const cellY = marginTopPx + row * (cellHeight + innerMarginPx);
 
       // Fit slide image maintaining aspect ratio without distorting or cropping
       const sw = slide.width;
@@ -165,7 +171,7 @@ export class LayoutEngine {
       ctx.fillText(
         `Sheet ${sheetIndex + 1} of ${totalSheets}  •  PW Notes Print Optimizer`,
         dimensions.widthPx / 2,
-        dimensions.heightPx - Math.round(marginPx * 0.4)
+        dimensions.heightPx - Math.max(10, Math.round(marginBottomPx * 0.4))
       );
     }
 

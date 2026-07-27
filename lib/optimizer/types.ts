@@ -64,12 +64,21 @@ export type GridFormat = '1x1' | '2x1' | '1x2' | '2x2' | '2x3' | '2x4' | '2x5' |
 export type PaperSize = 'A4' | 'LETTER' | 'LEGAL';
 export type Orientation = 'PORTRAIT' | 'LANDSCAPE' | 'AUTO';
 
+export interface OuterMarginConfig {
+  top: number;
+  left: number;
+  right: number;
+  bottom: number;
+}
+
 export interface LayoutConfig {
   gridFormat: GridFormat;
   paperSize: PaperSize;
   orientation: Orientation;
-  marginMm: number;
-  spacingMm: number;
+  outerMarginMm: OuterMarginConfig;
+  innerMarginMm: number;
+  marginMm?: number;
+  spacingMm?: number;
   showSlideBorders: boolean;
   showPageNumbers: boolean;
   headerTitle: string;

@@ -23,6 +23,7 @@ import {
   Smartphone,
 } from 'lucide-react';
 import { FullPdfViewerPreview } from '@/components/preview/FullPdfViewerPreview';
+import { MarginSettings } from '@/components/MarginSettings';
 
 export const MobileWorkflowUI: React.FC<WorkflowUIProps> = (props) => {
   const {
@@ -320,6 +321,12 @@ export const MobileWorkflowUI: React.FC<WorkflowUIProps> = (props) => {
                 </label>
               </div>
             </div>
+
+            <MarginSettings
+              layoutConfig={layoutConfig}
+              onUpdateOuterMargins={props.onUpdateOuterMargins}
+              onUpdateInnerMargin={props.onUpdateInnerMargin}
+            />
           </div>
 
           {finalSheetPreviews.length > 0 && (

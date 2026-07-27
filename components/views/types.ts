@@ -5,6 +5,7 @@ import {
   GridFormat,
   LayoutConfig,
   OptimizationMetrics,
+  OuterMarginConfig,
   ProcessedPage,
   ProcessingProgress,
 } from '@/lib/optimizer/types';
@@ -60,6 +61,8 @@ export interface WorkflowUIProps {
   onToggleOrientation: () => void;
   onToggleBorders: () => void;
   onTogglePageNumbers: () => void;
+  onUpdateOuterMargins?: (margins: OuterMarginConfig) => void;
+  onUpdateInnerMargin?: (innerMarginMm: number) => void;
   onDownloadFinalPrintPdf: () => void;
   onProceedToPhase4: () => void;
 
