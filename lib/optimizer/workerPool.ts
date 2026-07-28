@@ -9,7 +9,8 @@
  * - Single-pass HSV evaluation (7N -> N pixel visits)
  * - Pre-allocated CC buffers (zero per-call allocation)
  * - Persistent workers (no create/destroy per page)
- * - Safe fallback with non-detached buffer copy
+ * - Single-copy transfer with original ImageData reference for fallback
+ *   (eliminates 2x memory overhead per page — Phase 1 / C-2 fix)
  */
 import { PageProfile, ProcessingParameters } from './types';
 import { ImageProcessingKernels } from './pixelKernels';
@@ -24,7 +25,8 @@ export interface WorkerProcessResult {
 interface QueuedTask {
   pageIndex: number;
   buffer: ArrayBuffer;
-  fallbackBuffer: ArrayBuffer;
+  /** Reference to original ImageData for fallback (no extra copy needed). */
+  sourceImageData: ImageData;
   width: number;
   height: number;
   params: ProcessingParameters;
@@ -288,10 +290,14 @@ class PersistentWorkerPool {
     this.dispatchNext();
   }
 
+  /**
+   * Fallback: process on main thread using the original ImageData reference.
+   * No extra buffer copy is needed — the source ImageData retains its own
+   * ArrayBuffer which was never transferred or detached.
+   */
   private fallback(task: QueuedTask): void {
     try {
-      // Use the fallback buffer (non-transferred copy) for main-thread processing
-      const img = new ImageData(new Uint8ClampedArray(task.fallbackBuffer), task.width, task.height);
+      const img = task.sourceImageData;
       const ib = ImageProcessingKernels.calculateInkCoverage(img);
       const opt = ImageProcessingKernels.processImage(img, task.params, task.profile);
       const ia = ImageProcessingKernels.calculateInkCoverage(opt);
@@ -338,9 +344,10 @@ class PersistentWorkerPool {
     if (!this.useWorkers || this.workers.length === 0) {
       // Direct main-thread processing (no worker available)
       return new Promise((resolve, reject) => {
-        const buf = imageData.data.buffer.slice(0);
         this.fallback({
-          pageIndex, buffer: buf, fallbackBuffer: buf,
+          pageIndex,
+          buffer: imageData.data.buffer,
+          sourceImageData: imageData,
           width: imageData.width, height: imageData.height,
           params, profile, resolve, reject,
         });
@@ -348,11 +355,13 @@ class PersistentWorkerPool {
     }
 
     return new Promise((resolve, reject) => {
-      // Create TWO copies: one to transfer to worker, one to keep for fallback
+      // Single copy for worker transfer. The original imageData.data.buffer
+      // remains intact as fallback — no second allocation needed.
       const workerBuffer = imageData.data.buffer.slice(0);
-      const fallbackBuffer = imageData.data.buffer.slice(0);
       const task: QueuedTask = {
-        pageIndex, buffer: workerBuffer, fallbackBuffer,
+        pageIndex,
+        buffer: workerBuffer,
+        sourceImageData: imageData,
         width: imageData.width, height: imageData.height,
         params, profile, resolve, reject,
       };
