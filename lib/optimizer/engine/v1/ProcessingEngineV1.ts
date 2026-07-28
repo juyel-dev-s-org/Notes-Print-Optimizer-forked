@@ -17,6 +17,14 @@ interface PendingWrite {
 
 const WRITE_BATCH_SIZE = 4;
 
+/* ── Adaptive render scale constants (M-2) ── */
+const TARGET_DPI = 250;
+const MIN_SCALE = 1.0;
+const MAX_SCALE = 4.0;
+const MAX_LONGEST_DIM_DESKTOP = 2400;
+const MAX_LONGEST_DIM_MOBILE = 1600;
+const FALLBACK_SCALE = 1.8;
+
 export class ProcessingEngineV1 implements IProcessingEngine {
   readonly id = 'pw-pixel-v1';
   readonly version: EngineVersion = 'v1';
@@ -52,6 +60,38 @@ export class ProcessingEngineV1 implements IProcessingEngine {
   private async flushRemainingWrites(): Promise<void> {
     this.scheduleFlush();
     await this.flushChain;
+  }
+
+  /* ── Adaptive DPI-targeted render scale (M-2) ── */
+
+  private getMaxLongestDim(): number {
+    if (typeof navigator !== 'undefined') {
+      const ua = navigator.userAgent;
+      const isMob = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(ua);
+      const isTab = /iPad/i.test(ua) || (navigator.maxTouchPoints > 2 && /MacIntel/.test(navigator.platform));
+      if (isMob && !isTab) return MAX_LONGEST_DIM_MOBILE;
+    }
+    return MAX_LONGEST_DIM_DESKTOP;
+  }
+
+  private computeAdaptiveScale(page: any): number {
+    try {
+      const viewport = page.getViewport({ scale: 1.0 });
+      const w = viewport?.width;
+      const h = viewport?.height;
+      if (!w || !h || !isFinite(w) || !isFinite(h) || w <= 0 || h <= 0) {
+        console.warn('[Engine v1] Invalid viewport dimensions, falling back to', FALLBACK_SCALE);
+        return FALLBACK_SCALE;
+      }
+      const dpiScale = TARGET_DPI / 72;
+      const maxDim = Math.max(w, h);
+      const dimCapScale = this.getMaxLongestDim() / maxDim;
+      const raw = Math.min(dpiScale, dimCapScale);
+      return Math.max(MIN_SCALE, Math.min(MAX_SCALE, raw));
+    } catch (e) {
+      console.warn('[Engine v1] computeAdaptiveScale failed, falling back to', FALLBACK_SCALE, e);
+      return FALLBACK_SCALE;
+    }
   }
 
   /* ── Public API ── */
@@ -90,7 +130,7 @@ export class ProcessingEngineV1 implements IProcessingEngine {
   public async processDocument(input: EngineDocumentInput, options: EngineProcessingOptions = {}, onProgress?: EngineProgressCallback): Promise<EngineDocumentOutput> {
     const t0 = performance.now();
     const { pdfBuffer, pdfId, presetMode = 'AUTO_ADAPTIVE' } = input;
-    const renderScale = options.renderScale || 1.8;
+    const userRenderScale = options.renderScale ?? null;
     const pdfjsLib = await this.initPdfJs();
     const pdfDoc = await pdfjsLib.getDocument({ data: new Uint8Array(pdfBuffer) }).promise;
     const totalPages = pdfDoc.numPages;
@@ -115,7 +155,8 @@ export class ProcessingEngineV1 implements IProcessingEngine {
     const processSinglePage = async (i: number): Promise<void> => {
       if (onProgress) onProgress(i, totalPages, `[Engine v1] Processing slide ${i}/${totalPages} (${execMode})...`);
       const page = await pdfDoc.getPage(i);
-      const viewport = page.getViewport({ scale: renderScale });
+      const pageScale = userRenderScale !== null ? userRenderScale : this.computeAdaptiveScale(page);
+      const viewport = page.getViewport({ scale: pageScale });
       const canvas = document.createElement('canvas');
       canvas.width = viewport.width; canvas.height = viewport.height;
       const ctx = canvas.getContext('2d', { willReadFrequently: true })!;
