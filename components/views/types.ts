@@ -54,6 +54,8 @@ export interface WorkflowUIProps {
 
   // Phase 3: Layout & Print PDF
   layoutConfig: LayoutConfig;
+  layoutDirty: boolean;
+  onApplyLayout: () => void;
   finalSheetPreviews: string[];
   finalMetrics: OptimizationMetrics | null;
   finalPrintPdfBlob: Blob | null;

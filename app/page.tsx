@@ -87,6 +87,7 @@ export default function HomePage() {
   const [finalPrintPdfBlob, setFinalPrintPdfBlob] = useState<Blob | null>(null);
   const [finalSheetPreviews, setFinalSheetPreviews] = useState<string[]>([]);
   const [finalMetrics, setFinalMetrics] = useState<OptimizationMetrics | null>(null);
+  const [layoutDirty, setLayoutDirty] = useState(false);
 
   // --- Phase 4 State: Done & Feedback ---
   const [rating, setRating] = useState<number>(5);
@@ -399,7 +400,6 @@ export default function HomePage() {
 
   // Proceed from Phase 2 to Phase 3: Choose Layout
   const handleProceedToPhase3 = async () => {
-    await compilePhase3PrintLayout(layoutConfig);
     setCurrentPhase(3);
   };
 
@@ -460,42 +460,49 @@ export default function HomePage() {
   }, [processedPages, excludedPages]);
 
   // Handle changing layout settings
-  const handleSelectLayoutFormat = async (format: GridFormat) => {
+  const handleSelectLayoutFormat = (format: GridFormat) => {
     const updated = { ...layoutConfig, gridFormat: format };
     setLayoutConfig(updated);
-    await compilePhase3PrintLayout(updated);
+    setLayoutDirty(true);
   };
 
-  const handleToggleOrientation = async () => {
+  const handleToggleOrientation = () => {
     const nextOrient = layoutConfig.orientation === 'PORTRAIT' ? 'LANDSCAPE' : 'PORTRAIT';
     const updated = { ...layoutConfig, orientation: nextOrient as 'PORTRAIT' | 'LANDSCAPE' };
     setLayoutConfig(updated);
-    await compilePhase3PrintLayout(updated);
+    setLayoutDirty(true);
   };
 
-  const handleToggleBorders = async () => {
+  const handleToggleBorders = () => {
     const updated = { ...layoutConfig, showSlideBorders: !layoutConfig.showSlideBorders };
     setLayoutConfig(updated);
-    await compilePhase3PrintLayout(updated);
+    setLayoutDirty(true);
   };
 
-  const handleTogglePageNumbers = async () => {
+  const handleTogglePageNumbers = () => {
     const updated = { ...layoutConfig, showPageNumbers: !layoutConfig.showPageNumbers };
     setLayoutConfig(updated);
-    await compilePhase3PrintLayout(updated);
+    setLayoutDirty(true);
   };
 
-  const handleUpdateOuterMargins = async (outerMargins: OuterMarginConfig) => {
+  const handleUpdateOuterMargins = (outerMargins: OuterMarginConfig) => {
     const updated = { ...layoutConfig, outerMarginMm: outerMargins };
     setLayoutConfig(updated);
-    await compilePhase3PrintLayout(updated);
+    setLayoutDirty(true);
   };
 
-  const handleUpdateInnerMargin = async (innerMarginMm: number) => {
+  const handleUpdateInnerMargin = (innerMarginMm: number) => {
     const updated = { ...layoutConfig, innerMarginMm };
     setLayoutConfig(updated);
-    await compilePhase3PrintLayout(updated);
+    setLayoutDirty(true);
   };
+  // Apply layout: only renders when user explicitly clicks Apply
+  const handleApplyLayout = useCallback(async () => {
+    if (!layoutDirty) return;
+    await compilePhase3PrintLayout(layoutConfig);
+    setLayoutDirty(false);
+  }, [layoutDirty, layoutConfig, compilePhase3PrintLayout]);
+
 
   const handleDownloadFinalPrintPdf = () => {
     if (!finalPrintPdfBlob) return;
@@ -599,6 +606,8 @@ export default function HomePage() {
           }}
           onDownloadOptimized1Up={handleDownloadOptimized1Up}
           onProceedToPhase3={handleProceedToPhase3}
+          layoutDirty={layoutDirty}
+          onApplyLayout={handleApplyLayout}
           layoutConfig={layoutConfig}
           finalSheetPreviews={finalSheetPreviews}
           finalMetrics={finalMetrics}

@@ -50,6 +50,8 @@ export const MobileWorkflowUI: React.FC<WorkflowUIProps> = (props) => {
     onToggleExcludeAll,
     onProceedToPhase3,
     layoutConfig,
+    layoutDirty,
+    onApplyLayout,
     finalSheetPreviews,
     finalMetrics,
     finalPrintPdfBlob,
@@ -329,7 +331,40 @@ export const MobileWorkflowUI: React.FC<WorkflowUIProps> = (props) => {
             />
           </div>
 
-          {finalSheetPreviews.length > 0 && (
+          {/* Apply Layout Button */}
+        <div className="mt-3 flex items-center gap-2">
+          <button
+            onClick={onApplyLayout}
+            disabled={!layoutDirty || isProcessing}
+            className={`flex-1 flex items-center justify-center gap-2 rounded-xl px-4 py-3 text-xs font-bold transition-all active:scale-95 ${
+              layoutDirty && !isProcessing
+                ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-900/30'
+                : 'bg-slate-800 text-slate-500 border border-slate-700'
+            }`}
+          >
+            {isProcessing ? (
+              <>
+                <span className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-white/30 border-t-white" />
+                Rendering...
+              </>
+            ) : layoutDirty ? (
+              <>
+                <Check className="h-3.5 w-3.5" />
+                Apply &amp; Render
+              </>
+            ) : (
+              <>
+                <Check className="h-3.5 w-3.5 opacity-40" />
+                Applied ✓
+              </>
+            )}
+          </button>
+          {layoutDirty && !isProcessing && (
+            <span className="text-[9px] text-amber-400 font-bold">● Unsaved</span>
+          )}
+        </div>
+
+        {finalSheetPreviews.length > 0 && (
             <FullPdfViewerPreview
               sheetPreviews={finalSheetPreviews}
               layoutConfig={layoutConfig}

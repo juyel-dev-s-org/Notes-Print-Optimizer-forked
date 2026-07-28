@@ -49,6 +49,8 @@ export const DesktopWorkflowUI: React.FC<WorkflowUIProps> = (props) => {
     onToggleExcludeAll,
     onProceedToPhase3,
     layoutConfig,
+    layoutDirty,
+    onApplyLayout,
     finalSheetPreviews,
     finalMetrics,
     finalPrintPdfBlob,
@@ -349,7 +351,40 @@ export const DesktopWorkflowUI: React.FC<WorkflowUIProps> = (props) => {
             />
           </div>
 
-          {finalSheetPreviews.length > 0 && (
+          {/* Apply Layout Button */}
+        <div className="mt-4 flex items-center gap-3">
+          <button
+            onClick={onApplyLayout}
+            disabled={!layoutDirty || isProcessing}
+            className={`flex-1 flex items-center justify-center gap-2 rounded-xl px-5 py-3 text-sm font-bold transition-all ${
+              layoutDirty && !isProcessing
+                ? 'bg-indigo-600 text-white hover:bg-indigo-500 shadow-lg shadow-indigo-900/30 active:scale-[0.98]'
+                : 'bg-slate-800 text-slate-500 cursor-not-allowed border border-slate-700'
+            }`}
+          >
+            {isProcessing ? (
+              <>
+                <span className="h-4 w-4 animate-spin rounded-full border-2 border-white/30 border-t-white" />
+                Rendering Layout...
+              </>
+            ) : layoutDirty ? (
+              <>
+                <Check className="h-4 w-4" />
+                Apply &amp; Render Preview
+              </>
+            ) : (
+              <>
+                <Check className="h-4 w-4 opacity-40" />
+                Layout Applied ✓
+              </>
+            )}
+          </button>
+          {layoutDirty && !isProcessing && (
+            <span className="text-[10px] text-amber-400 font-medium">● Unsaved changes</span>
+          )}
+        </div>
+
+        {finalSheetPreviews.length > 0 && (
             <FullPdfViewerPreview
               sheetPreviews={finalSheetPreviews}
               layoutConfig={layoutConfig}
