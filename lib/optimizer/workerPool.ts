@@ -45,6 +45,7 @@ function getInlineWorkerScript(): string {
   return `
 'use strict';
 var ccLabels = null, ccQueue = null, ccCapacity = 0;
+var CC_SKIP_THRESHOLD = 0.005;
 function ensureCC(size) {
   if (ccCapacity < size) { ccLabels = new Int32Array(size); ccQueue = new Int32Array(size); ccCapacity = size; }
   else { ccLabels.fill(0, 0, size); }
@@ -162,21 +163,22 @@ function processPage(buffer, width, height, params, profile) {
   var hsv = [0, 0, 0];
   if (convertColors) {
     var cm = [], cf = [false,false,false,false,false,false,false];
+    var channelCounts = [0, 0, 0, 0, 0, 0, 0];
     for (var c = 0; c < 7; c++) cm.push(new Uint8Array(tp));
     for (var y2 = 0; y2 < dh; y2++) { var sro2 = (y2+ct)*sw*4, dro2 = y2*dw;
       for (var x2 = 0; x2 < dw; x2++) { var si2 = sro2+x2*4;
         rgbToHsv(src[si2], src[si2+1], src[si2+2], hsv);
         var h = hsv[0], s = hsv[1], v = hsv[2];
         if (v < 70) continue; var pi = dro2+x2;
-        if (s < 55 && v > 155) { cm[0][pi]=1; cf[0]=true; }
-        if (h>=15 && h<=35 && s>80 && v>100) { cm[1][pi]=1; cf[1]=true; }
-        if (h>=36 && h<=85 && s>55 && v>75) { cm[2][pi]=1; cf[2]=true; }
-        if (h>=86 && h<=105 && s>55 && v>75) { cm[3][pi]=1; cf[3]=true; }
-        if (h>=106 && h<=135 && s>55 && v>65) { cm[4][pi]=1; cf[4]=true; }
-        if (h>=136 && h<=175 && s>55 && v>75) { cm[5][pi]=1; cf[5]=true; }
-        if (((h<=15)||(h>=175)) && s>75 && v>95) { cm[6][pi]=1; cf[6]=true; } } }
+        if (s < 55 && v > 155) { cm[0][pi]=1; cf[0]=true; channelCounts[0]++; }
+        if (h>=15 && h<=35 && s>80 && v>100) { cm[1][pi]=1; cf[1]=true; channelCounts[1]++; }
+        if (h>=36 && h<=85 && s>55 && v>75) { cm[2][pi]=1; cf[2]=true; channelCounts[2]++; }
+        if (h>=86 && h<=105 && s>55 && v>75) { cm[3][pi]=1; cf[3]=true; channelCounts[3]++; }
+        if (h>=106 && h<=135 && s>55 && v>65) { cm[4][pi]=1; cf[4]=true; channelCounts[4]++; }
+        if (h>=136 && h<=175 && s>55 && v>75) { cm[5][pi]=1; cf[5]=true; channelCounts[5]++; }
+        if (((h<=15)||(h>=175)) && s>75 && v>95) { cm[6][pi]=1; cf[6]=true; channelCounts[6]++; } } }
     for (var c2 = 0; c2 < 7; c2++) {
-      if (cf[c2]) { stripDecorativeFills(cm[c2], dw, dh); for (var i = 0; i < tp; i++) if (cm[c2][i]===1) fm[i]=1; } }
+      if (cf[c2]) { var coverage = channelCounts[c2] / tp; if (coverage >= CC_SKIP_THRESHOLD) { stripDecorativeFills(cm[c2], dw, dh); } for (var i = 0; i < tp; i++) if (cm[c2][i]===1) fm[i]=1; } }
   } else {
     for (var y3 = 0; y3 < dh; y3++) { var sro3 = (y3+ct)*sw*4, dro3 = y3*dw;
       for (var x3 = 0; x3 < dw; x3++) { var si3 = sro3+x3*4;
