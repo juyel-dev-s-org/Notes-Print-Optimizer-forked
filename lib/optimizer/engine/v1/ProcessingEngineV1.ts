@@ -6,6 +6,7 @@ import { workerPool } from '../../workerPool';
 import { ParameterGenerator } from '../../parameterGenerator';
 import { memoryManager } from '../../memoryManager';
 import { pwOptimizerStorage } from '../../storage';
+import { getPdfjsLib } from '../../pdfjsLoader';
 
 /** Batched IDB write queue — reduces per-page transactions (H-5). */
 interface PendingWrite {
@@ -201,30 +202,11 @@ export class ProcessingEngineV1 implements IProcessingEngine {
       processingTimeMs: Math.round(performance.now() - t0) };
   }
 
-  private async initPdfJs(): Promise<any> {
-    if (typeof window === 'undefined') return null;
-    if ((window as any).pdfjsLib) return (window as any).pdfjsLib;
-    return new Promise((resolve, reject) => {
-      const existing = document.getElementById('pdfjs-script');
-      if (existing) { let att = 0; const iv = setInterval(() => {
-        if ((window as any).pdfjsLib) { clearInterval(iv); resolve((window as any).pdfjsLib); }
-        else if (att++ > 50) { clearInterval(iv); reject(new Error('PDF.js timeout')); }
-      }, 100); return; }
-      const s = document.createElement('script'); s.id = 'pdfjs-script';
-      s.src = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js';
-      s.onload = () => { const lib = (window as any).pdfjsLib;
-        if (lib) { lib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js'; resolve(lib); }
-        else reject(new Error('PDF.js init failed')); };
-      s.onerror = () => reject(new Error('PDF.js CDN failed'));
-      document.head.appendChild(s);
-    });
-  }
-
   public async processDocument(input: EngineDocumentInput, options: EngineProcessingOptions = {}, onProgress?: EngineProgressCallback): Promise<EngineDocumentOutput> {
     const t0 = performance.now();
     const { pdfBuffer, pdfId, presetMode = 'AUTO_ADAPTIVE' } = input;
     const userRenderScale = options.renderScale ?? null;
-    const pdfjsLib = await this.initPdfJs();
+    const pdfjsLib = await getPdfjsLib();
     const pdfDoc = await pdfjsLib.getDocument({ data: new Uint8Array(pdfBuffer) }).promise;
     const totalPages = pdfDoc.numPages;
     const profiles: PageProfile[] = new Array(totalPages);

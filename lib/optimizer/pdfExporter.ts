@@ -3,26 +3,13 @@ import { LayoutEngine } from './layoutEngine';
 import { memoryManager } from './memoryManager';
 import { pwOptimizerStorage } from './storage';
 import { getProcessingEngine, EngineVersion } from './engine';
+import { getPdfjsLib } from './pdfjsLoader';
 import { DocumentProfile, LayoutConfig, OptimizationMetrics, PresetMode, ProcessedPage } from './types';
 
 export class PdfExporter {
-  public static async initPdfJs(): Promise<any> {
-    if (typeof window === 'undefined') return null;
-    if ((window as any).pdfjsLib) return (window as any).pdfjsLib;
-    return new Promise((resolve, reject) => {
-      const existing = document.getElementById('pdfjs-script');
-      if (existing) { let att = 0; const iv = setInterval(() => {
-        if ((window as any).pdfjsLib) { clearInterval(iv); resolve((window as any).pdfjsLib); }
-        else if (att++ > 50) { clearInterval(iv); reject(new Error('PDF.js timeout')); }
-      }, 100); return; }
-      const s = document.createElement('script'); s.id = 'pdfjs-script';
-      s.src = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js';
-      s.onload = () => { const lib = (window as any).pdfjsLib;
-        if (lib) { lib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js'; resolve(lib); }
-        else reject(new Error('PDF.js init failed')); };
-      s.onerror = () => reject(new Error('PDF.js CDN failed'));
-      document.head.appendChild(s);
-    });
+  /** @deprecated Use getPdfjsLib() from pdfjsLoader directly. Kept for backward compat. */
+  public static async initPdfJs(): Promise<typeof import('pdfjs-dist')> {
+    return getPdfjsLib();
   }
 
   public static async mergePdfBuffers(pdfBuffers: ArrayBuffer[]): Promise<{ pdfBytes: Uint8Array; pdfBlob: Blob }> {
