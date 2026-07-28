@@ -80,6 +80,13 @@ class MemoryManager {
   public async yieldToUI(): Promise<void> {
     const sched = (globalThis as any).scheduler;
     if (sched && typeof sched.yield === 'function') return sched.yield();
+    if (typeof MessageChannel !== 'undefined') {
+      return new Promise<void>((resolve) => {
+        const { port1, port2 } = new MessageChannel();
+        port2.onmessage = () => resolve();
+        port1.postMessage(null);
+      });
+    }
     return new Promise((resolve) => setTimeout(resolve, 0));
   }
 }
