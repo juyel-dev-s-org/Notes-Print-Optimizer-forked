@@ -7,6 +7,16 @@ import { ParameterGenerator } from '../../parameterGenerator';
 import { memoryManager } from '../../memoryManager';
 import { pwOptimizerStorage } from '../../storage';
 
+/** Batched IDB write queue — reduces per-page transactions (H-5). */
+interface PendingWrite {
+  pdfId: string;
+  pageIndex: number;
+  originalBlob: Blob;
+  optimizedBlob: Blob;
+}
+
+const WRITE_BATCH_SIZE = 4;
+
 export class ProcessingEngineV1 implements IProcessingEngine {
   readonly id = 'pw-pixel-v1';
   readonly version: EngineVersion = 'v1';
@@ -17,6 +27,34 @@ export class ProcessingEngineV1 implements IProcessingEngine {
     maxConcurrentPages: typeof navigator !== 'undefined' ? navigator.hardwareConcurrency || 4 : 4,
     engineDescription: 'v1: Single-pass render + parallel pixel kernels.',
   };
+
+  /* ── Batched write queue (H-5) ── */
+  private writeQueue: PendingWrite[] = [];
+  private flushChain: Promise<void> = Promise.resolve();
+
+  private enqueueWrite(entry: PendingWrite): void {
+    this.writeQueue.push(entry);
+    if (this.writeQueue.length >= WRITE_BATCH_SIZE) {
+      this.scheduleFlush();
+    }
+  }
+
+  private scheduleFlush(): void {
+    const batch = this.writeQueue.splice(0, this.writeQueue.length);
+    if (batch.length === 0) return;
+    this.flushChain = this.flushChain.then(() =>
+      pwOptimizerStorage.storePagesBatch(batch)
+    ).catch((e) => {
+      console.warn('[Engine v1] IDB batch write failed (non-fatal):', e);
+    });
+  }
+
+  private async flushRemainingWrites(): Promise<void> {
+    this.scheduleFlush();
+    await this.flushChain;
+  }
+
+  /* ── Public API ── */
 
   public async analyzePage(imageData: ImageData, pageIndex: number): Promise<PageProfile> {
     return ImageProcessingKernels.analyzeImageData(imageData, pageIndex);
@@ -59,6 +97,10 @@ export class ProcessingEngineV1 implements IProcessingEngine {
     const profiles: PageProfile[] = new Array(totalPages);
     const processedPages: ProcessedPage[] = new Array(totalPages);
     let sumBrightness = 0, darkCount = 0;
+
+    /* Reset write queue for new document (H-5) */
+    this.writeQueue = [];
+    this.flushChain = Promise.resolve();
 
     let execMode = options.executionMode || 'auto';
     if (execMode === 'auto') {
@@ -104,7 +146,10 @@ export class ProcessingEngineV1 implements IProcessingEngine {
       } catch { thumbnailDataUrl = ''; }
       const origBlob = await memoryManager.imageDataToBlob(srcImageData, 0.85);
       const optBlob = await memoryManager.imageDataToBlob(pageRes.optimizedImageData, 0.88);
-      await pwOptimizerStorage.storePage(pdfId, i - 1, origBlob, optBlob);
+
+      /* Batched IDB write — enqueue instead of per-page transaction (H-5) */
+      this.enqueueWrite({ pdfId, pageIndex: i - 1, originalBlob: origBlob, optimizedBlob: optBlob });
+
       memoryManager.disposeCanvas(canvas);
       processedPages[i - 1] = { pageIndex: i - 1, thumbnailDataUrl, profile, parameters: params,
         inkCoverageBeforePct: pageRes.inkCoverageBeforePct, inkCoverageAfterPct: pageRes.inkCoverageAfterPct,
@@ -115,6 +160,9 @@ export class ProcessingEngineV1 implements IProcessingEngine {
     if (concurrency <= 1) { for (let i = 1; i <= totalPages; i++) await processSinglePage(i); }
     else { let idx = 1; const run = async () => { while (idx <= totalPages) { const i = idx++; await processSinglePage(i); } };
       await Promise.all(Array.from({ length: concurrency }, () => run())); }
+
+    /* Final flush — ensure all remaining writes are committed (H-5) */
+    await this.flushRemainingWrites();
 
     const darkRatio = darkCount / totalPages;
     let recommended: PresetMode = presetMode;
