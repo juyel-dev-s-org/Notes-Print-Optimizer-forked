@@ -2,6 +2,7 @@ import { ParameterGenerator } from '../optimizer/parameterGenerator';
 import type {
   LayoutConfig,
 } from '../optimizer/types';
+import type { EngineVersion } from '../optimizer/engine/types';
 import type {
   WorkflowAction,
   WorkflowState,
