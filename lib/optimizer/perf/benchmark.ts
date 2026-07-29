@@ -46,10 +46,10 @@ export class BenchmarkHarness {
     console.log('\\n=== Benchmark Summary ===');
     let totalMs = 0;
     for (const r of this.results) {
-      console.log(\`  \${r.stage}: \${r.durationMs.toFixed(2)} ms\${r.megapixelsPerSec ? \` (\${r.megapixelsPerSec.toFixed(2)} MPx/s)\` : ''}\`);
+      console.log(`  ${r.stage}: ${r.durationMs.toFixed(2)} ms${r.megapixelsPerSec ? ` (${r.megapixelsPerSec.toFixed(2)} MPx/s)` : ''}`);
       totalMs += r.durationMs;
     }
-    console.log(\`  TOTAL: \${totalMs.toFixed(2)} ms\\n\`);
+    console.log(`  TOTAL: ${totalMs.toFixed(2)} ms\\n`);
   }
 }
 
