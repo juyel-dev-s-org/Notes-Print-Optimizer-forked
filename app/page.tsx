@@ -1,34 +1,21 @@
 'use client';
 
 import React, { useCallback, useEffect } from 'react';
-import { Header, WorkflowPhase } from '@/components/Header';
+import { Header } from '@/components/Header';
 import { ProcessingModal } from '@/components/ProcessingModal';
 import { PlatformUIOrchestrator } from '@/components/views/PlatformUIOrchestrator';
 
 import { SamplePdfGenerator } from '@/lib/optimizer/samplePdfGenerator';
-import { ParameterGenerator } from '@/lib/optimizer/parameterGenerator';
-import { LayoutEngine } from '@/lib/optimizer/layoutEngine';
 import { PdfExporter } from '@/lib/optimizer/pdfExporter';
 import { pwOptimizerStorage } from '@/lib/optimizer/storage';
 import { memoryManager } from '@/lib/optimizer/memoryManager';
 
 import { useWorkflow } from '@/lib/workflow/useWorkflow';
 
-import {
+import type {
   GridFormat,
   LayoutConfig,
   OuterMarginConfig,
-} from '@/lib/optimizer/types';
-
-import type { EngineVersion } from '@/lib/optimizer/engine';
-
-import {
-  DocumentProfile,
-  OptimizationMetrics,
-  PageProfile,
-  ProcessedPage,
-  ProcessingParameters,
-  ProcessingProgress,
 } from '@/lib/optimizer/types';
 
 interface UploadedPdfItem {
