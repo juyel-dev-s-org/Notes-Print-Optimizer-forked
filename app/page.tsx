@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useCallback, useEffect } from 'react';
+import React, { useCallback, useEffect } from 'react';
 import { Header, WorkflowPhase } from '@/components/Header';
 import { ProcessingModal } from '@/components/ProcessingModal';
 import { PlatformUIOrchestrator } from '@/components/views/PlatformUIOrchestrator';
@@ -11,14 +11,20 @@ import { LayoutEngine } from '@/lib/optimizer/layoutEngine';
 import { PdfExporter } from '@/lib/optimizer/pdfExporter';
 import { pwOptimizerStorage } from '@/lib/optimizer/storage';
 import { memoryManager } from '@/lib/optimizer/memoryManager';
-import { EngineVersion } from '@/lib/optimizer/engine';
+
+import { useWorkflow } from '@/lib/workflow/useWorkflow';
+
+import {
+  GridFormat,
+  LayoutConfig,
+  OuterMarginConfig,
+} from '@/lib/optimizer/types';
+
+import type { EngineVersion } from '@/lib/optimizer/engine';
 
 import {
   DocumentProfile,
-  GridFormat,
-  LayoutConfig,
   OptimizationMetrics,
-  OuterMarginConfig,
   PageProfile,
   ProcessedPage,
   ProcessingParameters,
@@ -34,74 +40,20 @@ interface UploadedPdfItem {
 }
 
 export default function HomePage() {
-  // Navigation Phase State: 1 | 2 | 3 | 4
-  const [currentPhase, setCurrentPhase] = useState<WorkflowPhase>(1);
-
-  // General Processing State
-  const [isProcessing, setIsProcessing] = useState(false);
-  const [progress, setProgress] = useState<ProcessingProgress | null>(null);
-  const [errorMessage, setErrorMessage] = useState<string | null>(null);
-
-  // --- Phase 1 State: Upload & Merge ---
-  const [uploadedItems, setUploadedItems] = useState<UploadedPdfItem[]>([]);
-  const [mergedPdfBlob, setMergedPdfBlob] = useState<Blob | null>(null);
-  const [mergedPdfBytes, setMergedPdfBytes] = useState<Uint8Array | null>(null);
-  const [mergedPageDataUrls, setMergedPageDataUrls] = useState<string[]>([]);
-
-  // Raw Page Extract
-  const [rawPagesData, setRawPagesData] = useState<ImageData[]>([]);
-  const [pageProfiles, setPageProfiles] = useState<PageProfile[]>([]);
-  const [docProfile, setDocProfile] = useState<DocumentProfile | null>(null);
-
-  // --- Phase 2 State: Optimize ---
-  const [processedPages, setProcessedPages] = useState<ProcessedPage[]>([]);
-  const [optimized1UpBlob, setOptimized1UpBlob] = useState<Blob | null>(null);
-  const [selectedPageIndex, setSelectedPageIndex] = useState<number>(0);
-  const [excludedPages, setExcludedPages] = useState<Set<number>>(new Set());
-
-  // Master Parameters
-  const [selectedEngineVersion, setSelectedEngineVersion] = useState<EngineVersion>('v1');
-  const [masterParams] = useState<ProcessingParameters>(
-    ParameterGenerator.getPresetParameters('AUTO_ADAPTIVE')
-  );
-
-  // --- Phase 3 State: Choose Layout & Generate ---
-  const [layoutConfig, setLayoutConfig] = useState<LayoutConfig>({
-    gridFormat: '2x2', // 4-up grid (optimal for PW Notes!)
-    paperSize: 'A4',
-    orientation: 'PORTRAIT',
-    outerMarginMm: {
-      top: 2,
-      left: 5,
-      right: 3,
-      bottom: 2,
-    },
-    innerMarginMm: 1,
-    marginMm: 2,
-    spacingMm: 1,
-    showSlideBorders: false,
-    showPageNumbers: false,
-    headerTitle: '',
-  });
-
-  const [finalPrintPdfBlob, setFinalPrintPdfBlob] = useState<Blob | null>(null);
-  const [finalSheetPreviews, setFinalSheetPreviews] = useState<string[]>([]);
-  const [finalMetrics, setFinalMetrics] = useState<OptimizationMetrics | null>(null);
-  const [layoutDirty, setLayoutDirty] = useState(false);
-
-  // --- Phase 4 State: Done & Feedback ---
-  const [rating, setRating] = useState<number>(5);
-  const [feedbackText, setFeedbackText] = useState<string>('');
-  const [feedbackSubmitted, setFeedbackSubmitted] = useState<boolean>(false);
-
-  // Workflow Timing Diagnostics
-  const [analysisTimeMs, setAnalysisTimeMs] = useState<number | undefined>(undefined);
-  const [optimizationTimeMs, setOptimizationTimeMs] = useState<number | undefined>(undefined);
-  const [layoutTimeMs, setLayoutTimeMs] = useState<number | undefined>(undefined);
+  const { state, actions } = useWorkflow();
+  const {
+    currentPhase, isProcessing, progress, errorMessage,
+    uploadedItems, mergedPdfBlob, mergedPdfBytes, mergedPageDataUrls,
+    rawPagesData, pageProfiles, docProfile,
+    processedPages, optimized1UpBlob, selectedPageIndex, excludedPages,
+    selectedEngineVersion, masterParams,
+    layoutConfig, finalPrintPdfBlob, finalSheetPreviews, finalMetrics, layoutDirty,
+    rating, feedbackText, feedbackSubmitted,
+    analysisTimeMs, optimizationTimeMs, layoutTimeMs,
+  } = state;
 
   // Temporary IndexedDB session cache lifecycle manager
   useEffect(() => {
-    // Clear any stale temporary IndexedDB cache on initial app mount
     pwOptimizerStorage.clearCache();
 
     const handleUnload = () => {
@@ -120,45 +72,17 @@ export default function HomePage() {
   const handleResetWorkflow = useCallback(() => {
     pwOptimizerStorage.clearCache();
     memoryManager.revokeAllBlobUrls();
-
-    setUploadedItems([]);
-    setMergedPdfBlob(null);
-    setMergedPdfBytes(null);
-    setMergedPageDataUrls([]);
-
-    setRawPagesData([]);
-    setPageProfiles([]);
-    setDocProfile(null);
-
-    setProcessedPages([]);
-    setOptimized1UpBlob(null);
-    setSelectedPageIndex(0);
-    setExcludedPages(new Set());
-
-    setFinalPrintPdfBlob(null);
-    setFinalSheetPreviews([]);
-    setFinalMetrics(null);
-
-    setAnalysisTimeMs(undefined);
-    setOptimizationTimeMs(undefined);
-    setLayoutTimeMs(undefined);
-
-    setFeedbackSubmitted(false);
-    setFeedbackText('');
-    setErrorMessage(null);
-
-    setCurrentPhase(1);
-  }, []);
+    actions.resetWorkflow();
+  }, [actions]);
 
   // -------------------------------------------------------------
   // PHASE 1 HANDLERS: Upload, Arrange, Merge
   // -------------------------------------------------------------
 
-  // Handle file uploads
   const handleFilesUpload = async (newFiles: File[]) => {
-    setErrorMessage(null);
-    setIsProcessing(true);
-    setProgress({
+    actions.setError(null);
+    actions.setProcessing(true);
+    actions.setProgress({
       stage: 'INITIALIZING',
       currentPage: 0,
       totalPages: newFiles.length,
@@ -183,22 +107,21 @@ export default function HomePage() {
       }
 
       const updatedList = [...uploadedItems, ...itemsToAdd];
-      setUploadedItems(updatedList);
+      actions.setUploadedItems(updatedList);
       await generateMergedPreview(updatedList);
     } catch (err: any) {
       console.error(err);
-      setErrorMessage('PDF cannot be opened or is corrupted.');
+      actions.setError('PDF cannot be opened or is corrupted.');
     } finally {
-      setIsProcessing(false);
-      setProgress(null);
+      actions.setProcessing(false);
+      actions.setProgress(null);
     }
   };
 
-  // Load sample Physics Wallah PDF
   const handleLoadSamplePdf = async () => {
-    setErrorMessage(null);
-    setIsProcessing(true);
-    setProgress({
+    actions.setError(null);
+    actions.setProcessing(true);
+    actions.setProgress({
       stage: 'INITIALIZING',
       currentPage: 1,
       totalPages: 1,
@@ -222,18 +145,17 @@ export default function HomePage() {
       };
 
       const updatedList = [sampleItem];
-      setUploadedItems(updatedList);
+      actions.setUploadedItems(updatedList);
       await generateMergedPreview(updatedList);
     } catch (err: any) {
       console.error(err);
-      setErrorMessage('Failed to load sample PDF.');
+      actions.setError('Failed to load sample PDF.');
     } finally {
-      setIsProcessing(false);
-      setProgress(null);
+      actions.setProcessing(false);
+      actions.setProgress(null);
     }
   };
 
-  // Reorder or Delete items in Phase 1
   const handleMoveItem = async (index: number, direction: 'UP' | 'DOWN') => {
     const targetIdx = direction === 'UP' ? index - 1 : index + 1;
     if (targetIdx < 0 || targetIdx >= uploadedItems.length) return;
@@ -243,40 +165,34 @@ export default function HomePage() {
     newList[index] = newList[targetIdx];
     newList[targetIdx] = temp;
 
-    setUploadedItems(newList);
+    actions.setUploadedItems(newList);
     await generateMergedPreview(newList);
   };
 
   const handleRemoveItem = async (index: number) => {
     const newList = uploadedItems.filter((_, i) => i !== index);
-    setUploadedItems(newList);
+    actions.setUploadedItems(newList);
     if (newList.length > 0) {
       await generateMergedPreview(newList);
     } else {
-      setMergedPdfBlob(null);
-      setMergedPdfBytes(null);
-      setMergedPageDataUrls([]);
+      actions.setMergeResult(null, null, []);
     }
   };
 
-  // Generate Merged PDF & Extract Thumbnail Data URLs
   const generateMergedPreview = async (items: UploadedPdfItem[]) => {
     if (items.length === 0) return;
 
     try {
       const buffers = items.map((it) => it.arrayBuffer);
       const { pdfBytes, pdfBlob } = await PdfExporter.mergePdfBuffers(buffers);
-      setMergedPdfBytes(pdfBytes);
-      setMergedPdfBlob(pdfBlob);
 
-      // Render low-res preview thumbnails of merged PDF
       const pdfjsLib = await PdfExporter.initPdfJs();
       const loadingTask = pdfjsLib.getDocument({ data: new Uint8Array(pdfBytes) });
       const pdfDoc = await loadingTask.promise;
       const totalPages = pdfDoc.numPages;
 
       const thumbnails: string[] = [];
-      const renderCount = Math.min(totalPages, 12); // Preview up to 12 pages for fast UI
+      const renderCount = Math.min(totalPages, 12);
 
       for (let i = 1; i <= renderCount; i++) {
         const page = await pdfDoc.getPage(i);
@@ -289,14 +205,13 @@ export default function HomePage() {
         thumbnails.push(canvas.toDataURL('image/jpeg', 0.6));
       }
 
-      setMergedPageDataUrls(thumbnails);
+      actions.setMergeResult(pdfBlob, pdfBytes, thumbnails);
     } catch (err: any) {
       console.error('Merge preview error:', err);
-      setErrorMessage('Failed to merge uploaded PDF files.');
+      actions.setError('Failed to merge uploaded PDF files.');
     }
   };
 
-  // Download Merged PDF
   const handleDownloadMerged = () => {
     if (!mergedPdfBlob) return;
     const url = URL.createObjectURL(mergedPdfBlob);
@@ -307,12 +222,11 @@ export default function HomePage() {
     URL.revokeObjectURL(url);
   };
 
-  // Proceed from Phase 1 to Phase 2: Analyze & Optimize
   const handleProceedToPhase2 = useCallback(async () => {
     if (!mergedPdfBytes) return;
 
-    setIsProcessing(true);
-    setErrorMessage(null);
+    actions.setProcessing(true);
+    actions.setError(null);
     const startTime = Date.now();
 
     const pdfId = `pw_doc_${Date.now()}`;
@@ -322,8 +236,8 @@ export default function HomePage() {
         mergedPdfBytes.buffer as ArrayBuffer,
         pdfId,
         masterParams.preset,
-        (curr, total, action) => {
-          setProgress({
+        (curr: number, total: number, action: string) => {
+          actions.setProgress({
             stage: 'OPTIMIZING',
             currentPage: curr,
             totalPages: total,
@@ -336,75 +250,33 @@ export default function HomePage() {
       );
 
       const phase2Elapsed = Date.now() - startTime;
-      setAnalysisTimeMs(Math.round(phase2Elapsed * 0.15));
-      setOptimizationTimeMs(Math.round(phase2Elapsed * 0.85));
+      actions.setTiming({
+        analysisTimeMs: Math.round(phase2Elapsed * 0.15),
+        optimizationTimeMs: Math.round(phase2Elapsed * 0.85),
+      });
 
-      setDocProfile(dProf);
-      setPageProfiles(dProf.pages);
-      setProcessedPages(pages);
+      actions.setDocProfile(dProf);
+      actions.setPageProfiles(dProf.pages);
+      actions.setProcessedPages(pages);
 
-      // Generate 1-Up optimized PDF blob for optional download (streaming)
       const optBlob = await PdfExporter.export1UpOptimizedPdf(pages);
-      setOptimized1UpBlob(optBlob);
+      actions.setOptimized1UpBlob(optBlob);
 
-      // Release raw merged bytes to keep memory lightweight
-      setMergedPdfBytes(null);
+      actions.setMergeResult(null, null, []);
 
-      // Transition to Phase 2
-      setCurrentPhase(2);
+      actions.setPhase(2);
     } catch (err: any) {
       console.error('Phase 2 optimization error:', err);
-      setErrorMessage('Processing failed due to browser memory limits.');
+      actions.setError('Processing failed due to browser memory limits.');
     } finally {
-      setIsProcessing(false);
-      setProgress(null);
+      actions.setProcessing(false);
+      actions.setProgress(null);
     }
-  }, [mergedPdfBytes, masterParams.preset, selectedEngineVersion]);
-
-  // -------------------------------------------------------------
-  // PHASE 2 HANDLERS: Optimize Preview, Exclude Pages
-  // -------------------------------------------------------------
-
-  const handleToggleExcludePage = (pageIdx: number) => {
-    setExcludedPages((prev) => {
-      const next = new Set(prev);
-      if (next.has(pageIdx)) {
-        next.delete(pageIdx);
-      } else {
-        next.add(pageIdx);
-      }
-
-      // If already in Phase 3, re-compile layout for remaining pages
-      if (currentPhase === 3 && processedPages.length > 0) {
-        const activePages = processedPages.filter((p) => !next.has(p.pageIndex));
-        if (activePages.length > 0) {
-          setTimeout(() => {
-            compilePhase3PrintLayout(layoutConfig, next);
-          }, 0);
-        }
-      }
-
-      return next;
-    });
-  };
-
-  const handleDownloadOptimized1Up = () => {
-    if (!optimized1UpBlob) return;
-    const url = URL.createObjectURL(optimized1UpBlob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = 'PW_Optimized_1Up.pdf';
-    a.click();
-    URL.revokeObjectURL(url);
-  };
-
-  // Proceed from Phase 2 to Phase 3: Choose Layout
-  const handleProceedToPhase3 = async () => {
-    setCurrentPhase(3);
-  };
+  }, [mergedPdfBytes, masterParams.preset, selectedEngineVersion, actions]);
 
   // -------------------------------------------------------------
   // PHASE 3 HANDLERS: Choose Layout & Generate Print PDF
+  // (Defined before Phase 2 toggle handler which references compilePhase3PrintLayout)
   // -------------------------------------------------------------
 
   const compilePhase3PrintLayout = useCallback(async (
@@ -413,11 +285,10 @@ export default function HomePage() {
   ) => {
     if (processedPages.length === 0) return;
 
-    // Revoke previous sheet preview Object URLs before building new ones
     memoryManager.revokeAllBlobUrls();
 
-    setIsProcessing(true);
-    setErrorMessage(null);
+    actions.setProcessing(true);
+    actions.setError(null);
     const startTime = Date.now();
 
     try {
@@ -432,8 +303,8 @@ export default function HomePage() {
       const { finalPdfBlob, sheetPreviews, metrics } = await PdfExporter.compileSheetsAndExportPdf(
         activePages,
         config,
-        (curr, total, action) => {
-          setProgress({
+        (curr: number, total: number, action: string) => {
+          actions.setProgress({
             stage: 'BUILDING_GRID',
             currentPage: curr,
             totalPages: total,
@@ -445,64 +316,59 @@ export default function HomePage() {
       );
 
       const layoutElapsed = Date.now() - startTime;
-      setLayoutTimeMs(layoutElapsed);
-
-      setFinalSheetPreviews(sheetPreviews);
-      setFinalPrintPdfBlob(finalPdfBlob);
-      setFinalMetrics(metrics);
+      actions.setTiming({ layoutTimeMs: layoutElapsed });
+      actions.setLayoutResult(finalPdfBlob, sheetPreviews, metrics);
     } catch (err: any) {
       console.error('Phase 3 layout error:', err);
-      setErrorMessage('Failed to generate print layout PDF.');
+      actions.setError('Failed to generate print layout PDF.');
     } finally {
-      setIsProcessing(false);
-      setProgress(null);
+      actions.setProcessing(false);
+      actions.setProgress(null);
     }
-  }, [processedPages, excludedPages]);
+  }, [processedPages, excludedPages, actions]);
 
-  // Handle changing layout settings
   const handleSelectLayoutFormat = (format: GridFormat) => {
     const updated = { ...layoutConfig, gridFormat: format };
-    setLayoutConfig(updated);
-    setLayoutDirty(true);
+    actions.setLayoutConfig(updated);
+    actions.setLayoutDirty(true);
   };
 
   const handleToggleOrientation = () => {
     const nextOrient = layoutConfig.orientation === 'PORTRAIT' ? 'LANDSCAPE' : 'PORTRAIT';
     const updated = { ...layoutConfig, orientation: nextOrient as 'PORTRAIT' | 'LANDSCAPE' };
-    setLayoutConfig(updated);
-    setLayoutDirty(true);
+    actions.setLayoutConfig(updated);
+    actions.setLayoutDirty(true);
   };
 
   const handleToggleBorders = () => {
     const updated = { ...layoutConfig, showSlideBorders: !layoutConfig.showSlideBorders };
-    setLayoutConfig(updated);
-    setLayoutDirty(true);
+    actions.setLayoutConfig(updated);
+    actions.setLayoutDirty(true);
   };
 
   const handleTogglePageNumbers = () => {
     const updated = { ...layoutConfig, showPageNumbers: !layoutConfig.showPageNumbers };
-    setLayoutConfig(updated);
-    setLayoutDirty(true);
+    actions.setLayoutConfig(updated);
+    actions.setLayoutDirty(true);
   };
 
   const handleUpdateOuterMargins = (outerMargins: OuterMarginConfig) => {
     const updated = { ...layoutConfig, outerMarginMm: outerMargins };
-    setLayoutConfig(updated);
-    setLayoutDirty(true);
+    actions.setLayoutConfig(updated);
+    actions.setLayoutDirty(true);
   };
 
   const handleUpdateInnerMargin = (innerMarginMm: number) => {
     const updated = { ...layoutConfig, innerMarginMm };
-    setLayoutConfig(updated);
-    setLayoutDirty(true);
+    actions.setLayoutConfig(updated);
+    actions.setLayoutDirty(true);
   };
-  // Apply layout: only renders when user explicitly clicks Apply
+
   const handleApplyLayout = useCallback(async () => {
     if (!layoutDirty) return;
     await compilePhase3PrintLayout(layoutConfig);
-    setLayoutDirty(false);
-  }, [layoutDirty, layoutConfig, compilePhase3PrintLayout]);
-
+    actions.setLayoutDirty(false);
+  }, [layoutDirty, layoutConfig, compilePhase3PrintLayout, actions]);
 
   const handleDownloadFinalPrintPdf = () => {
     if (!finalPrintPdfBlob) return;
@@ -514,20 +380,55 @@ export default function HomePage() {
     URL.revokeObjectURL(url);
   };
 
-  // Proceed to Phase 4 (Done)
   const handleProceedToPhase4 = () => {
     pwOptimizerStorage.clearCache();
     memoryManager.revokeAllBlobUrls();
-    setCurrentPhase(4);
+    actions.setPhase(4);
   };
 
-  // Submit Feedback
+  // -------------------------------------------------------------
+  // PHASE 2 HANDLERS: Optimize Preview, Exclude Pages
+  // -------------------------------------------------------------
+
+  const handleToggleExcludePage = useCallback((pageIdx: number) => {
+    const next = new Set(excludedPages);
+    if (next.has(pageIdx)) {
+      next.delete(pageIdx);
+    } else {
+      next.add(pageIdx);
+    }
+    actions.setExcludedPages(next);
+
+    if (currentPhase === 3 && processedPages.length > 0) {
+      const activePages = processedPages.filter((p) => !next.has(p.pageIndex));
+      if (activePages.length > 0) {
+        setTimeout(() => {
+          compilePhase3PrintLayout(layoutConfig, next);
+        }, 0);
+      }
+    }
+  }, [excludedPages, currentPhase, processedPages, layoutConfig, compilePhase3PrintLayout, actions]);
+
+  const handleDownloadOptimized1Up = () => {
+    if (!optimized1UpBlob) return;
+    const url = URL.createObjectURL(optimized1UpBlob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'PW_Optimized_1Up.pdf';
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const handleProceedToPhase3 = async () => {
+    actions.setPhase(3);
+  };
+
   const handleSendFeedback = async () => {
-    setFeedbackSubmitted(true);
-    const feedbackUrl = process.env.NEXT_PUBLIC_FEEDBACK_URL || 
-      (window as unknown as Record<string, string>).__NEXT_FEEDBACK_URL || 
+    actions.setFeedbackSubmitted(true);
+    const feedbackUrl = process.env.NEXT_PUBLIC_FEEDBACK_URL ||
+      (window as unknown as Record<string, string>).__NEXT_FEEDBACK_URL ||
       'https://script.google.com/macros/s/AKfycbxQ-ENm_QT9lUD9wwX-GhSc-apEW_myrocrys46zX1Kj28q5xXZ4QCNYHIJk7lB3-DX9w/exec';
-    
+
     if (feedbackUrl) {
       try {
         await fetch(feedbackUrl, {
@@ -556,7 +457,7 @@ export default function HomePage() {
         currentPhase={currentPhase}
         onReset={handleResetWorkflow}
         onLoadSample={handleLoadSamplePdf}
-        onNavigatePhase={(phase) => setCurrentPhase(phase)}
+        onNavigatePhase={(phase) => actions.setPhase(phase)}
         isProcessing={isProcessing}
       />
 
@@ -574,17 +475,17 @@ export default function HomePage() {
       <main className="mx-auto w-full max-w-5xl flex-1 px-3 py-4 sm:px-6 sm:py-6 pb-28 md:pb-8">
         <PlatformUIOrchestrator
           currentPhase={currentPhase}
-          setCurrentPhase={setCurrentPhase}
+          setCurrentPhase={(phase) => actions.setPhase(phase)}
           isProcessing={isProcessing}
           progress={progress}
           errorMessage={errorMessage}
-          setErrorMessage={setErrorMessage}
+          setErrorMessage={(msg) => actions.setError(msg)}
           uploadedItems={uploadedItems}
           mergedPdfBlob={mergedPdfBlob}
           mergedPdfBytes={mergedPdfBytes}
           mergedPageDataUrls={mergedPageDataUrls}
           selectedEngineVersion={selectedEngineVersion}
-          setSelectedEngineVersion={setSelectedEngineVersion}
+          setSelectedEngineVersion={(version) => actions.setEngineVersion(version)}
           onFilesUpload={handleFilesUpload}
           onLoadSample={handleLoadSamplePdf}
           onMoveItem={handleMoveItem}
@@ -593,7 +494,7 @@ export default function HomePage() {
           onProceedToPhase2={handleProceedToPhase2}
           processedPages={processedPages}
           selectedPageIndex={selectedPageIndex}
-          setSelectedPageIndex={setSelectedPageIndex}
+          setSelectedPageIndex={(idx) => actions.setSelectedPageIndex(idx)}
           excludedPages={excludedPages}
           docProfile={docProfile}
           onToggleExcludePage={handleToggleExcludePage}
@@ -602,7 +503,7 @@ export default function HomePage() {
             if (exclude) {
               processedPages.forEach((_, idx) => next.add(idx));
             }
-            setExcludedPages(next);
+            actions.setExcludedPages(next);
           }}
           onDownloadOptimized1Up={handleDownloadOptimized1Up}
           onProceedToPhase3={handleProceedToPhase3}
@@ -624,9 +525,9 @@ export default function HomePage() {
           optimizationTimeMs={optimizationTimeMs}
           layoutTimeMs={layoutTimeMs}
           rating={rating}
-          setRating={setRating}
+          setRating={(r) => actions.setRating(r)}
           feedbackText={feedbackText}
-          setFeedbackText={setFeedbackText}
+          setFeedbackText={(t) => actions.setFeedbackText(t)}
           feedbackSubmitted={feedbackSubmitted}
           onSendFeedback={handleSendFeedback}
           onResetWorkflow={handleResetWorkflow}
