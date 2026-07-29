@@ -3,7 +3,7 @@ import { ParameterGenerator } from '../../lib/optimizer/parameterGenerator';
 import { PresetMode } from '../../lib/optimizer/types';
 
 describe('ParameterGenerator', () => {
-  const presets: PresetMode[] = ['PW_DARK_SLIDE', 'LIGHT_HANDWRITTEN', 'INK_SAVER_EXTREME', 'BALANCED_DEFAULT', 'HIGH_CONTRAST_BW'];
+  const presets: PresetMode[] = ['PW_DARK_SLIDE', 'LIGHT_HANDWRITTEN', 'INK_SAVER_EXTREME', 'DIAGRAM_HIGH_CONTRAST', 'AUTO_ADAPTIVE'];
 
   it('should return valid parameters for all 5 presets', () => {
     for (const preset of presets) {
@@ -21,8 +21,6 @@ describe('ParameterGenerator', () => {
   it('should have distinct configurations for different presets', () => {
     const darkSlide = ParameterGenerator.getPresetParameters('PW_DARK_SLIDE');
     const lightHandwritten = ParameterGenerator.getPresetParameters('LIGHT_HANDWRITTEN');
-    
-    // Dark slide should have smart invert, light handwritten should not
     expect(darkSlide.invertMode).toBe('smart');
     expect(lightHandwritten.invertMode).toBe('none');
   });

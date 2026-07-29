@@ -1,26 +1,40 @@
-// tests/setup.ts
-import { fakeIndexedDB } from 'fake-indexeddb';
+import 'fake-indexeddb/auto';
 
-// Mock IndexedDB for tests
-if (typeof window !== 'undefined') {
-  (window as any).indexedDB = fakeIndexedDB;
-  (window as any).IDBKeyRange = (global as any).IDBKeyRange;
+if (typeof Blob === 'undefined') {
+  (global as any).Blob = class Blob {
+    parts: any[];
+    options?: any;
+    constructor(parts: any[], options?: any) {
+      this.parts = parts;
+      this.options = options;
+    }
+    get size() { return this.parts.join('').length; }
+    get type() { return this.options?.type || ''; }
+    async text() { return this.parts.join(''); }
+    async arrayBuffer() { return new Uint8Array(Buffer.from(this.parts.join(''))).buffer; }
+  };
 }
 
-// Mock canvas for Node.js environment
+if (typeof ImageData === 'undefined') {
+  (global as any).ImageData = class ImageData {
+    data: Uint8ClampedArray;
+    width: number;
+    height: number;
+    constructor(data: Uint8ClampedArray, width: number, height: number) {
+      this.data = data;
+      this.width = width;
+      this.height = height;
+    }
+  };
+}
+
 if (typeof HTMLCanvasElement === 'undefined') {
   const { createCanvas } = require('@napi-rs/canvas');
   (global as any).HTMLCanvasElement = class HTMLCanvasElement {};
   (global as any).CanvasRenderingContext2D = class CanvasRenderingContext2D {};
-  (global as any).ImageData = class ImageData {
-    constructor(public data: Uint8ClampedArray, public width: number, public height: number) {}
-  };
   (global as any).document = {
     createElement: (tag: string) => {
-      if (tag === 'canvas') {
-        const canvas = createCanvas(100, 100);
-        return canvas;
-      }
+      if (tag === 'canvas') return createCanvas(100, 100);
       return {};
     }
   };
