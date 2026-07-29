@@ -540,7 +540,7 @@ export default function HomePage() {
             rating,
             feedback: feedbackText,
             timestamp: new Date().toLocaleString(),
-            source: 'Physics Wallah Notes Print Optimizer',
+            source: 'Notes Print Optimizer',
           }),
         });
       } catch (err) {
