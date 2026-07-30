@@ -189,7 +189,8 @@ export default function HomePage() {
         canvas.height = viewport.height;
         const ctx = canvas.getContext('2d')!;
         await page.render({ canvasContext: ctx, viewport }).promise;
-        thumbnails.push(canvas.toDataURL('image/jpeg', 0.6));
+        const blob = await new Promise<Blob>((res) => canvas.toBlob((b) => res(b || new Blob()), 'image/jpeg', 0.6));
+        thumbnails.push(URL.createObjectURL(blob));
       }
 
       actions.setMergeResult(pdfBlob, pdfBytes, thumbnails);
