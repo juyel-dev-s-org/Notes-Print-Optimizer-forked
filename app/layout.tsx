@@ -1,14 +1,17 @@
 import type { Metadata, Viewport } from 'next';
 import './globals.css';
 
+const basePath = process.env.NEXT_PUBLIC_BASE_PATH || '';
+const iconPath = `${basePath}/icon.svg`;
+
 export const metadata: Metadata = {
   title: 'PW Notes Print Optimizer',
   description: 'Mobile-first adaptive print optimizer and PDF engine for Physics Wallah and lecture class notes.',
   manifest: '/manifest.webmanifest',
   icons: {
-    icon: '/icon.svg',
-    shortcut: '/icon.svg',
-    apple: '/icon.svg',
+    icon: iconPath,
+    shortcut: iconPath,
+    apple: iconPath,
   },
   appleWebApp: {
     capable: true,
