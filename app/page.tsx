@@ -246,9 +246,6 @@ export default function HomePage() {
       actions.setPageProfiles(dProf.pages);
       actions.setProcessedPages(pages);
 
-      const optBlob = await PdfExporter.export1UpOptimizedPdf(pages);
-      actions.setOptimized1UpBlob(optBlob);
-
       actions.setMergeResult(null, null, []);
 
       actions.setPhase(2);
@@ -396,15 +393,27 @@ export default function HomePage() {
     }
   }, [excludedPages, currentPhase, processedPages, layoutConfig, compilePhase3PrintLayout, actions]);
 
-  const handleDownloadOptimized1Up = () => {
-    if (!optimized1UpBlob) return;
-    const url = URL.createObjectURL(optimized1UpBlob);
+  const handleDownloadOptimized1Up = useCallback(async () => {
+    let blob = optimized1UpBlob;
+    if (!blob) {
+      actions.setProcessing(true);
+      try {
+        blob = await PdfExporter.export1UpOptimizedPdf(processedPages);
+        actions.setOptimized1UpBlob(blob);
+      } catch (err) {
+        console.error('1-up export failed:', err);
+        actions.setProcessing(false);
+        return;
+      }
+      actions.setProcessing(false);
+    }
+    const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
     a.download = 'PW_Optimized_1Up.pdf';
     a.click();
     URL.revokeObjectURL(url);
-  };
+  }, [optimized1UpBlob, processedPages, actions]);
 
   const handleProceedToPhase3 = async () => {
     actions.setPhase(3);
