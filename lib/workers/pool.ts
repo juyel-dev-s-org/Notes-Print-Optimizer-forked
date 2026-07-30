@@ -212,11 +212,28 @@ export class WorkerPool {
       (entry as any).height = task.height;
       (entry as any).params = task.params;
       (entry as any).profile = task.profile;
+      const clear = this.scheduleTimeout(entry);
+      const origReject = entry.reject;
+      entry.reject = (reason) => { clear(); origReject(reason); };
+      const origResolve = entry.resolve;
+      entry.resolve = (val) => { clear(); origResolve(val); };
 
       this.taskQueue.push(entry);
       this.setupHealthCheck();
       this.dispatchNext();
     });
+  }
+
+  private scheduleTimeout(entry: TaskEntry): () => void {
+    const timer = setTimeout(() => {
+      const idx = this.taskQueue.indexOf(entry);
+      if (idx !== -1) this.taskQueue.splice(idx, 1);
+      if (this.pending.get(entry.taskId) === entry) {
+        this.pending.delete(entry.taskId);
+        entry.reject(new Error(`Task ${entry.type} timed out after ${entry.timeout}ms`));
+      }
+    }, entry.timeout);
+    return () => clearTimeout(timer);
   }
 
   submitComposeTask(task: Omit<ComposeTask, 'taskId'>, timeout = DEFAULT_TIMEOUT_MS): Promise<{
@@ -237,6 +254,11 @@ export class WorkerPool {
       };
       const fullTask: ComposeTask = { taskId: entry.taskId, ...task };
       Object.assign(entry, fullTask);
+      const clear = this.scheduleTimeout(entry);
+      const origReject = entry.reject;
+      entry.reject = (reason) => { clear(); origReject(reason); };
+      const origResolve = entry.resolve;
+      entry.resolve = (val) => { clear(); origResolve(val); };
 
       this.taskQueue.push(entry);
       this.setupHealthCheck();

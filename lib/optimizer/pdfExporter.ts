@@ -53,28 +53,29 @@ export class PdfExporter {
   ): Promise<{ jpegBuffer: ArrayBuffer; width: number; height: number }> {
     const wm = WorkerManager.getInstance();
     if (wm.isWorkerSupported() && wm.isOffscreenCanvasSupported()) {
-      try {
-        const dims = LayoutEngine.getSheetDimensions(config.paperSize, config.orientation);
-        const mmPx = dims.dpi / 25.4;
-        const { cols, rows } = LayoutEngine.getGridDimensions(config.gridFormat);
-        const pageBuffers = pageImageDatas.map(d => d.data.buffer.slice(0));
-        const transferables = [...pageBuffers];
-        const pool = wm.getPool();
-        const result = await pool.submitComposeTask({
-          sheetIndex, totalSheets,
-          pageBuffers, pageWidths: pageImageDatas.map(d => d.width), pageHeights: pageImageDatas.map(d => d.height),
-          dims: { widthPx: dims.widthPx, heightPx: dims.heightPx }, cols, rows,
-          marginTop: Math.round((config.outerMarginMm?.top ?? config.marginMm ?? 2) * mmPx),
-          marginLeft: Math.round((config.outerMarginMm?.left ?? config.marginMm ?? 5) * mmPx),
-          marginRight: Math.round((config.outerMarginMm?.right ?? config.marginMm ?? 3) * mmPx),
-          marginBottom: Math.round((config.outerMarginMm?.bottom ?? config.marginMm ?? 2) * mmPx),
-          marginInner: Math.round((config.innerMarginMm ?? config.spacingMm ?? 1) * mmPx),
-          showSlideBorders: config.showSlideBorders ?? true,
-          showPageNumbers: config.showPageNumbers ?? false,
-        });
-        return { jpegBuffer: result.jpegBuffer, width: result.width, height: result.height };
-      } catch {
-        /* worker compose failed — fall through to main thread */
+      const pool = wm.getPool();
+      if (pool.getStats().poolSize > 0 || pool.getStats().queueLength === 0) {
+        try {
+          const dims = LayoutEngine.getSheetDimensions(config.paperSize, config.orientation);
+          const mmPx = dims.dpi / 25.4;
+          const { cols, rows } = LayoutEngine.getGridDimensions(config.gridFormat);
+          const pageBuffers = pageImageDatas.map(d => d.data.buffer.slice(0));
+          const result = await pool.submitComposeTask({
+            sheetIndex, totalSheets,
+            pageBuffers, pageWidths: pageImageDatas.map(d => d.width), pageHeights: pageImageDatas.map(d => d.height),
+            dims: { widthPx: dims.widthPx, heightPx: dims.heightPx }, cols, rows,
+            marginTop: Math.round((config.outerMarginMm?.top ?? config.marginMm ?? 2) * mmPx),
+            marginLeft: Math.round((config.outerMarginMm?.left ?? config.marginMm ?? 5) * mmPx),
+            marginRight: Math.round((config.outerMarginMm?.right ?? config.marginMm ?? 3) * mmPx),
+            marginBottom: Math.round((config.outerMarginMm?.bottom ?? config.marginMm ?? 2) * mmPx),
+            marginInner: Math.round((config.innerMarginMm ?? config.spacingMm ?? 1) * mmPx),
+            showSlideBorders: config.showSlideBorders ?? true,
+            showPageNumbers: config.showPageNumbers ?? false,
+          });
+          return { jpegBuffer: result.jpegBuffer, width: result.width, height: result.height };
+        } catch {
+          /* worker compose failed — fall through to main thread */
+        }
       }
     }
     const sheetCanvas = LayoutEngine.composeSheet(pageImageDatas, sheetIndex, totalSheets, config);
