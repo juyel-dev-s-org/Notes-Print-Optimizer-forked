@@ -6,7 +6,8 @@ let initPromise: Promise<IWasmKernels> | null = null;
 
 async function loadWasm(): Promise<IWasmKernels | null> {
   try {
-    const wasm = await import(/* @vite-ignore */ '../../wasm/pkg/npo_wasm.js');
+    const wasmUrl = Array.of('../../wasm/pkg/npo_wasm.js')[0];
+    const wasm = await import(wasmUrl);
     try {
       await wasm.default();
     } catch {
