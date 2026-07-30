@@ -12,10 +12,26 @@ export default function HomePage() {
 
   useEffect(() => {
     if ('serviceWorker' in navigator) {
-      const swPath = `${process.env.NEXT_PUBLIC_BASE_PATH || ''}/sw.js`;
-      navigator.serviceWorker.register(swPath)
-        .then((reg) => console.log('[SW] Registered:', reg.scope))
-        .catch((err) => console.warn('[SW] Registration failed:', err));
+      const basePath = process.env.NEXT_PUBLIC_BASE_PATH || '';
+      const swPath = `${basePath}/sw.js`;
+      window.addEventListener('load', () => {
+        navigator.serviceWorker
+          .register(swPath, { scope: `${basePath}/` })
+          .then((reg) => {
+            console.log('[SW] Registered with scope:', reg.scope);
+            reg.addEventListener('updatefound', () => {
+              const nw = reg.installing;
+              if (nw) {
+                nw.addEventListener('statechange', () => {
+                  if (nw.state === 'activated') {
+                    console.log('[SW] New version activated');
+                  }
+                });
+              }
+            });
+          })
+          .catch((err) => console.warn('[SW] Registration failed:', err));
+      });
     }
   }, []);
 

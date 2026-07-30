@@ -6,9 +6,11 @@ const basePath = process.env.NEXT_PUBLIC_BASE_PATH || '';
 
 export default function manifest(): MetadataRoute.Manifest {
   return {
+    id: `${basePath}/`,
     name: 'PW Notes Print Optimizer',
     short_name: 'PW Optimizer',
-    description: 'Mobile-first print optimizer and adaptive layout engine for PW lecture notes. Convert dark-background slides to print-ready PDFs with optimal ink and paper usage.',
+    description:
+      'Mobile-first print optimizer and adaptive layout engine for PW lecture notes. Convert dark-background slides to print-ready PDFs with optimal ink and paper usage.',
     start_url: `${basePath}/`,
     scope: `${basePath}/`,
     display: 'standalone',
@@ -18,12 +20,6 @@ export default function manifest(): MetadataRoute.Manifest {
     categories: ['education', 'productivity', 'utilities'],
     prefer_related_applications: false,
     icons: [
-      {
-        src: `${basePath}/icon.svg`,
-        sizes: '512x512',
-        type: 'image/svg+xml',
-        purpose: 'any',
-      },
       {
         src: `${basePath}/icon-192.png`,
         sizes: '192x192',
@@ -42,7 +38,12 @@ export default function manifest(): MetadataRoute.Manifest {
         type: 'image/png',
         purpose: 'maskable',
       },
+      {
+        src: `${basePath}/icon.svg`,
+        sizes: 'any',
+        type: 'image/svg+xml',
+        purpose: 'any',
+      },
     ],
-    screenshots: [],
   };
 }

@@ -3,12 +3,11 @@ import './globals.css';
 
 const basePath = process.env.NEXT_PUBLIC_BASE_PATH || '';
 const iconPath = `${basePath}/icon.svg`;
-const manifestPath = `${basePath}/manifest.webmanifest`;
 
 export const metadata: Metadata = {
   title: 'PW Notes Print Optimizer',
-  description: 'Mobile-first adaptive print optimizer and PDF engine for Physics Wallah and lecture class notes.',
-  manifest: manifestPath,
+  description:
+    'Mobile-first adaptive print optimizer and PDF engine for Physics Wallah and lecture class notes.',
   icons: {
     icon: iconPath,
     shortcut: iconPath,
@@ -40,7 +39,8 @@ export const metadata: Metadata = {
     startupImage: [
       {
         url: `${basePath}/icon-512.png`,
-        media: '(device-width: 390px) and (device-height: 844px) and (-webkit-device-pixel-ratio: 3)',
+        media:
+          '(device-width: 390px) and (device-height: 844px) and (-webkit-device-pixel-ratio: 3)',
       },
     ],
   },
@@ -62,13 +62,19 @@ export const viewport: Viewport = {
   viewportFit: 'cover',
 };
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
+export default function RootLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
   return (
     <html lang="en" className="h-full bg-slate-950 text-slate-100 antialiased">
-      <body className="min-h-full flex flex-col font-sans bg-slate-950 text-slate-100 selection:bg-indigo-500 selection:text-white" suppressHydrationWarning>
+      <body
+        className="min-h-full flex flex-col font-sans bg-slate-950 text-slate-100 selection:bg-indigo-500 selection:text-white"
+        suppressHydrationWarning
+      >
         {children}
       </body>
     </html>
   );
 }
-
