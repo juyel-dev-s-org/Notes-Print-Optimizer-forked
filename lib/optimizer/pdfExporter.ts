@@ -54,7 +54,7 @@ export class PdfExporter {
     const wm = WorkerManager.getInstance();
     if (wm.isWorkerSupported() && wm.isOffscreenCanvasSupported()) {
       const pool = wm.getPool();
-      if (pool.getStats().poolSize > 0 || pool.getStats().queueLength === 0) {
+      if (pool.getStats().poolSize > 0) {
         try {
           const dims = LayoutEngine.getSheetDimensions(config.paperSize, config.orientation);
           const mmPx = dims.dpi / 25.4;

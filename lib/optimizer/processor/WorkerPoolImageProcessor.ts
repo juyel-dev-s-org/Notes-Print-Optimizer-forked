@@ -27,7 +27,7 @@ export class WorkerPoolImageProcessor implements IImageProcessor {
     params: ProcessingParameters,
     profile: PageProfile
   ): Promise<WorkerProcessResult> {
-    if (wm.isWorkerSupported()) {
+    if (wm.isWorkerSupported() && wm.getPool().getStats().poolSize > 0) {
       try {
         const pool = wm.getPool();
         const result = await pool.submitPixelTask({
