@@ -247,10 +247,10 @@ export const Header: React.FC<HeaderProps> = ({
                   <div className="rounded-xl border border-indigo-500/40 bg-gradient-to-br from-indigo-950 to-slate-900 p-3.5 shadow-lg">
                     <div className="flex items-center gap-2.5 text-indigo-300 font-semibold text-xs mb-1">
                       <Smartphone className="h-4 w-4 text-indigo-400" />
-                      <span>Install Android App</span>
+                      <span>Install App</span>
                     </div>
                     <p className="text-[11px] text-slate-300 mb-3 leading-relaxed">
-                      Install PW Optimizer on your phone for home screen access, offline support, and full-screen workspace.
+                      Install PW Optimizer on your device for home screen access, offline support, and full-screen workspace.
                     </p>
                     <button
                       type="button"
@@ -258,7 +258,7 @@ export const Header: React.FC<HeaderProps> = ({
                       className="w-full flex items-center justify-center gap-2 rounded-lg bg-indigo-600 px-3 py-2 text-xs font-bold text-white shadow-md active:scale-98 transition-all hover:bg-indigo-500"
                     >
                       <Download className="h-3.5 w-3.5" />
-                      <span>Add to Home Screen</span>
+                      <span>Install App</span>
                     </button>
                   </div>
                 )}
