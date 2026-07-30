@@ -222,7 +222,7 @@ export class ProcessingEngineV1 implements IProcessingEngine {
       /* Thumbnail via shared canvas + blob URL (M-4) */
       const thumbnailDataUrl = await this.generateThumbnail(pageRes.optimizedImageData, i - 1);
 
-      const origBlob = await memoryManager.imageDataToBlob(srcImageData, 0.85);
+      const origBlob = await memoryManager.imageDataToBlob(srcImageData, 0.75);
       const optBlob = await memoryManager.imageDataToBlob(pageRes.optimizedImageData, 0.88);
 
       /* Batched IDB write — enqueue instead of per-page transaction (H-5) */

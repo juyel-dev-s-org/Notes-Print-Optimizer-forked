@@ -42,6 +42,13 @@ export default function HomePage() {
   // Temporary IndexedDB session cache lifecycle manager
   useEffect(() => {
     pwOptimizerStorage.clearCache();
+    pwOptimizerStorage.evictStaleEntries();
+
+    memoryManager.checkStorageQuota().then((q) => {
+      if (q && !q.ok) {
+        console.warn(`[Storage] ${q.percentUsed.toFixed(0)}% used (${q.used}/${q.quota}) — near quota`);
+      }
+    });
 
     const handleUnload = () => {
       pwOptimizerStorage.clearCache();

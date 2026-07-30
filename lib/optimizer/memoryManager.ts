@@ -77,6 +77,22 @@ class MemoryManager {
     });
   }
 
+  public async checkStorageQuota(): Promise<{ ok: boolean; used: string; quota: string; percentUsed: number } | null> {
+    if (typeof navigator === 'undefined' || !navigator.storage?.estimate) return null;
+    try {
+      const estimate = await navigator.storage.estimate();
+      const used = estimate.usage ?? 0;
+      const quota = estimate.quota ?? 0;
+      return { ok: used < quota * 0.9, used: this.formatBytes(used), quota: this.formatBytes(quota), percentUsed: quota > 0 ? (used / quota) * 100 : 0 };
+    } catch { return null; }
+  }
+
+  private formatBytes(bytes: number): string {
+    if (bytes < 1024) return `${bytes} B`;
+    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+    return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+  }
+
   public async yieldToUI(): Promise<void> {
     const sched = (globalThis as any).scheduler;
     if (sched && typeof sched.yield === 'function') return sched.yield();
