@@ -15,7 +15,7 @@ const REGRESSION_THRESHOLDS: Record<string, number> = {
   unsharpMask: 3,
   removeNoise: 1,
   inkCoverage: 30,
-  connectedComponents: 20,
+  connectedComponents: 10,
 };
 
 function createSyntheticImageData(width: number, height: number): ImageData {
