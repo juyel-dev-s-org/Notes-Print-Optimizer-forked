@@ -29,7 +29,12 @@ if (typeof ImageData === 'undefined') {
 }
 
 if (typeof HTMLCanvasElement === 'undefined') {
-  const { createCanvas } = require('@napi-rs/canvas');
+  let createCanvas: any;
+  try {
+    createCanvas = require('@napi-rs/canvas').createCanvas;
+  } catch {
+    createCanvas = () => ({ width: 100, height: 100, getContext: () => null });
+  }
   (global as any).HTMLCanvasElement = class HTMLCanvasElement {};
   (global as any).CanvasRenderingContext2D = class CanvasRenderingContext2D {};
   (global as any).document = {
