@@ -26,29 +26,6 @@ export const BeforeAfterSlider: React.FC<BeforeAfterSliderProps> = ({ page }) =>
     const loadImages = async () => {
       setIsLoadingImages(true);
       try {
-        if (page.originalImageData && page.optimizedImageData) {
-          const origCanvas = document.createElement('canvas');
-          origCanvas.width = page.originalImageData.width;
-          origCanvas.height = page.originalImageData.height;
-          const origCtx = origCanvas.getContext('2d');
-          if (origCtx) origCtx.putImageData(page.originalImageData, 0, 0);
-
-          const optCanvas = document.createElement('canvas');
-          optCanvas.width = page.optimizedImageData.width;
-          optCanvas.height = page.optimizedImageData.height;
-          const optCtx = optCanvas.getContext('2d');
-          if (optCtx) optCtx.putImageData(page.optimizedImageData, 0, 0);
-
-          if (!isCancelled) {
-            setOrigUrl(origCanvas.toDataURL());
-            setOptUrl(optCanvas.toDataURL());
-            setIsLoadingImages(false);
-          }
-          memoryManager.disposeCanvas(origCanvas);
-          memoryManager.disposeCanvas(optCanvas);
-          return;
-        }
-
         const { originalImageData, optimizedImageData } = await PdfExporter.loadPageImageData(page);
 
         const origCanvas = document.createElement('canvas');
@@ -64,8 +41,10 @@ export const BeforeAfterSlider: React.FC<BeforeAfterSliderProps> = ({ page }) =>
         if (optCtx) optCtx.putImageData(optimizedImageData, 0, 0);
 
         if (!isCancelled) {
-          setOrigUrl(origCanvas.toDataURL());
-          setOptUrl(optCanvas.toDataURL());
+          const origBlob = await new Promise<Blob>((res) => origCanvas.toBlob((b) => res(b || new Blob()), 'image/jpeg', 0.6));
+          const optBlob = await new Promise<Blob>((res) => optCanvas.toBlob((b) => res(b || new Blob()), 'image/jpeg', 0.6));
+          setOrigUrl(URL.createObjectURL(origBlob));
+          setOptUrl(URL.createObjectURL(optBlob));
           setIsLoadingImages(false);
         }
 

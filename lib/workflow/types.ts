@@ -72,7 +72,7 @@ export interface WorkflowState {
   mergedPageDataUrls: string[];
 
   // Raw page extraction / analysis
-  rawPagesData: ImageData[];
+
   pageProfiles: PageProfile[];
   docProfile: DocumentProfile | null;
 
@@ -118,8 +118,7 @@ export type WorkflowAction =
   // Upload & Merge
   | { type: 'SET_UPLOADED_ITEMS'; items: UploadedPdfItem[] }
   | { type: 'SET_MERGE_RESULT'; blob: Blob | null; bytes: Uint8Array | null; pageDataUrls: string[] }
-  // Raw extraction / analysis
-  | { type: 'SET_RAW_PAGES'; rawPagesData: ImageData[] }
+  // Profiles
   | { type: 'SET_PAGE_PROFILES'; pageProfiles: PageProfile[] }
   | { type: 'SET_DOC_PROFILE'; docProfile: DocumentProfile | null }
   // Optimize

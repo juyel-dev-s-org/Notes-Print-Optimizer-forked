@@ -32,7 +32,6 @@ export const initialState: WorkflowState = {
   mergedPdfBytes: null,
   mergedPageDataUrls: [],
 
-  rawPagesData: [],
   pageProfiles: [],
   docProfile: null,
 
@@ -74,7 +73,6 @@ function resetTransientState(): Omit<
     mergedPdfBytes: null,
     mergedPageDataUrls: [],
 
-    rawPagesData: [],
     pageProfiles: [],
     docProfile: null,
 
@@ -128,10 +126,6 @@ export function workflowReducer(
         mergedPdfBytes: action.bytes,
         mergedPageDataUrls: action.pageDataUrls,
       };
-
-    // Raw extraction / analysis
-    case 'SET_RAW_PAGES':
-      return { ...state, rawPagesData: action.rawPagesData };
 
     case 'SET_PAGE_PROFILES':
       return { ...state, pageProfiles: action.pageProfiles };

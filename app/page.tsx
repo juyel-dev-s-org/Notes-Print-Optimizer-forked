@@ -31,7 +31,7 @@ export default function HomePage() {
   const {
     currentPhase, isProcessing, progress, errorMessage,
     uploadedItems, mergedPdfBlob, mergedPdfBytes, mergedPageDataUrls,
-    rawPagesData, pageProfiles, docProfile,
+    pageProfiles, docProfile,
     processedPages, optimized1UpBlob, selectedPageIndex, excludedPages,
     selectedEngineVersion, masterParams,
     layoutConfig, finalPrintPdfBlob, finalSheetPreviews, finalMetrics, layoutDirty,

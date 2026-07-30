@@ -32,7 +32,6 @@ export interface WorkflowActions {
     bytes: Uint8Array | null,
     pageDataUrls: string[]
   ) => void;
-  setRawPages: (rawPagesData: ImageData[]) => void;
   setPageProfiles: (pageProfiles: PageProfile[]) => void;
   setDocProfile: (docProfile: DocumentProfile | null) => void;
   setProcessedPages: (pages: ProcessedPage[]) => void;
@@ -79,8 +78,6 @@ export function useWorkflow(): {
         dispatch({ type: 'SET_UPLOADED_ITEMS', items }),
       setMergeResult: (blob, bytes, pageDataUrls) =>
         dispatch({ type: 'SET_MERGE_RESULT', blob, bytes, pageDataUrls }),
-      setRawPages: (rawPagesData) =>
-        dispatch({ type: 'SET_RAW_PAGES', rawPagesData }),
       setPageProfiles: (pageProfiles) =>
         dispatch({ type: 'SET_PAGE_PROFILES', pageProfiles }),
       setDocProfile: (docProfile) =>

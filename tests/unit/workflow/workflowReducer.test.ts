@@ -373,7 +373,6 @@ describe('workflowReducer', () => {
       expect(reset.mergedPdfBlob).toBeNull();
       expect(reset.mergedPdfBytes).toBeNull();
       expect(reset.mergedPageDataUrls).toEqual([]);
-      expect(reset.rawPagesData).toEqual([]);
       expect(reset.pageProfiles).toEqual([]);
       expect(reset.docProfile).toBeNull();
       expect(reset.processedPages).toEqual([]);

@@ -107,8 +107,6 @@ export interface OptimizationMetrics {
 
 export interface ProcessedPage {
   pageIndex: number;
-  originalImageData?: ImageData;
-  optimizedImageData?: ImageData;
   thumbnailDataUrl: string;
   profile: PageProfile;
   parameters: ProcessingParameters;

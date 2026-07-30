@@ -33,17 +33,15 @@ export class PdfExporter {
   }
 
   public static async loadPageImageData(page: ProcessedPage): Promise<{ originalImageData: ImageData; optimizedImageData: ImageData }> {
-    if (page.originalImageData && page.optimizedImageData) return { originalImageData: page.originalImageData, optimizedImageData: page.optimizedImageData };
-    if (page.storageKey) { const cached = await pwOptimizerStorage.getPage(page.storageKey, page.pageIndex);
-      if (cached) return { originalImageData: await memoryManager.blobToImageData(cached.originalBlob),
-        optimizedImageData: await memoryManager.blobToImageData(cached.optimizedBlob) }; }
+    const cached = await pwOptimizerStorage.getPage(page.storageKey!, page.pageIndex);
+    if (cached) return { originalImageData: await memoryManager.blobToImageData(cached.originalBlob),
+      optimizedImageData: await memoryManager.blobToImageData(cached.optimizedBlob) };
     throw new Error(`Failed to load page ${page.pageIndex + 1}`);
   }
 
   public static async loadOptimizedImageData(page: ProcessedPage): Promise<ImageData> {
-    if (page.optimizedImageData) return page.optimizedImageData;
-    if (page.storageKey) { const cached = await pwOptimizerStorage.getPage(page.storageKey, page.pageIndex);
-      if (cached) return memoryManager.blobToImageData(cached.optimizedBlob); }
+    const cached = await pwOptimizerStorage.getPage(page.storageKey!, page.pageIndex);
+    if (cached) return memoryManager.blobToImageData(cached.optimizedBlob);
     throw new Error(`Failed to load optimized page ${page.pageIndex + 1}`);
   }
 
