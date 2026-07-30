@@ -52,6 +52,14 @@ export interface UploadedPdfItem {
   arrayBuffer: ArrayBuffer;
 }
 
+/** Checkpoint snapshot for the resume-from-last-session prompt. */
+export interface ResumeInfo {
+  documentId: string;
+  totalPages: number;
+  completedCount: number;
+  lastUpdated: number;
+}
+
 /**
  * Complete workflow state. Every field corresponds 1:1 to a useState hook
  * previously declared in app/page.tsx. `masterParams` had no setter in the

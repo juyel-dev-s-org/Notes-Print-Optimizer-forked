@@ -2,7 +2,7 @@ import { PDFDocument } from 'pdf-lib';
 import { LayoutEngine } from './layoutEngine';
 import { memoryManager } from './memoryManager';
 import { pwOptimizerStorage } from './storage';
-import { workerPool } from './workerPool';
+import { WorkerManager } from '../workers/WorkerManager';
 import { getProcessingEngine, EngineVersion } from './engine';
 import { getPdfjsLib } from './pdfjsLoader';
 import { DocumentProfile, LayoutConfig, OptimizationMetrics, PresetMode, ProcessedPage } from './types';
@@ -45,6 +45,44 @@ export class PdfExporter {
     throw new Error(`Failed to load optimized page ${page.pageIndex + 1}`);
   }
 
+  private static async composeSheetWithWorker(
+    pageImageDatas: ImageData[],
+    sheetIndex: number,
+    totalSheets: number,
+    config: LayoutConfig
+  ): Promise<{ jpegBuffer: ArrayBuffer; width: number; height: number }> {
+    const wm = WorkerManager.getInstance();
+    if (wm.isWorkerSupported() && wm.isOffscreenCanvasSupported()) {
+      try {
+        const dims = LayoutEngine.getSheetDimensions(config.paperSize, config.orientation);
+        const mmPx = dims.dpi / 25.4;
+        const { cols, rows } = LayoutEngine.getGridDimensions(config.gridFormat);
+        const pageBuffers = pageImageDatas.map(d => d.data.buffer.slice(0));
+        const transferables = [...pageBuffers];
+        const pool = wm.getPool();
+        const result = await pool.submitComposeTask({
+          sheetIndex, totalSheets,
+          pageBuffers, pageWidths: pageImageDatas.map(d => d.width), pageHeights: pageImageDatas.map(d => d.height),
+          dims: { widthPx: dims.widthPx, heightPx: dims.heightPx }, cols, rows,
+          marginTop: Math.round((config.outerMarginMm?.top ?? config.marginMm ?? 2) * mmPx),
+          marginLeft: Math.round((config.outerMarginMm?.left ?? config.marginMm ?? 5) * mmPx),
+          marginRight: Math.round((config.outerMarginMm?.right ?? config.marginMm ?? 3) * mmPx),
+          marginBottom: Math.round((config.outerMarginMm?.bottom ?? config.marginMm ?? 2) * mmPx),
+          marginInner: Math.round((config.innerMarginMm ?? config.spacingMm ?? 1) * mmPx),
+          showSlideBorders: config.showSlideBorders ?? true,
+          showPageNumbers: config.showPageNumbers ?? false,
+        });
+        return { jpegBuffer: result.jpegBuffer, width: result.width, height: result.height };
+      } catch {
+        /* worker compose failed — fall through to main thread */
+      }
+    }
+    const sheetCanvas = LayoutEngine.composeSheet(pageImageDatas, sheetIndex, totalSheets, config);
+    const blob = await new Promise<Blob>((res) => sheetCanvas.toBlob((b) => res(b || new Blob()), 'image/jpeg', 0.85));
+    const jpegBuffer = await blob.arrayBuffer();
+    return { jpegBuffer, width: sheetCanvas.width, height: sheetCanvas.height };
+  }
+
   public static async compileSheetsAndExportPdf(activePages: ProcessedPage[], layoutConfig: LayoutConfig,
     onProgress?: (current: number, total: number, action: string) => void
   ): Promise<{ finalPdfBlob: Blob; sheetPreviews: string[]; metrics: OptimizationMetrics }> {
@@ -74,7 +112,7 @@ export class PdfExporter {
         ? Promise.all(nextChunk.map(p => this.loadOptimizedImageData(p)))
         : null;
 
-      const { jpegBuffer, width, height } = await workerPool.composeSheet(
+      const { jpegBuffer, width, height } = await this.composeSheetWithWorker(
         chunkImages, si, totalSheets, layoutConfig
       );
 

@@ -2,7 +2,7 @@ import type {
   PageProfile,
   ProcessingParameters,
 } from '../types';
-import type { WorkerProcessResult } from '../worker/protocol';
+import type { WorkerProcessResult } from '../../workers/protocol';
 
 export interface ProcessorCapabilities {
   supportsWorkers: boolean;

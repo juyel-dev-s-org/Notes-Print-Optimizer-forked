@@ -21,17 +21,19 @@ const nextConfig: NextConfig = {
         protocol: 'https',
         hostname: 'picsum.photos',
         port: '',
-        pathname: '/**', // This allows any path under the hostname
+        pathname: '/**',
       },
     ],
   },
   transpilePackages: ['motion'],
-  webpack: (config, {dev}) => {
-    // HMR is disabled in AI Studio via DISABLE_HMR env var.
-    // Do not modifyâfile watching is disabled to prevent flickering during agent edits.
+  webpack: (config, {isServer, dev}) => {
     if (dev && process.env.DISABLE_HMR === 'true') {
-      config.watchOptions = {
-        ignored: /.*/,
+      config.watchOptions = { ignored: /.*/ };
+    }
+    if (!isServer) {
+      config.output = {
+        ...config.output,
+        chunkFilename: dev ? '[name].js' : '[name].[contenthash:8].js',
       };
     }
     return config;

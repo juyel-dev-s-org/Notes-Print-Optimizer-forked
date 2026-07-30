@@ -1,5 +1,5 @@
 // tests/validators/outputValidator.ts
-import { ImageProcessingKernels } from '../../lib/optimizer/pixelKernels';
+import { calculateInkCoverage } from '../../lib/kernels';
 import { ProcessingParameters } from '../../lib/optimizer/types';
 
 export interface ValidationResult {
@@ -20,8 +20,8 @@ export function validateOutput(
   expectedInkCoveragePct: number,
   tolerancePct: number = 5.0
 ): ValidationResult {
-  const originalCoverage = ImageProcessingKernels.calculateInkCoverage(originalImageData);
-  const processedCoverage = ImageProcessingKernels.calculateInkCoverage(processedImageData);
+  const originalCoverage = calculateInkCoverage(originalImageData.data);
+  const processedCoverage = calculateInkCoverage(processedImageData.data);
   
   const inkCoverageDiff = Math.abs(processedCoverage - expectedInkCoveragePct);
   

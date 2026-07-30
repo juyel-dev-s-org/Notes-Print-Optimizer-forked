@@ -1,11 +1,23 @@
 'use client';
 
 import React, { useState } from 'react';
+import dynamic from 'next/dynamic';
 import { WorkflowUIProps } from './types';
-import { MobileWorkflowUI } from './mobile/MobileWorkflowUI';
-import { TabletWorkflowUI } from './tablet/TabletWorkflowUI';
-import { DesktopWorkflowUI } from './desktop/DesktopWorkflowUI';
+import { RotateCcw, X } from 'lucide-react';
 import { Smartphone, Tablet, Monitor, Settings2 } from 'lucide-react';
+import { PhaseSkeleton } from '@/components/shared/LoadingSkeleton';
+
+const MobileWorkflowUI = dynamic(() => import('./mobile/MobileWorkflowUI').then(m => m.MobileWorkflowUI), {
+  loading: () => <PhaseSkeleton phaseName="Mobile" />,
+});
+
+const TabletWorkflowUI = dynamic(() => import('./tablet/TabletWorkflowUI').then(m => m.TabletWorkflowUI), {
+  loading: () => <PhaseSkeleton phaseName="Tablet" />,
+});
+
+const DesktopWorkflowUI = dynamic(() => import('./desktop/DesktopWorkflowUI').then(m => m.DesktopWorkflowUI), {
+  loading: () => <PhaseSkeleton phaseName="Desktop" />,
+});
 
 type PlatformOverride = 'AUTO' | 'MOBILE' | 'TABLET' | 'DESKTOP';
 
@@ -77,6 +89,38 @@ export const PlatformUIOrchestrator: React.FC<WorkflowUIProps> = (props) => {
           </button>
         </div>
       </div>
+
+      {/* Resume Prompt Banner */}
+      {props.resumeInfo && props.currentPhase === 1 && (
+        <div className="mb-4 flex items-center justify-between gap-3 rounded-xl border border-amber-500/40 bg-amber-950/30 p-3 shadow-md">
+          <div className="flex items-center gap-3 min-w-0">
+            <RotateCcw className="h-5 w-5 shrink-0 text-amber-400" />
+            <div className="min-w-0">
+              <p className="text-xs font-bold text-amber-200">Resume where you left off?</p>
+              <p className="text-[11px] text-amber-300/70 truncate">
+                {props.resumeInfo.completedCount} of {props.resumeInfo.totalPages} pages already processed.
+              </p>
+            </div>
+          </div>
+          <div className="flex items-center gap-2 shrink-0">
+            <button
+              type="button"
+              onClick={props.onResumeProcessing}
+              className="rounded-lg bg-amber-600 px-3 py-1.5 text-[10px] font-bold text-white hover:bg-amber-500 transition-colors"
+            >
+              Resume
+            </button>
+            <button
+              type="button"
+              onClick={props.onDismissResume}
+              className="flex h-7 w-7 items-center justify-center rounded-lg text-amber-300/70 hover:bg-amber-950/60 hover:text-amber-200 transition-colors"
+              title="Dismiss"
+            >
+              <X className="h-4 w-4" />
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Render view based on override or CSS responsive breakpoints */}
       {overrideMode === 'MOBILE' && <MobileWorkflowUI {...props} />}

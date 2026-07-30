@@ -1,5 +1,5 @@
 import { IProcessingEngine } from '../IProcessingEngine';
-import { EngineCapabilities, EngineDocumentInput, EngineDocumentOutput, EnginePageProcessResult, EngineProcessingOptions, EngineProgressCallback, EngineVersion } from '../types';
+import type { EngineCapabilities, EngineDocumentInput, EngineDocumentOutput, EnginePageOptimizedCallback, EnginePageProcessResult, EngineProcessingOptions, EngineProgressCallback, EngineVersion } from '../types';
 import { DocumentProfile, PageProfile, PresetMode, ProcessedPage, ProcessingParameters } from '../../types';
 import { ParameterGenerator } from '../../parameterGenerator';
 import { memoryManager } from '../../memoryManager';
@@ -172,7 +172,7 @@ export class ProcessingEngineV1 implements IProcessingEngine {
       processingTimeMs: Math.round(performance.now() - t0) };
   }
 
-  public async processDocument(input: EngineDocumentInput, options: EngineProcessingOptions = {}, onProgress?: EngineProgressCallback): Promise<EngineDocumentOutput> {
+  public async processDocument(input: EngineDocumentInput, options: EngineProcessingOptions = {}, onProgress?: EngineProgressCallback, onPageOptimized?: EnginePageOptimizedCallback): Promise<EngineDocumentOutput> {
     const t0 = performance.now();
     const { pdfBuffer, pdfId, presetMode = 'AUTO_ADAPTIVE' } = input;
     const userRenderScale = options.renderScale ?? null;
@@ -221,6 +221,10 @@ export class ProcessingEngineV1 implements IProcessingEngine {
 
       /* Thumbnail via shared canvas + blob URL (M-4) */
       const thumbnailDataUrl = await this.generateThumbnail(pageRes.optimizedImageData, i - 1);
+
+      if (onPageOptimized) {
+        onPageOptimized(i - 1, thumbnailDataUrl, pageRes.inkCoverageBeforePct, pageRes.inkCoverageAfterPct);
+      }
 
       const origBlob = await memoryManager.imageDataToBlob(srcImageData, 0.75);
       const optBlob = await memoryManager.imageDataToBlob(pageRes.optimizedImageData, 0.88);
