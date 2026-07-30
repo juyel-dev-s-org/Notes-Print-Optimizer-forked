@@ -7,7 +7,7 @@ export interface MemoryLimits {
 }
 
 function detectLimits(): MemoryLimits {
-  const mem = (navigator as any).deviceMemory;
+  const mem = typeof navigator !== 'undefined' ? (navigator as any).deviceMemory : undefined;
   const gb = typeof mem === 'number' ? mem : 4;
   if (gb <= 4) return { maxHeapMB: 512, evictThreshold: 0.75, gcPressureThreshold: 0.85 };
   if (gb <= 8) return { maxHeapMB: 1024, evictThreshold: 0.8, gcPressureThreshold: 0.9 };

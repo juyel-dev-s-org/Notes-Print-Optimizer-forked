@@ -81,8 +81,8 @@ export class PipelineController {
     );
 
     const device: DeviceProfile = deviceProfile ?? {
-      cores: navigator.hardwareConcurrency || 4,
-      memoryGB: (navigator as any).deviceMemory || 4,
+      cores: typeof navigator !== 'undefined' ? navigator.hardwareConcurrency || 4 : 4,
+      memoryGB: typeof navigator !== 'undefined' ? (navigator as any).deviceMemory || 4 : 4,
       isMobile: false, isTablet: false,
       supportsWASM: typeof WebAssembly !== 'undefined',
       supportsOffscreenCanvas: typeof OffscreenCanvas !== 'undefined',

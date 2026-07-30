@@ -13,11 +13,13 @@ class ProcessingEngineRegistry {
   private engines: Map<string, IProcessingEngine> = new Map();
   private defaultEngineVersion: EngineVersion = 'v1';
 
-  constructor() {
+  private ensureEngines(): void {
+    if (this.engines.size > 0) return;
     const mainThreadProc = new MainThreadImageProcessor();
-    this.register(new ProcessingEngineV1(mainThreadProc));
-    this.register(new ProcessingEngineV1(new WorkerPoolImageProcessor()));
-    this.register(new ProcessingEngineV2());
+    this.engines.set('v1', new ProcessingEngineV1(mainThreadProc));
+    this.engines.set('pw-pixel-v1', new ProcessingEngineV1(new WorkerPoolImageProcessor()));
+    this.engines.set('v2', new ProcessingEngineV2());
+    this.engines.set('pw-pixel-v2', this.engines.get('v2')!);
   }
 
   public register(engine: IProcessingEngine): void {
@@ -26,12 +28,14 @@ class ProcessingEngineRegistry {
   }
 
   public setDefaultVersion(version: EngineVersion): void {
+    this.ensureEngines();
     if (this.engines.has(version.toLowerCase())) {
       this.defaultEngineVersion = version;
     }
   }
 
   public getEngine(versionOrId?: EngineVersion): IProcessingEngine {
+    this.ensureEngines();
     if (versionOrId) {
       const key = versionOrId.toLowerCase();
       if (this.engines.has(key)) {
@@ -53,6 +57,7 @@ class ProcessingEngineRegistry {
     description: string;
     capabilities: EngineCapabilities;
   }> {
+    this.ensureEngines();
     const unique = new Map<string, IProcessingEngine>();
     this.engines.forEach((engine) => unique.set(engine.id, engine));
     return Array.from(unique.values()).map((eng) => ({
