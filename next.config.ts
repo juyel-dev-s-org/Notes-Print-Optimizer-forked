@@ -26,18 +26,6 @@ const nextConfig: NextConfig = {
     ],
   },
   transpilePackages: ['motion'],
-  webpack: (config, {isServer, dev}) => {
-    if (dev && process.env.DISABLE_HMR === 'true') {
-      config.watchOptions = { ignored: /.*/ };
-    }
-    if (!isServer) {
-      config.output = {
-        ...config.output,
-        chunkFilename: dev ? '[name].js' : '[name].[contenthash:8].js',
-      };
-    }
-    return config;
-  },
 };
 
 export default nextConfig;
