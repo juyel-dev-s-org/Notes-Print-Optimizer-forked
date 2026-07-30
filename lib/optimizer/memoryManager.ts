@@ -3,6 +3,31 @@
  */
 class MemoryManager {
   private activeBlobUrls: Set<string> = new Set();
+  private canvasPool: HTMLCanvasElement[] = [];
+  private canvasPoolMax = 3;
+
+  public acquireCanvas(width: number, height: number): HTMLCanvasElement {
+    for (let i = 0; i < this.canvasPool.length; i++) {
+      const c = this.canvasPool[i];
+      if (c.width >= width && c.height >= height) {
+        this.canvasPool.splice(i, 1);
+        c.width = width; c.height = height;
+        return c;
+      }
+    }
+    const canvas = document.createElement('canvas');
+    canvas.width = width; canvas.height = height;
+    return canvas;
+  }
+
+  public releaseCanvas(canvas: HTMLCanvasElement | null | undefined): void {
+    if (!canvas) return;
+    if (this.canvasPool.length < this.canvasPoolMax) {
+      this.canvasPool.push(canvas);
+    } else {
+      canvas.width = 0; canvas.height = 0;
+    }
+  }
 
   public isMobileDevice(): boolean {
     if (typeof window === 'undefined') return false;
@@ -39,16 +64,19 @@ class MemoryManager {
 
   public disposeCanvas(canvas: HTMLCanvasElement | null | undefined): void {
     if (!canvas) return;
-    try { canvas.width = 0; canvas.height = 0; } catch { /* */ }
+    if (this.canvasPool.length < this.canvasPoolMax) {
+      this.canvasPool.push(canvas);
+    } else {
+      try { canvas.width = 0; canvas.height = 0; } catch { /* */ }
+    }
   }
 
   public async imageDataToBlob(imageData: ImageData, quality: number = 0.85): Promise<Blob> {
-    const canvas = document.createElement('canvas');
-    canvas.width = imageData.width; canvas.height = imageData.height;
+    const canvas = this.acquireCanvas(imageData.width, imageData.height);
     const ctx = canvas.getContext('2d', { willReadFrequently: true });
     if (ctx) ctx.putImageData(imageData, 0, 0);
     return new Promise((resolve) => {
-      canvas.toBlob((blob) => { this.disposeCanvas(canvas); resolve(blob || new Blob([], { type: 'image/jpeg' })); }, 'image/jpeg', quality);
+      canvas.toBlob((blob) => { this.releaseCanvas(canvas); resolve(blob || new Blob([], { type: 'image/jpeg' })); }, 'image/jpeg', quality);
     });
   }
 

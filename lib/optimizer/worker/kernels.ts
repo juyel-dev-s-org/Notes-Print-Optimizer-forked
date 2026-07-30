@@ -1,3 +1,5 @@
+import { bufferPool } from '../perf/bufferPool';
+
 export function rgbToHsv(r: number, g: number, b: number, out: [number, number, number]): void {
   const rN = r * 0.00392156862745098, gN = g * 0.00392156862745098, bN = b * 0.00392156862745098;
   const vN = rN > gN ? (rN > bN ? rN : bN) : (gN > bN ? gN : bN);
@@ -91,7 +93,7 @@ export function removeNoise(mask: Uint8Array, w: number, h: number): void {
 }
 
 export function applyMaskDilation(mask: Uint8Array, w: number, h: number, ks: number): void {
-  const copy = new Uint8Array(mask); const off = (ks / 2) | 0;
+  const copy = bufferPool.acquire(mask.length); copy.set(mask); const off = (ks / 2) | 0;
   const offsets: Array<[number, number]> = [];
   if (ks === 3) offsets.push([0, -1], [-1, 0], [0, 0], [1, 0], [0, 1]);
   else if (ks === 5) {
@@ -102,6 +104,7 @@ export function applyMaskDilation(mask: Uint8Array, w: number, h: number, ks: nu
   for (let y = off; y < h - off; y++) { const ro = y * w;
     for (let x = off; x < w - off; x++) {
       if (copy[ro + x] === 1) for (let k = 0; k < offsets.length; k++) mask[(y + offsets[k][1]) * w + (x + offsets[k][0])] = 1; } }
+  bufferPool.release(copy);
 }
 
 export function applyUnsharpMask(data: Uint8ClampedArray, w: number, h: number, amt: number): void {
