@@ -2,43 +2,34 @@
 
 import { useEffect, useState } from 'react';
 
+function getIsStandalone(): boolean {
+  if (typeof window === 'undefined') return false;
+  return window.matchMedia('(display-mode: standalone)').matches;
+}
+
 export function InstallButton() {
   const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
-  const [isInstalled, setIsInstalled] = useState(false);
 
   useEffect(() => {
-    if (typeof window !== 'undefined' && window.matchMedia('(display-mode: standalone)').matches) {
-      setIsInstalled(true);
-    }
-
     const handler = (e: Event) => {
       e.preventDefault();
       setDeferredPrompt(e);
     };
 
-    if (typeof window !== 'undefined') {
-      window.addEventListener('beforeinstallprompt', handler);
+    window.addEventListener('beforeinstallprompt', handler);
+    window.addEventListener('appinstalled', () => setDeferredPrompt(null));
 
-      window.addEventListener('appinstalled', () => {
-        setIsInstalled(true);
-        setDeferredPrompt(null);
-      });
-
-      return () => window.removeEventListener('beforeinstallprompt', handler);
-    }
+    return () => window.removeEventListener('beforeinstallprompt', handler);
   }, []);
 
   const handleInstall = async () => {
     if (!deferredPrompt) return;
     deferredPrompt.prompt();
-    const result = await deferredPrompt.userChoice;
-    if (result.outcome === 'accepted') {
-      setIsInstalled(true);
-    }
+    await deferredPrompt.userChoice;
     setDeferredPrompt(null);
   };
 
-  if (isInstalled || !deferredPrompt) return null;
+  if (getIsStandalone() || !deferredPrompt) return null;
 
   return (
     <button
