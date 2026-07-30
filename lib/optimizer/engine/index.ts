@@ -1,6 +1,7 @@
 import { IProcessingEngine } from './IProcessingEngine';
 import { ProcessingEngineV1 } from './v1/ProcessingEngineV1';
 import { EngineCapabilities, EngineVersion } from './types';
+import { MainThreadImageProcessor } from '../processor/MainThreadImageProcessor';
 
 export * from './types';
 export * from './IProcessingEngine';
@@ -11,8 +12,8 @@ class ProcessingEngineRegistry {
   private defaultEngineVersion: EngineVersion = 'v1';
 
   constructor() {
-    // Automatically register default v1 engine
-    this.register(new ProcessingEngineV1());
+    const defaultProcessor = new MainThreadImageProcessor();
+    this.register(new ProcessingEngineV1(defaultProcessor));
   }
 
   /**

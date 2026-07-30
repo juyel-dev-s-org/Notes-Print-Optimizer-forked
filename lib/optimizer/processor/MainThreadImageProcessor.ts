@@ -1,15 +1,11 @@
-import type { PageProfile, PageClassification, ProcessingParameters } from './types';
-import {
-  getLuminance,
-  rgbToHsv,
-  stripDecorativeFills,
-  removeNoise,
-  applyMaskDilation,
-  applyUnsharpMask,
-  processPage as kernelProcessPage,
-  calculateInkCoverage as kernelCalcInk,
-  createImageDataFromBuffer as kernelCreateImageData,
-} from './worker/kernels';
+import type { PageClassification, PageProfile, ProcessingParameters } from '../types';
+import type { WorkerProcessResult } from '../worker/protocol';
+import type { IImageProcessor, ProcessorCapabilities } from './IImageProcessor';
+import { processPage, calculateInkCoverage, createImageDataFromBuffer } from '../worker/kernels';
+import { getLuminance } from '../worker/kernels';
+import { rgbToHsv } from '../worker/kernels';
+import { stripDecorativeFills } from '../worker/kernels';
+import { removeNoise, applyMaskDilation, applyUnsharpMask } from '../worker/kernels';
 
 function detectBanners(data: Uint8ClampedArray, width: number, height: number) {
   let topRows = 0, bottomRows = 0;
@@ -35,10 +31,15 @@ function detectBanners(data: Uint8ClampedArray, width: number, height: number) {
   return { topBannerPct: topRows / height, bottomBannerPct: bottomRows / height };
 }
 
-export class ImageProcessingKernels {
-  static getLuminance = getLuminance;
+export class MainThreadImageProcessor implements IImageProcessor {
+  readonly name = 'main-thread';
+  readonly capabilities: ProcessorCapabilities = {
+    supportsWorkers: false,
+    supportsConcurrentPages: false,
+    maxConcurrentPages: 1,
+  };
 
-  static analyzeImageData(imageData: ImageData, pageIndex: number): PageProfile {
+  async analyzePage(imageData: ImageData, pageIndex: number): Promise<PageProfile> {
     const { width, height, data } = imageData;
     const totalPixels = width * height;
     let sumLuminance = 0, darkPixelCount = 0, lightPixelCount = 0;
@@ -84,12 +85,25 @@ export class ImageProcessingKernels {
     };
   }
 
-  static processImage(srcImageData: ImageData, params: ProcessingParameters, profile: PageProfile): ImageData {
-    const result = kernelProcessPage(srcImageData.data, srcImageData.width, srcImageData.height, params, profile);
-    return kernelCreateImageData(result.buffer, result.width, result.height);
+  async processPage(
+    imageData: ImageData,
+    pageIndex: number,
+    params: ProcessingParameters,
+    profile: PageProfile
+  ): Promise<WorkerProcessResult> {
+    const result = processPage(imageData.data, imageData.width, imageData.height, params, profile);
+    const optimizedImageData = createImageDataFromBuffer(result.buffer, result.width, result.height);
+    const ib = calculateInkCoverage(imageData.data);
+    const ia = calculateInkCoverage(new Uint8ClampedArray(result.buffer));
+    return {
+      pageIndex,
+      optimizedImageData,
+      inkCoverageBeforePct: ib,
+      inkCoverageAfterPct: ia,
+    };
   }
 
-  static calculateInkCoverage(imageData: ImageData): number {
-    return kernelCalcInk(imageData.data);
+  async calculateInkCoverage(imageData: ImageData): Promise<number> {
+    return calculateInkCoverage(imageData.data);
   }
 }

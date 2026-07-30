@@ -1,12 +1,11 @@
 import { IProcessingEngine } from '../IProcessingEngine';
 import { EngineCapabilities, EngineDocumentInput, EngineDocumentOutput, EnginePageProcessResult, EngineProcessingOptions, EngineProgressCallback, EngineVersion } from '../types';
 import { DocumentProfile, PageProfile, PresetMode, ProcessedPage, ProcessingParameters } from '../../types';
-import { ImageProcessingKernels } from '../../pixelKernels';
-import { workerPool } from '../../workerPool';
 import { ParameterGenerator } from '../../parameterGenerator';
 import { memoryManager } from '../../memoryManager';
 import { pwOptimizerStorage } from '../../storage';
 import { getPdfjsLib } from '../../pdfjsLoader';
+import type { IImageProcessor } from '../../processor/IImageProcessor';
 
 /** Batched IDB write queue — reduces per-page transactions (H-5). */
 interface PendingWrite {
@@ -36,6 +35,12 @@ export class ProcessingEngineV1 implements IProcessingEngine {
     maxConcurrentPages: typeof navigator !== 'undefined' ? navigator.hardwareConcurrency || 4 : 4,
     engineDescription: 'v1: Single-pass render + parallel pixel kernels.',
   };
+
+  private processor: IImageProcessor;
+
+  constructor(processor: IImageProcessor) {
+    this.processor = processor;
+  }
 
   /* ── Batched write queue (H-5) ── */
   private writeQueue: PendingWrite[] = [];
@@ -191,12 +196,12 @@ export class ProcessingEngineV1 implements IProcessingEngine {
   /* ── Public API ── */
 
   public async analyzePage(imageData: ImageData, pageIndex: number): Promise<PageProfile> {
-    return ImageProcessingKernels.analyzeImageData(imageData, pageIndex);
+    return this.processor.analyzePage(imageData, pageIndex);
   }
 
   public async processPage(imageData: ImageData, pageIndex: number, params: ProcessingParameters, profile: PageProfile): Promise<EnginePageProcessResult> {
     const t0 = performance.now();
-    const res = await workerPool.processPage(pageIndex, imageData, params, profile);
+    const res = await this.processor.processPage(imageData, pageIndex, params, profile);
     return { pageIndex: res.pageIndex, optimizedImageData: res.optimizedImageData,
       inkCoverageBeforePct: res.inkCoverageBeforePct, inkCoverageAfterPct: res.inkCoverageAfterPct,
       processingTimeMs: Math.round(performance.now() - t0) };
@@ -241,7 +246,7 @@ export class ProcessingEngineV1 implements IProcessingEngine {
       const ctx = canvas.getContext('2d', { willReadFrequently: true })!;
       await page.render({ canvasContext: ctx, viewport }).promise;
       const srcImageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-      const profile = ImageProcessingKernels.analyzeImageData(srcImageData, i - 1);
+      const profile = await this.processor.analyzePage(srcImageData, i - 1);
       profiles[i - 1] = profile; sumBrightness += profile.averageBrightness;
       if (profile.classification === 'DARK_SLIDE') darkCount++;
       const partialDoc: DocumentProfile = { totalPages, averageBrightness: 128, darkSlideRatio: 0.5,
