@@ -1,10 +1,14 @@
 import {
   processPage,
   calculateInkCoverage,
+  setWasmHooks,
 } from './kernels';
+import { ensureWasm, applyMaskDilation as wasmDilation, applyUnsharpMask as wasmUnsharp } from '../wasm/wasmRuntime';
 import type { WorkerRequest, WorkerResponse, ComposeSheetParams } from './protocol';
 
 let cancelled = false;
+
+ensureWasm().then(() => setWasmHooks(wasmDilation, wasmUnsharp));
 
 self.onmessage = (e: MessageEvent<WorkerRequest>) => {
   const msg = e.data;
