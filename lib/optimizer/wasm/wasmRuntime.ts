@@ -1,5 +1,5 @@
 import { WASM_BASE64 } from './kernels.wasm.generated';
-import { applyMaskDilation as jsDilation, applyUnsharpMask as jsUnsharp } from '../worker/kernels';
+import { applyMaskDilation as jsDilation, applyUnsharpMask as jsUnsharp } from '../../kernels';
 
 interface WasmExports {
   memory: WebAssembly.Memory;

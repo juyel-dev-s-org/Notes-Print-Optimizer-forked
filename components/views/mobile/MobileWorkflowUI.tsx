@@ -1,14 +1,13 @@
 'use client';
 
 import React from 'react';
+import dynamic from 'next/dynamic';
 import { WorkflowUIProps } from '../types';
 import { UploadArea } from '@/components/UploadArea';
 import { BeforeAfterSlider } from '@/components/BeforeAfterSlider';
 import { PageGrid } from '@/components/PageGrid';
 import { PageSequencePreview } from '@/components/PageSequencePreview';
 import { EngineSelector } from '@/components/EngineSelector';
-import { InfoTooltip } from '@/components/InfoTooltip';
-import { FeedbackSection } from '@/components/FeedbackSection';
 import {
   Download,
   ArrowLeft,
@@ -17,13 +16,24 @@ import {
   ArrowUp,
   ArrowDown,
   CheckCircle2,
-  Star,
   RotateCcw,
   Check,
   Smartphone,
 } from 'lucide-react';
-import { FullPdfViewerPreview } from '@/components/preview/FullPdfViewerPreview';
-import { MarginSettings } from '@/components/MarginSettings';
+import { PhaseErrorBoundary } from '@/components/shared/PhaseErrorBoundary';
+import { CardSkeleton } from '@/components/shared/LoadingSkeleton';
+
+const FullPdfViewerPreview = dynamic(() => import('@/components/preview/FullPdfViewerPreview').then(m => m.FullPdfViewerPreview), {
+  loading: () => <CardSkeleton />,
+});
+
+const FeedbackSection = dynamic(() => import('@/components/FeedbackSection').then(m => m.FeedbackSection), {
+  loading: () => <CardSkeleton />,
+});
+
+const MarginSettings = dynamic(() => import('@/components/MarginSettings').then(m => m.MarginSettings), {
+  loading: () => <CardSkeleton />,
+});
 
 export const MobileWorkflowUI: React.FC<WorkflowUIProps> = (props) => {
   const {
@@ -83,6 +93,7 @@ export const MobileWorkflowUI: React.FC<WorkflowUIProps> = (props) => {
 
       {/* PHASE 1: UPLOAD & MERGE */}
       {currentPhase === 1 && (
+        <PhaseErrorBoundary phaseName="Upload & Merge">
         <div className="flex flex-col gap-4 animate-in fade-in duration-200">
           <UploadArea
             onFilesUpload={onFilesUpload}
@@ -187,10 +198,12 @@ export const MobileWorkflowUI: React.FC<WorkflowUIProps> = (props) => {
             </div>
           )}
         </div>
+        </PhaseErrorBoundary>
       )}
 
       {/* PHASE 2: ANALYZE & OPTIMIZE */}
       {currentPhase === 2 && processedPages.length > 0 && (
+        <PhaseErrorBoundary phaseName="Analyze & Optimize">
         <div className="flex flex-col gap-4 animate-in fade-in duration-200">
           <div className="flex flex-col gap-2 rounded-2xl border border-emerald-500/30 bg-emerald-950/40 p-3.5 shadow-lg">
             <div className="flex items-center gap-2.5">
@@ -238,10 +251,12 @@ export const MobileWorkflowUI: React.FC<WorkflowUIProps> = (props) => {
             </button>
           </div>
         </div>
+        </PhaseErrorBoundary>
       )}
 
       {/* PHASE 3: LAYOUT & GENERATE */}
       {currentPhase === 3 && (
+        <PhaseErrorBoundary phaseName="Layout & Generate">
         <div className="flex flex-col gap-4 animate-in fade-in duration-200">
           <div className="flex flex-col gap-3 rounded-2xl border border-slate-800 bg-slate-900/90 p-3.5 shadow-xl">
             <div className="flex items-center justify-between border-b border-slate-800 pb-2">
@@ -403,10 +418,12 @@ export const MobileWorkflowUI: React.FC<WorkflowUIProps> = (props) => {
             </button>
           </div>
         </div>
+        </PhaseErrorBoundary>
       )}
 
       {/* PHASE 4: DONE */}
       {currentPhase === 4 && (
+        <PhaseErrorBoundary phaseName="Complete">
         <div className="flex flex-col items-center gap-4 text-center animate-in fade-in duration-200">
           <div className="flex flex-col items-center gap-2.5 rounded-2xl border border-emerald-500/30 bg-slate-900/90 p-5 shadow-xl w-full">
             <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
@@ -465,6 +482,7 @@ export const MobileWorkflowUI: React.FC<WorkflowUIProps> = (props) => {
             <span>Optimize Another PDF</span>
           </button>
         </div>
+        </PhaseErrorBoundary>
       )}
     </div>
   );

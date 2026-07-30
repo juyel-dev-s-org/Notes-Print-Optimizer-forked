@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeAll } from 'vitest';
-import { applyMaskDilation as jsDilation, applyUnsharpMask as jsUnsharp } from '../../lib/optimizer/worker/kernels';
+import { applyMaskDilation as jsDilation, applyUnsharpMask as jsUnsharp } from '../../lib/kernels';
 import { ensureWasm, applyMaskDilation as wasmDilation, applyUnsharpMask as wasmUnsharp } from '../../lib/optimizer/wasm/wasmRuntime';
-import { setWasmHooks, applyMaskDilation as hookedDilation, applyUnsharpMask as hookedUnsharp } from '../../lib/optimizer/worker/kernels';
+import { setWasmHooks, applyMaskDilation as hookedDilation, applyUnsharpMask as hookedUnsharp } from '../../lib/kernels';
 
 beforeAll(async () => {
   await ensureWasm();

@@ -1,5 +1,6 @@
 import { WorkflowPhase } from '@/components/Header';
 import { EngineVersion } from '@/lib/optimizer/engine';
+import type { ResumeInfo } from '@/lib/workflow/types';
 import {
   DocumentProfile,
   GridFormat,
@@ -18,8 +19,9 @@ interface UploadedPdfItem {
   arrayBuffer: ArrayBuffer;
 }
 
+export type { ResumeInfo };
+
 export interface WorkflowUIProps {
-  // Navigation & Core State
   currentPhase: WorkflowPhase;
   setCurrentPhase: (phase: WorkflowPhase) => void;
   isProcessing: boolean;
@@ -40,6 +42,17 @@ export interface WorkflowUIProps {
   onRemoveItem: (index: number) => void;
   onDownloadMerged: () => void;
   onProceedToPhase2: () => void;
+
+  // Cancel
+  onCancelProcessing?: () => void;
+
+  // Resume
+  resumeInfo: ResumeInfo | null;
+  onResumeProcessing?: () => void;
+  onDismissResume?: () => void;
+
+  // Progressive thumbnails (populated as each page finishes processing)
+  progressiveThumbnails?: Map<number, string>;
 
   // Phase 2: Optimize
   processedPages: ProcessedPage[];

@@ -41,6 +41,8 @@ interface EngineProgressInfo {
 
 export type EngineProgressCallback = (current: number, total: number, action: string) => void;
 
+export type EnginePageOptimizedCallback = (pageIndex: number, thumbnailUrl: string, inkBeforePct: number, inkAfterPct: number) => void;
+
 export interface EnginePageProcessResult {
   pageIndex: number;
   optimizedImageData: ImageData;

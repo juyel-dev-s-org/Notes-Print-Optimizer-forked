@@ -5,6 +5,7 @@ export default defineConfig({
     environment: 'jsdom',
     globals: true,
     include: ['tests/**/*.test.ts', 'tests/**/*.bench.ts'],
+    exclude: ['tests/smoke/**', 'node_modules/**'],
     setupFiles: ['./tests/setup.ts'],
     benchmark: {
       reporters: ['default'],

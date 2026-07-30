@@ -1,16 +1,19 @@
 import type { PageProfile, ProcessingParameters } from '../types';
 import type { IImageProcessor, ProcessorCapabilities } from './IImageProcessor';
-import type { WorkerProcessResult } from '../worker/protocol';
-import { workerPool } from '../workerPool';
-import { createImageDataFromBuffer } from '../worker/kernels';
+import type { WorkerProcessResult } from '../../workers/protocol';
+import { WorkerManager } from '../../workers/WorkerManager';
 import { MainThreadImageProcessor } from './MainThreadImageProcessor';
+
+const wm = WorkerManager.getInstance();
 
 export class WorkerPoolImageProcessor implements IImageProcessor {
   readonly name = 'worker-pool';
   readonly capabilities: ProcessorCapabilities = {
-    supportsWorkers: true,
-    supportsConcurrentPages: true,
-    maxConcurrentPages: navigator.hardwareConcurrency || 4,
+    supportsWorkers: wm.isWorkerSupported(),
+    supportsConcurrentPages: wm.isWorkerSupported(),
+    maxConcurrentPages: wm.isWorkerSupported()
+      ? (typeof navigator !== 'undefined' ? navigator.hardwareConcurrency || 4 : 4)
+      : 1,
   };
   private fallback = new MainThreadImageProcessor();
 
@@ -24,11 +27,34 @@ export class WorkerPoolImageProcessor implements IImageProcessor {
     params: ProcessingParameters,
     profile: PageProfile
   ): Promise<WorkerProcessResult> {
-    try {
-      return await workerPool.processPage(pageIndex, imageData, params, profile);
-    } catch {
-      return this.fallback.processPage(imageData, pageIndex, params, profile);
+    if (wm.isWorkerSupported()) {
+      try {
+        const pool = wm.getPool();
+        const result = await pool.submitPixelTask({
+          pageIndex,
+          buffer: imageData.data.buffer.slice(0),
+          width: imageData.width,
+          height: imageData.height,
+          params: {
+            invertMode: params.invertMode,
+            bannerCropTopPct: params.bannerCropTopPct,
+            bannerCropBottomPct: params.bannerCropBottomPct,
+            strokeEnhancement: params.strokeEnhancement,
+            sharpenAmount: params.sharpenAmount,
+          },
+          profile: { classification: profile.classification, darkBackgroundRatio: profile.darkBackgroundRatio },
+        });
+        return {
+          pageIndex: result.pageIndex,
+          optimizedImageData: new ImageData(new Uint8ClampedArray(result.buffer), result.width, result.height),
+          inkCoverageBeforePct: result.inkCoverageBeforePct,
+          inkCoverageAfterPct: result.inkCoverageAfterPct,
+        };
+      } catch {
+        // Worker failed — fall through to main thread
+      }
     }
+    return this.fallback.processPage(imageData, pageIndex, params, profile);
   }
 
   async calculateInkCoverage(imageData: ImageData): Promise<number> {
