@@ -1,17 +1,14 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import { Header } from '@/components/Header';
 import { ProcessingModal } from '@/components/ProcessingModal';
 import { PlatformUIOrchestrator } from '@/components/views/PlatformUIOrchestrator';
 import { usePageHandlers } from '@/lib/workflow/usePageHandlers';
 import { useMonitor } from '@/lib/monitoring/useMonitor';
-import { InstallButton } from '@/components/InstallButton';
 
 export default function HomePage() {
   useMonitor();
-  const [installableEvent, setInstallableEvent] = useState<any>(null);
-  const [isAppInstalled, setIsAppInstalled] = useState(false);
 
   useEffect(() => {
     if ('serviceWorker' in navigator) {
@@ -20,19 +17,6 @@ export default function HomePage() {
         .then((reg) => console.log('[SW] Registered:', reg.scope))
         .catch((err) => console.warn('[SW] Registration failed:', err));
     }
-
-    const promptHandler = (e: Event) => {
-      e.preventDefault();
-      setInstallableEvent(e);
-    };
-    window.addEventListener('beforeinstallprompt', promptHandler);
-
-    window.addEventListener('appinstalled', () => {
-      setIsAppInstalled(true);
-      setInstallableEvent(null);
-    });
-
-    return () => window.removeEventListener('beforeinstallprompt', promptHandler);
   }, []);
 
   const {
@@ -57,8 +41,6 @@ export default function HomePage() {
         onLoadSample={handleLoadSamplePdf}
         onNavigatePhase={(phase) => actions.setPhase(phase)}
         isProcessing={state.isProcessing}
-        installTrigger={installableEvent ? () => { installableEvent.prompt(); setInstallableEvent(null); } : undefined}
-        isInstalled={isAppInstalled}
       />
       <ProcessingModal progress={state.progress} onCancel={handleCancelProcessing} progressiveThumbnails={progressiveThumbnails} />
       {state.errorMessage && (
