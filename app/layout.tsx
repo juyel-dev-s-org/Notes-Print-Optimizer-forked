@@ -2,29 +2,48 @@ import type { Metadata, Viewport } from 'next';
 import './globals.css';
 
 const basePath = process.env.NEXT_PUBLIC_BASE_PATH || '';
-const iconPath = `${basePath}/icon.svg`;
+const siteUrl = `https://juyel-dev.github.io${basePath}`;
 
 export const metadata: Metadata = {
+  metadataBase: new URL(siteUrl),
   title: 'PW Notes Print Optimizer',
   description:
     'Mobile-first adaptive print optimizer and PDF engine for Physics Wallah and lecture class notes.',
-  icons: {
-    icon: iconPath,
-    shortcut: iconPath,
-    apple: iconPath,
-    other: [
+  alternates: {
+    canonical: `${basePath}/`,
+  },
+  openGraph: {
+    title: 'PW Notes Print Optimizer',
+    description:
+      'Convert dark-background lecture slides to print-ready PDFs with optimal ink and paper usage.',
+    url: `${basePath}/`,
+    siteName: 'PW Notes Print Optimizer',
+    type: 'website',
+    images: [
       {
-        rel: 'icon',
+        url: `${basePath}/icon-512.png`,
+        width: 512,
+        height: 512,
+        alt: 'PW Notes Print Optimizer',
+      },
+    ],
+  },
+  icons: {
+    icon: [
+      {
+        url: `${basePath}/icon-192.png`,
         type: 'image/png',
         sizes: '192x192',
-        url: `${basePath}/icon-192.png`,
       },
       {
-        rel: 'icon',
+        url: `${basePath}/icon-512.png`,
         type: 'image/png',
         sizes: '512x512',
-        url: `${basePath}/icon-512.png`,
       },
+    ],
+    shortcut: `${basePath}/icon-192.png`,
+    apple: `${basePath}/icon-512.png`,
+    other: [
       {
         rel: 'mask-icon',
         color: '#4f46e5',
