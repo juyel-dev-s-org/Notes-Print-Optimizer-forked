@@ -27,11 +27,9 @@ export async function getPdfjsLib(): Promise<PdfjsModule> {
     try {
       const pdfjsLib = await import('pdfjs-dist');
 
-      /* Configure worker — webpack 5 emits this as a separate asset chunk */
-      pdfjsLib.GlobalWorkerOptions.workerSrc = new URL(
-        'pdfjs-dist/build/pdf.worker.min.mjs',
-        import.meta.url
-      ).toString();
+      /* Configure worker — use CDN since static export can't serve it locally */
+      pdfjsLib.GlobalWorkerOptions.workerSrc =
+        'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.10.38/pdf.worker.min.mjs';
 
       cached = pdfjsLib;
       return pdfjsLib;
