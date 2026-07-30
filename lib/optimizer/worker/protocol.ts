@@ -1,4 +1,5 @@
 import type { PageProfile, ProcessingParameters } from '../types';
+import type { SheetDimensions } from '../layoutEngine';
 
 export type ProcessingParams = {
   invertMode: string;
@@ -7,6 +8,25 @@ export type ProcessingParams = {
   strokeEnhancement?: string;
   sharpenAmount: number;
 };
+
+export interface ComposeSheetParams {
+  sheetIndex: number;
+  totalSheets: number;
+  pageBuffers: ArrayBuffer[];
+  pageWidths: number[];
+  pageHeights: number[];
+  dims: SheetDimensions;
+  orientation: 'PORTRAIT' | 'LANDSCAPE' | 'AUTO';
+  cols: number;
+  rows: number;
+  marginTop: number;
+  marginLeft: number;
+  marginRight: number;
+  marginBottom: number;
+  marginInner: number;
+  showSlideBorders: boolean;
+  showPageNumbers: boolean;
+}
 
 export type WorkerRequest =
   | {
@@ -18,6 +38,7 @@ export type WorkerRequest =
       params: ProcessingParams;
       profile: { classification: string; darkBackgroundRatio: number };
     }
+  | { type: 'COMPOSE_SHEET'; params: ComposeSheetParams }
   | { type: 'CANCEL'; pageIndex?: number }
   | { type: 'TERMINATE' };
 
@@ -32,8 +53,20 @@ export type WorkerResponse =
       inkCoverageAfterPct: number;
     }
   | {
+      type: 'SHEET_COMPOSED';
+      sheetIndex: number;
+      buffer: ArrayBuffer;
+      width: number;
+      height: number;
+    }
+  | {
       type: 'PAGE_ERROR';
       pageIndex: number;
+      error: string;
+    }
+  | {
+      type: 'COMPOSE_ERROR';
+      sheetIndex: number;
       error: string;
     };
 

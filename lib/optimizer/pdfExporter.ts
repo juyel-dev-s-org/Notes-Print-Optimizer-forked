@@ -2,6 +2,7 @@ import { PDFDocument } from 'pdf-lib';
 import { LayoutEngine } from './layoutEngine';
 import { memoryManager } from './memoryManager';
 import { pwOptimizerStorage } from './storage';
+import { workerPool } from './workerPool';
 import { getProcessingEngine, EngineVersion } from './engine';
 import { getPdfjsLib } from './pdfjsLoader';
 import { DocumentProfile, LayoutConfig, OptimizationMetrics, PresetMode, ProcessedPage } from './types';
@@ -55,24 +56,42 @@ export class PdfExporter {
     const sheetPreviews: string[] = [];
     const pdfDoc = await PDFDocument.create();
 
+    let prefetchPromise: Promise<ImageData[]> | null = null;
+
     for (let si = 0; si < totalSheets; si++) {
-      const chunk = activePages.slice(si * totalPerSheet, Math.min(activePages.length, (si + 1) * totalPerSheet));
       if (onProgress) onProgress(si + 1, totalSheets, `Building sheet ${si + 1}/${totalSheets}...`);
-      const chunkImages: ImageData[] = [];
-      for (const p of chunk) chunkImages.push(await this.loadOptimizedImageData(p));
-      const sheetCanvas = LayoutEngine.composeSheet(chunkImages, si, totalSheets, layoutConfig);
-      const tw = Math.min(500, Math.round(sheetCanvas.width / 3)), th = Math.min(750, Math.round(sheetCanvas.height / 3));
+
+      const chunk = activePages.slice(si * totalPerSheet, Math.min(activePages.length, (si + 1) * totalPerSheet));
+
+      if (prefetchPromise === null) {
+        prefetchPromise = Promise.all(chunk.map(p => this.loadOptimizedImageData(p)));
+      }
+      const chunkImages = await prefetchPromise;
+
+      const nextSi = si + 1;
+      const nextChunk = nextSi < totalSheets
+        ? activePages.slice(nextSi * totalPerSheet, Math.min(activePages.length, (nextSi + 1) * totalPerSheet))
+        : [];
+      prefetchPromise = nextChunk.length > 0
+        ? Promise.all(nextChunk.map(p => this.loadOptimizedImageData(p)))
+        : null;
+
+      const { jpegBuffer, width, height } = await workerPool.composeSheet(
+        chunkImages, si, totalSheets, layoutConfig
+      );
+
+      const tw = Math.min(500, Math.round(width / 3)), th = Math.min(750, Math.round(height / 3));
       const tc = document.createElement('canvas'); tc.width = tw; tc.height = th;
-      tc.getContext('2d')!.drawImage(sheetCanvas, 0, 0, tw, th);
+      const bmp = await createImageBitmap(new Blob([jpegBuffer], { type: 'image/jpeg' }), { resizeWidth: tw, resizeHeight: th, resizeQuality: 'medium' });
+      tc.getContext('2d')!.drawImage(bmp, 0, 0);
+      bmp.close();
       const previewBlob = await new Promise<Blob>((res) => tc.toBlob((b) => res(b || new Blob()), 'image/jpeg', 0.6));
       memoryManager.disposeCanvas(tc);
       sheetPreviews.push(memoryManager.createTrackedBlobUrl(previewBlob));
-      const jpegBlob = await new Promise<Blob>((res) => sheetCanvas.toBlob((b) => res(b || new Blob()), 'image/jpeg', 0.85));
-      const embedded = await pdfDoc.embedJpg(await jpegBlob.arrayBuffer());
-      const pdfPage = pdfDoc.addPage([sheetCanvas.width, sheetCanvas.height]);
-      pdfPage.drawImage(embedded, { x: 0, y: 0, width: sheetCanvas.width, height: sheetCanvas.height });
-      memoryManager.disposeCanvas(sheetCanvas);
-      chunkImages.length = 0;
+
+      const embedded = await pdfDoc.embedJpg(jpegBuffer);
+      const pdfPage = pdfDoc.addPage([width, height]);
+      pdfPage.drawImage(embedded, { x: 0, y: 0, width, height });
       await memoryManager.yieldToUI();
     }
 

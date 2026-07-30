@@ -1,6 +1,9 @@
 import { PageProfile, ProcessingParameters } from './types';
 import { WORKER_SCRIPT } from './worker/worker.generated';
-import type { WorkerProcessResult, QueuedTask, ProcessingParams } from './worker/protocol';
+import { canUseOffscreenCanvas } from './features';
+import type { WorkerProcessResult, QueuedTask, ProcessingParams, ComposeSheetParams } from './worker/protocol';
+import type { LayoutConfig } from './types';
+import { LayoutEngine } from './layoutEngine';
 
 interface PooledWorker {
   worker: Worker;
@@ -167,6 +170,62 @@ class PersistentWorkerPool {
         return;
       }
     }
+  }
+
+  public async composeSheet(
+    pageImageDatas: ImageData[],
+    sheetIndex: number,
+    totalSheets: number,
+    config: LayoutConfig
+  ): Promise<{ jpegBuffer: ArrayBuffer; width: number; height: number }> {
+    if (this.useWorkers && this.workers.length > 0 && canUseOffscreenCanvas()) {
+      const dims = LayoutEngine.getSheetDimensions(config.paperSize, config.orientation);
+      const { cols, rows } = LayoutEngine.getGridDimensions(config.gridFormat);
+      const mmPx = dims.dpi / 25.4;
+      const params: ComposeSheetParams = {
+        sheetIndex, totalSheets,
+        pageBuffers: [],
+        pageWidths: pageImageDatas.map(d => d.width),
+        pageHeights: pageImageDatas.map(d => d.height),
+        dims, orientation: config.orientation, cols, rows,
+        marginTop: Math.round((config.outerMarginMm?.top ?? config.marginMm ?? 2) * mmPx),
+        marginLeft: Math.round((config.outerMarginMm?.left ?? config.marginMm ?? 5) * mmPx),
+        marginRight: Math.round((config.outerMarginMm?.right ?? config.marginMm ?? 3) * mmPx),
+        marginBottom: Math.round((config.outerMarginMm?.bottom ?? config.marginMm ?? 2) * mmPx),
+        marginInner: Math.round((config.innerMarginMm ?? config.spacingMm ?? 1) * mmPx),
+        showSlideBorders: config.showSlideBorders ?? true,
+        showPageNumbers: config.showPageNumbers ?? false,
+      };
+      const transferables: ArrayBuffer[] = [];
+      for (const img of pageImageDatas) {
+        const buf = img.data.buffer.slice(0);
+        params.pageBuffers.push(buf);
+        transferables.push(buf);
+      }
+      return new Promise((resolve, reject) => {
+        const idle = this.workers.find(w => !w.busy);
+        if (!idle) { reject(new Error('No idle worker for sheet composition')); return; }
+        const onMsg = (e: MessageEvent) => {
+          const msg = e.data;
+          if (msg.type === 'SHEET_COMPOSED' && msg.sheetIndex === sheetIndex) {
+            idle.worker.removeEventListener('message', onMsg);
+            idle.busy = false;
+            resolve({ jpegBuffer: msg.buffer, width: msg.width, height: msg.height });
+          } else if (msg.type === 'COMPOSE_ERROR' && msg.sheetIndex === sheetIndex) {
+            idle.worker.removeEventListener('message', onMsg);
+            idle.busy = false;
+            reject(new Error(msg.error));
+          }
+        };
+        idle.worker.addEventListener('message', onMsg);
+        idle.busy = true;
+        idle.worker.postMessage({ type: 'COMPOSE_SHEET', params }, transferables);
+      });
+    }
+    const sheetCanvas = LayoutEngine.composeSheet(pageImageDatas, sheetIndex, totalSheets, config);
+    const blob = await new Promise<Blob>((res) => sheetCanvas.toBlob((b) => res(b || new Blob()), 'image/jpeg', 0.85));
+    const jpegBuffer = await blob.arrayBuffer();
+    return { jpegBuffer, width: sheetCanvas.width, height: sheetCanvas.height };
   }
 
   public getStats() {
