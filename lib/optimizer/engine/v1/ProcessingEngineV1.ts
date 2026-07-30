@@ -5,6 +5,7 @@ import { ParameterGenerator } from '../../parameterGenerator';
 import { memoryManager } from '../../memoryManager';
 import { pwOptimizerStorage } from '../../storage';
 import { getPdfjsLib } from '../../pdfjsLoader';
+import { canCreateImageBitmap } from '../../features';
 import type { IImageProcessor } from '../../processor/IImageProcessor';
 
 /** Batched IDB write queue — reduces per-page transactions (H-5). */
@@ -100,25 +101,8 @@ export class ProcessingEngineV1 implements IProcessingEngine {
     }
   }
 
-  /* ── Reusable thumbnail canvas + blob URLs (M-4) ── */
-  private thumbCanvas: HTMLCanvasElement | null = null;
-  private thumbCtx: CanvasRenderingContext2D | null = null;
+  /* ── Thumbnail generation ── */
   private thumbUrls: Map<number, string> = new Map();
-  /** Serializes thumbnail generation so the shared canvas is safe under concurrency. */
-  private thumbChain: Promise<string> = Promise.resolve('');
-
-  private getThumbContext(width: number, height: number): CanvasRenderingContext2D {
-    if (!this.thumbCanvas) {
-      this.thumbCanvas = document.createElement('canvas');
-      this.thumbCtx = this.thumbCanvas.getContext('2d')!;
-    }
-    if (this.thumbCanvas.width !== width || this.thumbCanvas.height !== height) {
-      this.thumbCanvas.width = width;
-      this.thumbCanvas.height = height;
-    }
-    this.thumbCtx!.clearRect(0, 0, width, height);
-    return this.thumbCtx!;
-  }
 
   private revokeThumbUrls(): void {
     this.thumbUrls.forEach((url) => {
@@ -127,70 +111,51 @@ export class ProcessingEngineV1 implements IProcessingEngine {
     this.thumbUrls.clear();
   }
 
-  private encodeThumbBlob(quality: number): Promise<string> {
-    const canvas = this.thumbCanvas!;
-    if (typeof canvas.toBlob === 'function') {
-      return new Promise<string>((resolve) => {
-        canvas.toBlob((blob) => {
-          if (blob) {
-            resolve(URL.createObjectURL(blob));
-          } else {
-            console.warn('[Engine v1] toBlob returned null, falling back to toDataURL');
-            resolve(canvas.toDataURL('image/jpeg', quality));
-          }
-        }, 'image/jpeg', quality);
-      });
-    }
-    /* toBlob unavailable — fall back to synchronous data URL */
-    return Promise.resolve(canvas.toDataURL('image/jpeg', quality));
-  }
+  private async generateThumbnail(imageData: ImageData, pageIndex: number): Promise<string> {
+    const tw = Math.max(1, Math.round(imageData.width / 4));
+    const th = Math.max(1, Math.round(imageData.height / 4));
 
-  /**
-   * Generate a thumbnail for one page. Serialized via thumbChain so the
-   * shared canvas is never accessed by two pages simultaneously.
-   */
-  private generateThumbnail(optimizedImageData: ImageData, pageIndex: number): Promise<string> {
-    const task = this.thumbChain.then(async () => {
-      const tw = Math.max(1, Math.round(optimizedImageData.width / 4));
-      const th = Math.max(1, Math.round(optimizedImageData.height / 4));
-      const ctx = this.getThumbContext(tw, th);
-
-      if (typeof createImageBitmap !== 'undefined') {
-        const bmp = await createImageBitmap(optimizedImageData, {
+    if (canCreateImageBitmap()) {
+      try {
+        const bmp = await createImageBitmap(imageData, {
           resizeWidth: tw, resizeHeight: th, resizeQuality: 'medium',
         });
-        ctx.drawImage(bmp, 0, 0);
+        const canvas = document.createElement('canvas');
+        canvas.width = tw; canvas.height = th;
+        canvas.getContext('2d')!.drawImage(bmp, 0, 0);
         bmp.close();
-      } else {
-        /* Fallback: temp canvas holds full-size pixels, then scale-draw */
-        const tmp = document.createElement('canvas');
-        tmp.width = optimizedImageData.width;
-        tmp.height = optimizedImageData.height;
-        tmp.getContext('2d')!.putImageData(optimizedImageData, 0, 0);
-        ctx.drawImage(tmp, 0, 0, tw, th);
-        memoryManager.disposeCanvas(tmp);
-      }
+        const url = await encodeCanvasJpeg(canvas, 0.6);
+        memoryManager.disposeCanvas(canvas);
+        this.updateThumbUrl(pageIndex, url);
+        return url;
+      } catch { /* fall through to fallback */ }
+    }
 
-      const url = await this.encodeThumbBlob(0.6);
+    const canvas = document.createElement('canvas');
+    canvas.width = tw; canvas.height = th;
+    const ctx = canvas.getContext('2d', { willReadFrequently: true })!;
+    const tmp = document.createElement('canvas');
+    tmp.width = imageData.width; tmp.height = imageData.height;
+    tmp.getContext('2d')!.putImageData(imageData, 0, 0);
+    ctx.drawImage(tmp, 0, 0, tw, th);
+    memoryManager.disposeCanvas(tmp);
+    const url = await encodeCanvasJpeg(canvas, 0.6);
+    memoryManager.disposeCanvas(canvas);
+    this.updateThumbUrl(pageIndex, url);
+    return url;
+  }
 
-      /* Revoke previous URL if this page was reprocessed */
-      const prev = this.thumbUrls.get(pageIndex);
-      if (prev && prev.startsWith('blob:')) {
-        try { URL.revokeObjectURL(prev); } catch { /* noop */ }
-      }
-      this.thumbUrls.set(pageIndex, url);
-      return url;
-    }).catch(() => '');
-
-    this.thumbChain = task;
-    return task;
+  private updateThumbUrl(pageIndex: number, url: string): void {
+    const prev = this.thumbUrls.get(pageIndex);
+    if (prev && prev.startsWith('blob:')) {
+      try { URL.revokeObjectURL(prev); } catch { /* noop */ }
+    }
+    this.thumbUrls.set(pageIndex, url);
   }
 
   /** Release thumbnail resources. Call when the engine is no longer needed. */
   public dispose(): void {
     this.revokeThumbUrls();
-    this.thumbCanvas = null;
-    this.thumbCtx = null;
   }
 
   /* ── Public API ── */
@@ -222,9 +187,8 @@ export class ProcessingEngineV1 implements IProcessingEngine {
     this.writeQueue = [];
     this.flushChain = Promise.resolve();
 
-    /* Reset thumbnail state for new document (M-4) */
+    /* Reset thumbnail state for new document */
     this.revokeThumbUrls();
-    this.thumbChain = Promise.resolve('');
 
     let execMode = options.executionMode || 'auto';
     if (execMode === 'auto') {
@@ -289,4 +253,16 @@ export class ProcessingEngineV1 implements IProcessingEngine {
     return { processedPages, docProfile, engineVersion: this.version, engineId: this.id, totalTimeMs: totalMs,
       metrics: { processingTimeMs: totalMs, pagesPerSecond: Number((totalPages / (totalMs / 1000)).toFixed(2)) } };
   }
+}
+
+function encodeCanvasJpeg(canvas: HTMLCanvasElement, quality: number): Promise<string> {
+  if (typeof canvas.toBlob === 'function') {
+    return new Promise<string>((resolve) => {
+      canvas.toBlob((blob) => {
+        if (blob) resolve(URL.createObjectURL(blob));
+        else resolve(canvas.toDataURL('image/jpeg', quality));
+      }, 'image/jpeg', quality);
+    });
+  }
+  return Promise.resolve(canvas.toDataURL('image/jpeg', quality));
 }
