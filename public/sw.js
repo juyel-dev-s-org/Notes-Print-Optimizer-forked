@@ -1,17 +1,20 @@
-const VERSION = 'v3';
+const VERSION = 'v4';
 const CACHE = `pw-optimizer-${VERSION}`;
 const STATIC_CACHE = `pw-optimizer-static-${VERSION}`;
 const DYNAMIC_CACHE = `pw-optimizer-dynamic-${VERSION}`;
-const OFFLINE_URL = '/offline/';
+
+// Derive basePath from the SW's own URL (e.g. /Notes-Print-Optimizer/sw.js -> /Notes-Print-Optimizer)
+const BASE = self.location.pathname.replace(/\/sw\.js$/, '') || '';
+const OFFLINE_URL = `${BASE}/offline/`;
 
 const PRECACHE_URLS = [
-  '/',
-  '/offline/',
-  '/icon.svg',
-  '/icon-192.png',
-  '/icon-512.png',
-  '/icon-maskable.png',
-  '/manifest.webmanifest',
+  `${BASE}/`,
+  `${BASE}/offline/`,
+  `${BASE}/icon.svg`,
+  `${BASE}/icon-192.png`,
+  `${BASE}/icon-512.png`,
+  `${BASE}/icon-maskable.png`,
+  `${BASE}/manifest.webmanifest`,
 ];
 
 // ---- Install ----
@@ -20,11 +23,8 @@ self.addEventListener('install', (event) => {
   event.waitUntil(
     (async () => {
       const cache = await caches.open(CACHE);
-      const base = self.location.pathname.replace(/\/sw\.js$/, '') || '';
-      const urls = PRECACHE_URLS.map((u) => `${base}${u}`);
-      // Cache individually so one failure doesn't block all
       await Promise.allSettled(
-        urls.map((url) =>
+        PRECACHE_URLS.map((url) =>
           cache.add(url).catch(() => {
             console.warn('[SW] Failed to precache:', url);
           }),
@@ -51,15 +51,10 @@ self.addEventListener('activate', (event) => {
 // ---- Fetch ----
 self.addEventListener('fetch', (event) => {
   const { request } = event;
-
-  // Only handle GET requests
   if (request.method !== 'GET') return;
 
   const url = new URL(request.url);
-  const base = self.location.pathname.replace(/\/sw\.js$/, '') || '';
   const isSameOrigin = url.origin === self.location.origin;
-
-  // Skip cross-origin requests
   if (!isSameOrigin) return;
 
   // Navigation requests: network-first with offline fallback
@@ -76,15 +71,13 @@ self.addEventListener('fetch', (event) => {
         } catch {
           const cached = await caches.match(request);
           if (cached) return cached;
-          const offlinePage = await caches.match(`${base}${OFFLINE_URL}`);
+          const offlinePage = await caches.match(OFFLINE_URL);
           if (offlinePage) return offlinePage;
+          const rootPage = await caches.match(`${BASE}/`);
+          if (rootPage) return rootPage;
           return new Response(
-            '<!DOCTYPE html><html><body><h1>Offline</h1><p>Please check your connection.</p></body></html>',
-            {
-              status: 503,
-              statusText: 'Service Unavailable',
-              headers: { 'Content-Type': 'text/html' },
-            },
+            '<!DOCTYPE html><html><body style="background:#0f172a;color:#e2e8f0;display:flex;align-items:center;justify-content:center;height:100vh;font-family:sans-serif"><div style="text-align:center"><h1>Offline</h1><p>Please check your connection.</p></div></body></html>',
+            { status: 503, statusText: 'Service Unavailable', headers: { 'Content-Type': 'text/html' } },
           );
         }
       })(),
@@ -120,9 +113,7 @@ self.addEventListener('fetch', (event) => {
       const cached = await cache.match(request);
       const fetchPromise = fetch(request)
         .then((res) => {
-          if (res.ok) {
-            cache.put(request, res.clone());
-          }
+          if (res.ok) cache.put(request, res.clone());
           return res;
         })
         .catch(() => cached);
