@@ -11,7 +11,8 @@ export default function HomePage() {
   useMonitor();
   useEffect(() => {
     if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.register('/sw.js').catch(() => {});
+      const swPath = `${process.env.NEXT_PUBLIC_BASE_PATH || ''}/sw.js`;
+      navigator.serviceWorker.register(swPath).catch(() => {});
     }
   }, []);
   const {
