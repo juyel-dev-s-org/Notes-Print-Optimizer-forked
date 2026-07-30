@@ -5,8 +5,11 @@ const repoName = process.env.GITHUB_REPOSITORY ? process.env.GITHUB_REPOSITORY.s
 const basePath = process.env.NEXT_PUBLIC_BASE_PATH || (isGitHubActions && repoName ? `/${repoName}` : '');
 
 const nextConfig: NextConfig = {
-  ...(isGitHubActions ? { output: 'export' } : {}),
-  ...(basePath ? { basePath, assetPrefix: basePath } : {}),
+  output: 'export',
+  ...(basePath ? { basePath, assetPrefix: `${basePath}/` } : {}),
+  env: {
+    NEXT_PUBLIC_BASE_PATH: basePath,
+  },
   reactStrictMode: true,
   eslint: {
     ignoreDuringBuilds: true,
