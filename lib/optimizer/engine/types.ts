@@ -29,6 +29,7 @@ export interface EngineProcessingOptions {
   enableWorkers?: boolean;
   presetMode?: PresetMode;
   executionMode?: 'auto' | 'parallel' | 'sequential' | 'hybrid';
+  signal?: AbortSignal;
 }
 
 interface EngineProgressInfo {
