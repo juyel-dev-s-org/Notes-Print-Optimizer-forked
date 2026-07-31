@@ -1,6 +1,7 @@
 {
   "name": "PW Notes Print Optimizer",
   "description": "Adaptive browser-based print optimizer and PDF engine for Physics Wallah and lecture class notes.",
+  "version": "1.0.0",
   "requestFramePermissions": [],
-  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+  "majorCapabilities": []
 }
