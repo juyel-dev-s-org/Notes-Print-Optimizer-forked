@@ -16,11 +16,7 @@
     "build:wasm": "wasm-pack build --target web --release --out-dir pkg wasm && node -e \"require('fs').copyFileSync('wasm/pkg/npo_wasm_bg.wasm','public/wasm/npo_wasm_bg.wasm')\""
   },
   "dependencies": {
-    "@google/genai": "^2.4.0",
-    "@hookform/resolvers": "^5.2.1",
-    "@types/canvas-confetti": "^1.9.0",
     "autoprefixer": "^10.4.21",
-    "canvas-confetti": "^1.9.4",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "lucide-react": "^0.553.0",
@@ -44,7 +40,6 @@
     "eslint": "^9.39.1",
     "eslint-config-next": "16.0.8",
     "fake-indexeddb": "^5.0.2",
-    "firebase-tools": "^15.0.0",
     "jsdom": "^24.0.0",
     "serve": "^14.2.6",
     "tailwindcss": "4.1.11",
