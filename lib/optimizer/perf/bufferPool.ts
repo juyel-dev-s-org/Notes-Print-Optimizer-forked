@@ -67,7 +67,7 @@ class BufferPool {
   }
 
   release(buf: Uint8Array): void {
-    this.releaseRaw(buf.buffer, buf.byteLength);
+    this.releaseRaw(buf.buffer as ArrayBuffer, buf.byteLength);
   }
 
   releaseRaw(buf: ArrayBuffer, byteLength?: number): void {
