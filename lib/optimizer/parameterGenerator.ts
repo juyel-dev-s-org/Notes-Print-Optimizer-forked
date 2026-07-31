@@ -26,6 +26,7 @@ export class ParameterGenerator {
           binaizationThreshold: 0,
           outputQuality: 0.88,
           strokeEnhancement: 'strong',
+          dilationKernelSize: 5,
         };
 
       case 'LIGHT_HANDWRITTEN':
@@ -43,6 +44,7 @@ export class ParameterGenerator {
           binaizationThreshold: 0,
           outputQuality: 0.88,
           strokeEnhancement: 'normal',
+          dilationKernelSize: 3,
         };
 
       case 'INK_SAVER_EXTREME':
@@ -60,6 +62,7 @@ export class ParameterGenerator {
           binaizationThreshold: 190,
           outputQuality: 0.80,
           strokeEnhancement: 'strong',
+          dilationKernelSize: 5,
         };
 
       case 'DIAGRAM_HIGH_CONTRAST':
@@ -77,6 +80,7 @@ export class ParameterGenerator {
           binaizationThreshold: 0,
           outputQuality: 0.92,
           strokeEnhancement: 'none',
+          dilationKernelSize: 0,
         };
 
       case 'AUTO_ADAPTIVE':
@@ -95,6 +99,7 @@ export class ParameterGenerator {
           binaizationThreshold: 0,
           outputQuality: 0.88,
           strokeEnhancement: 'strong',
+          dilationKernelSize: 5,
         };
     }
   }
