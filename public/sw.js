@@ -1,4 +1,4 @@
-const VERSION = 'v4';
+const VERSION = 'v5';
 const CACHE = `pw-optimizer-${VERSION}`;
 const STATIC_CACHE = `pw-optimizer-static-${VERSION}`;
 const DYNAMIC_CACHE = `pw-optimizer-dynamic-${VERSION}`;
@@ -14,7 +14,6 @@ const PRECACHE_URLS = [
   `${BASE}/icon-192.png`,
   `${BASE}/icon-512.png`,
   `${BASE}/icon-maskable.png`,
-  `${BASE}/manifest.webmanifest`,
 ];
 
 // ---- Install ----
@@ -85,7 +84,7 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // Static assets: cache-first
+  // Static assets: cache-first with long TTL
   if (url.pathname.match(/\.(wasm|js|css|svg|png|ico|webmanifest|woff2?)$/)) {
     event.respondWith(
       (async () => {
