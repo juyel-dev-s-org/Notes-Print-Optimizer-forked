@@ -58,6 +58,7 @@ export interface ProcessingParameters {
   binaizationThreshold: number; // 0 = disabled, 1-255 = threshold
   outputQuality: number; // JPEG quality 0.5 - 1.0
   strokeEnhancement?: 'none' | 'normal' | 'strong';
+  dilationKernelSize?: number; // 0=off, 3=light, 5=medium, 7=heavy (overrides strokeEnhancement)
 }
 
 export type GridFormat = '1x1' | '2x1' | '1x2' | '2x2' | '2x3' | '2x4' | '2x5' | '3x3' | 'original' | '2up' | '4up' | '6up' | '8up' | '10up';
