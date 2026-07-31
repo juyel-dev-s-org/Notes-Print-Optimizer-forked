@@ -45,7 +45,7 @@ export class WorkerPool {
       return;
     }
 
-    const entry = msg.type === 'ERROR' ? this.pending.get(msg.taskId) : this.pending.get(msg.taskId);
+    const entry = this.pending.get(msg.taskId);
     if (!entry) return;
 
     this.pending.delete(msg.taskId);
@@ -104,7 +104,7 @@ export class WorkerPool {
     info.healthy = false;
     const idx = this.workers.indexOf(info);
     if (idx !== -1) {
-      try { info.worker.terminate(); } catch { /* noop */ }
+      try { info.worker.terminate(); } catch (error) { console.warn('[WorkerPool] Non-fatal error:', error); }
       this.workers.splice(idx, 1);
     }
 
@@ -174,16 +174,43 @@ export class WorkerPool {
         if (info.busy) continue;
         if (now - info.lastPong > HEALTH_CHECK_INTERVAL_MS + PING_TIMEOUT_MS) {
           info.healthy = false;
-          try { info.worker.terminate(); } catch { /* noop */ }
+          try { info.worker.terminate(); } catch (error) { console.warn('[WorkerPool] Non-fatal error:', error); }
           const idx = this.workers.indexOf(info);
           if (idx !== -1) this.workers.splice(idx, 1);
           this.spawnWorker(info.type);
         } else {
-          try { info.worker.postMessage({ type: 'PING' }); } catch { /* noop */ }
+          try { info.worker.postMessage({ type: 'PING' }); } catch (error) { console.warn('[WorkerPool] Non-fatal error:', error); }
         }
       }
       this.dispatchNext();
     }, HEALTH_CHECK_INTERVAL_MS);
+  }
+
+  private submitTask<T extends PixelTask | ComposeTask>(
+    task: Omit<T, 'taskId'>,
+    type: 'PROCESS_PIXEL' | 'COMPOSE_SHEET',
+    timeout = DEFAULT_TIMEOUT_MS
+  ): Promise<any> {
+    return new Promise((resolve, reject) => {
+      const entry = {
+        taskId: generateTaskId(),
+        type,
+        resolve,
+        reject,
+        startTime: Date.now(),
+        timeout,
+        retriesLeft: MAX_RETRIES,
+        ...task,
+      } as TaskEntry & T;
+
+      const clear = this.scheduleTimeout(entry);
+      entry.reject = (reason: Error) => { clear(); reject(reason); };
+      entry.resolve = (val: any) => { clear(); resolve(val); };
+
+      this.taskQueue.push(entry);
+      this.setupHealthCheck();
+      this.dispatchNext();
+    });
   }
 
   submitPixelTask(task: Omit<PixelTask, 'taskId'>, timeout = DEFAULT_TIMEOUT_MS): Promise<{
@@ -194,34 +221,7 @@ export class WorkerPool {
     inkCoverageBeforePct: number;
     inkCoverageAfterPct: number;
   }> {
-    return new Promise((resolve, reject) => {
-      const entry: TaskEntry = {
-        taskId: generateTaskId(),
-        type: 'PROCESS_PIXEL',
-        resolve,
-        reject,
-        startTime: Date.now(),
-        timeout,
-        retriesLeft: MAX_RETRIES,
-      };
-      const fullTask: PixelTask = { taskId: entry.taskId, ...task };
-      (entry as any).taskId = entry.taskId;
-      (entry as any).pageIndex = task.pageIndex;
-      (entry as any).buffer = task.buffer;
-      (entry as any).width = task.width;
-      (entry as any).height = task.height;
-      (entry as any).params = task.params;
-      (entry as any).profile = task.profile;
-      const clear = this.scheduleTimeout(entry);
-      const origReject = entry.reject;
-      entry.reject = (reason) => { clear(); origReject(reason); };
-      const origResolve = entry.resolve;
-      entry.resolve = (val) => { clear(); origResolve(val); };
-
-      this.taskQueue.push(entry);
-      this.setupHealthCheck();
-      this.dispatchNext();
-    });
+    return this.submitTask<PixelTask>(task, 'PROCESS_PIXEL', timeout);
   }
 
   private scheduleTimeout(entry: TaskEntry): () => void {
@@ -242,28 +242,7 @@ export class WorkerPool {
     width: number;
     height: number;
   }> {
-    return new Promise((resolve, reject) => {
-      const entry: TaskEntry = {
-        taskId: generateTaskId(),
-        type: 'COMPOSE_SHEET',
-        resolve,
-        reject,
-        startTime: Date.now(),
-        timeout,
-        retriesLeft: MAX_RETRIES,
-      };
-      const fullTask: ComposeTask = { taskId: entry.taskId, ...task };
-      Object.assign(entry, fullTask);
-      const clear = this.scheduleTimeout(entry);
-      const origReject = entry.reject;
-      entry.reject = (reason) => { clear(); origReject(reason); };
-      const origResolve = entry.resolve;
-      entry.resolve = (val) => { clear(); origResolve(val); };
-
-      this.taskQueue.push(entry);
-      this.setupHealthCheck();
-      this.dispatchNext();
-    });
+    return this.submitTask<ComposeTask>(task, 'COMPOSE_SHEET', timeout);
   }
 
   getStats() {
@@ -283,7 +262,7 @@ export class WorkerPool {
       this.healthTimer = null;
     }
     for (const info of this.workers) {
-      try { info.worker.postMessage({ type: 'TERMINATE' }); info.worker.terminate(); } catch { /* noop */ }
+      try { info.worker.postMessage({ type: 'TERMINATE' }); info.worker.terminate(); } catch (error) { console.warn('[WorkerPool] Non-fatal error:', error); }
     }
     this.workers = [];
     this.taskQueue = [];
