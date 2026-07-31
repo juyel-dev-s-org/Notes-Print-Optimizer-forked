@@ -40,9 +40,9 @@ const SLIDERS: SliderConfig[] = [
     icon: <PenLine className="h-3.5 w-3.5" />,
     min: 0,
     max: 7,
-    step: 2,
+    step: 1,
     unit: 'px',
-    hint: 'Dilation kernel size. 0=off, 3=light, 5=medium, 7=heavy. Lower = thinner text.',
+    hint: 'Dilation kernel size. 0=off, 3=light, 5=default, 7=heavy. Lower = thinner text.',
   },
   {
     key: 'sharpenAmount',
