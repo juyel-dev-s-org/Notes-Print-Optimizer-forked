@@ -18,7 +18,8 @@ import {
 import { AppLogo } from './AppLogo';
 import { motion, AnimatePresence } from 'motion/react';
 
-export type WorkflowPhase = 1 | 2 | 3 | 4;
+import type { WorkflowPhase } from '@/lib/workflow/types';
+export type { WorkflowPhase };
 
 interface HeaderProps {
   currentPhase: WorkflowPhase;
