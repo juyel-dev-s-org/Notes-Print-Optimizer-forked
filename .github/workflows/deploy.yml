@@ -30,13 +30,8 @@ jobs:
       - run: npm ci
       - name: Lint
         run: npm run lint
-        continue-on-error: true
       - name: Unit Tests
         run: npm run test
-        continue-on-error: true
-      - name: Benchmarks
-        run: npm run test:bench
-        continue-on-error: true
       - name: Build
         run: npm run build
       - name: Upload build artifact
