@@ -31,13 +31,18 @@ class MemoryManager {
 
   public isMobileDevice(): boolean {
     if (typeof window === 'undefined') return false;
-    const nav = navigator as any;
-    if (nav.userAgentData?.mobile !== undefined) return nav.userAgentData.mobile === true;
+    
+    const nav = navigator as Navigator & { userAgentData?: { mobile?: boolean }; deviceMemory?: number };
+    if (nav.userAgentData?.mobile !== undefined) {
+      return nav.userAgentData.mobile;
+    }
+    
     const ua = navigator.userAgent || '';
     const isMobileUA = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(ua);
     const isLowMemory = typeof nav.deviceMemory === 'number' && nav.deviceMemory <= 4;
     const isSmallScreen = window.innerWidth <= 768;
     const isTouchOnly = navigator.maxTouchPoints > 0 && !window.matchMedia('(pointer: fine)').matches;
+    
     return isMobileUA || isLowMemory || (isSmallScreen && isTouchOnly);
   }
 
@@ -58,17 +63,12 @@ class MemoryManager {
   }
 
   public revokeAllBlobUrls(): void {
-    this.activeBlobUrls.forEach((url) => { try { URL.revokeObjectURL(url); } catch { /* */ } });
+    this.activeBlobUrls.forEach((url) => { try { URL.revokeObjectURL(url); } catch (error) { console.warn('[MemoryManager] Non-fatal error:', error); } });
     this.activeBlobUrls.clear();
   }
 
   public disposeCanvas(canvas: HTMLCanvasElement | null | undefined): void {
-    if (!canvas) return;
-    if (this.canvasPool.length < this.canvasPoolMax) {
-      this.canvasPool.push(canvas);
-    } else {
-      try { canvas.width = 0; canvas.height = 0; } catch { /* */ }
-    }
+    this.releaseCanvas(canvas);
   }
 
   public async imageDataToBlob(imageData: ImageData, quality: number = 0.85): Promise<Blob> {
@@ -80,29 +80,51 @@ class MemoryManager {
     });
   }
 
-  public async blobToImageData(blob: Blob): Promise<ImageData> {
-    if (typeof createImageBitmap !== 'undefined') {
-      try { const bitmap = await createImageBitmap(blob);
-        const canvas = document.createElement('canvas');
-        canvas.width = bitmap.width; canvas.height = bitmap.height;
-        const ctx = canvas.getContext('2d', { willReadFrequently: true })!;
-        ctx.drawImage(bitmap, 0, 0); bitmap.close();
-        const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-        this.disposeCanvas(canvas); return imgData;
-      } catch { /* fall through */ }
-    }
+  private async loadImage(blob: Blob): Promise<HTMLImageElement> {
     return new Promise((resolve, reject) => {
-      const img = new Image(); const url = URL.createObjectURL(blob);
-      img.onload = () => { const canvas = document.createElement('canvas');
-        canvas.width = img.width; canvas.height = img.height;
-        const ctx = canvas.getContext('2d', { willReadFrequently: true });
-        if (!ctx) { URL.revokeObjectURL(url); this.disposeCanvas(canvas); return reject(new Error('No 2D ctx')); }
-        ctx.drawImage(img, 0, 0);
-        const imgData = ctx.getImageData(0, 0, img.width, img.height);
-        URL.revokeObjectURL(url); this.disposeCanvas(canvas); resolve(imgData); };
-      img.onerror = (err) => { URL.revokeObjectURL(url); reject(err); };
+      const img = new Image();
+      const url = URL.createObjectURL(blob);
+      img.onload = () => {
+        URL.revokeObjectURL(url);
+        resolve(img);
+      };
+      img.onerror = (err) => {
+        URL.revokeObjectURL(url);
+        reject(new Error('Failed to load image from blob'));
+      };
       img.src = url;
     });
+  }
+
+  public async blobToImageData(blob: Blob): Promise<ImageData> {
+    if (typeof createImageBitmap !== 'undefined') {
+      try {
+        const bitmap = await createImageBitmap(blob);
+        const canvas = this.acquireCanvas(bitmap.width, bitmap.height);
+        const ctx = canvas.getContext('2d', { willReadFrequently: true })!;
+        ctx.drawImage(bitmap, 0, 0);
+        bitmap.close();
+        const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+        this.disposeCanvas(canvas);
+        return imgData;
+      } catch {
+        // Fall through to Image fallback
+      }
+    }
+    
+    const img = await this.loadImage(blob);
+    const canvas = this.acquireCanvas(img.width, img.height);
+    const ctx = canvas.getContext('2d', { willReadFrequently: true });
+    
+    if (!ctx) {
+      this.disposeCanvas(canvas);
+      throw new Error('Failed to get 2D context');
+    }
+    
+    ctx.drawImage(img, 0, 0);
+    const imgData = ctx.getImageData(0, 0, img.width, img.height);
+    this.disposeCanvas(canvas);
+    return imgData;
   }
 
   public async checkStorageQuota(): Promise<{ ok: boolean; used: string; quota: string; percentUsed: number } | null> {
