@@ -1,6 +1,6 @@
 {
-  "name": "ai-studio-applet",
-  "version": "0.1.0",
+  "name": "notes-print-optimizer",
+  "version": "1.0.0",
   "private": true,
   "scripts": {
     "dev": "next dev",
@@ -52,5 +52,30 @@
     "typescript": "5.9.3",
     "vitest": "^1.6.0",
     "wabt": "^1.0.39"
-  }
+  },
+  "description": "Mobile-first adaptive print optimizer and PDF engine for PW lecture notes",
+  "author": "juyel-dev",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/juyel-dev/Notes-Print-Optimizer.git"
+  },
+  "homepage": "https://juyel-dev.github.io/Notes-Print-Optimizer",
+  "bugs": {
+    "url": "https://github.com/juyel-dev/Notes-Print-Optimizer/issues"
+  },
+  "engines": {
+    "node": ">=20.0.0"
+  },
+  "keywords": [
+    "pdf",
+    "print",
+    "optimizer",
+    "notes",
+    "education",
+    "pwa",
+    "wasm",
+    "next.js",
+    "ink-saver"
+  ]
 }
