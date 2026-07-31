@@ -29,23 +29,31 @@ export function useMonitor() {
 
     log('app.loaded', performance.now());
 
-    if ('performance' in window) {
+    if ('performance' in window && typeof PerformanceObserver !== 'undefined') {
       const obs = new PerformanceObserver((list) => {
         for (const entry of list.getEntries()) {
           log(`perf.${entry.entryType}.${entry.name}`, entry.duration || entry.startTime || 0);
         }
       });
-      try { obs.observe({ type: 'largest-contentful-paint', buffered: true }); } catch {}
-      try { obs.observe({ type: 'first-input', buffered: true }); } catch {}
-      try { obs.observe({ type: 'layout-shift', buffered: true }); } catch {}
+      try { obs.observe({ type: 'largest-contentful-paint', buffered: true }); } catch { /* not supported */ }
+      try { obs.observe({ type: 'first-input', buffered: true }); } catch { /* not supported */ }
+      try { obs.observe({ type: 'layout-shift', buffered: true }); } catch { /* not supported */ }
     }
 
-    window.addEventListener('error', (e) => {
+    const handleError = () => {
       log('error.uncaught', 1);
-    });
+    };
 
-    window.addEventListener('unhandledrejection', () => {
+    const handleRejection = () => {
       log('error.unhandledRejection', 1);
-    });
+    };
+
+    window.addEventListener('error', handleError);
+    window.addEventListener('unhandledrejection', handleRejection);
+
+    return () => {
+      window.removeEventListener('error', handleError);
+      window.removeEventListener('unhandledrejection', handleRejection);
+    };
   }, []);
 }
