@@ -1,4 +1,4 @@
-import type { WorkflowPhase } from '@/lib/workflow/types';
+import type { WorkflowPhase, ProcessingToggleState } from '@/lib/workflow/types';
 import type { EngineVersion } from '@/lib/optimizer/engine/types';
 import type { ResumeInfo } from '@/lib/workflow/types';
 import type {
@@ -70,6 +70,13 @@ export interface WorkflowUIProps {
   masterParams: ProcessingParameters;
   onMasterParamsChange: (params: ProcessingParameters) => void;
   onReprocess: () => void;
+
+  // Phase 2: Processing Toggles & Preview
+  processingToggles: ProcessingToggleState;
+  onProcessingTogglesChange: (toggles: ProcessingToggleState) => void;
+  onPreviewReprocess: () => void;
+  isPreviewProcessing: boolean;
+  onResetSettings: () => void;
 
   // Phase 3: Layout & Print PDF
   layoutConfig: LayoutConfig;

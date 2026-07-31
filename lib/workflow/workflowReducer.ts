@@ -4,9 +4,11 @@ import type {
 } from '../optimizer/types';
 import type { EngineVersion } from '../optimizer/engine/types';
 import type {
+  ProcessingToggleState,
   WorkflowAction,
   WorkflowState,
 } from './types';
+import { DEFAULT_PROCESSING_TOGGLES } from './types';
 
 export const initialLayoutConfig: LayoutConfig = {
   gridFormat: '2x2',
@@ -42,6 +44,9 @@ export const initialState: WorkflowState = {
 
   selectedEngineVersion: 'v1' as EngineVersion,
   masterParams: ParameterGenerator.getPresetParameters('AUTO_ADAPTIVE'),
+
+  processingToggles: { ...DEFAULT_PROCESSING_TOGGLES },
+  isPreviewProcessing: false,
 
   layoutConfig: { ...initialLayoutConfig },
   finalPrintPdfBlob: null,
@@ -80,6 +85,9 @@ function resetTransientState(): Omit<
     optimized1UpBlob: null,
     selectedPageIndex: 0,
     excludedPages: new Set<number>(),
+
+    processingToggles: { ...DEFAULT_PROCESSING_TOGGLES },
+    isPreviewProcessing: false,
 
     layoutConfig: { ...initialLayoutConfig },
     finalPrintPdfBlob: null,
@@ -162,6 +170,22 @@ export function workflowReducer(
 
     case 'SET_MASTER_PARAMS':
       return { ...state, masterParams: action.params };
+
+    // Processing toggles
+    case 'SET_PROCESSING_TOGGLES':
+      return { ...state, processingToggles: action.toggles };
+
+    // Single-page preview processing
+    case 'SET_PREVIEW_PROCESSING':
+      return { ...state, isPreviewProcessing: action.isPreviewProcessing };
+
+    case 'UPDATE_SINGLE_PROCESSED_PAGE': {
+      const pages = [...state.processedPages];
+      if (action.pageIndex >= 0 && action.pageIndex < pages.length) {
+        pages[action.pageIndex] = action.page;
+      }
+      return { ...state, processedPages: pages };
+    }
 
     // Layout
     case 'SET_LAYOUT_CONFIG':

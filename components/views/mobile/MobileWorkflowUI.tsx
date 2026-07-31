@@ -66,6 +66,11 @@ export const MobileWorkflowUI: React.FC<WorkflowUIProps> = (props) => {
     masterParams,
     onMasterParamsChange,
     onReprocess,
+    processingToggles,
+    onProcessingTogglesChange,
+    onPreviewReprocess,
+    isPreviewProcessing,
+    onResetSettings,
     layoutConfig,
     layoutDirty,
     onApplyLayout,
@@ -232,6 +237,11 @@ export const MobileWorkflowUI: React.FC<WorkflowUIProps> = (props) => {
             onParamsChange={onMasterParamsChange}
             onReprocess={onReprocess}
             isProcessing={isProcessing}
+            toggles={processingToggles}
+            onTogglesChange={onProcessingTogglesChange}
+            onPreviewReprocess={onPreviewReprocess}
+            isPreviewProcessing={isPreviewProcessing}
+            onResetSettings={onResetSettings}
           />
 
           {processedPages[selectedPageIndex] && (

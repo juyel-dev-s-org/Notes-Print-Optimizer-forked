@@ -61,6 +61,31 @@ export interface ResumeInfo {
 }
 
 /**
+ * Toggle state for each processing parameter.
+ *
+ * - Stroke/Dilation OFF  → raw PDF preserved, NO morphology applied at all.
+ * - Stroke/Dilation ON   → manual slider controls stroke thickness.
+ * - Sharpen/Contrast/Denoise/BG-Whitening OFF → uses preset default value.
+ * - Sharpen/Contrast/Denoise/BG-Whitening ON  → manual slider overrides preset.
+ */
+export interface ProcessingToggleState {
+  strokeDilation: boolean;
+  sharpen: boolean;
+  contrast: boolean;
+  denoise: boolean;
+  bgWhitening: boolean;
+}
+
+/** All toggles OFF — every parameter uses its preset default. */
+export const DEFAULT_PROCESSING_TOGGLES: ProcessingToggleState = {
+  strokeDilation: false,
+  sharpen: false,
+  contrast: false,
+  denoise: false,
+  bgWhitening: false,
+};
+
+/**
  * Complete workflow state. Every field corresponds 1:1 to a useState hook
  * previously declared in app/page.tsx. `masterParams` had no setter in the
  * original component (initialized once); it is retained as state so that
@@ -93,6 +118,12 @@ export interface WorkflowState {
   // Master parameters / engine selection (user preferences)
   selectedEngineVersion: EngineVersion;
   masterParams: ProcessingParameters;
+
+  // Processing toggle overrides (which params are manually controlled)
+  processingToggles: ProcessingToggleState;
+
+  // Single-page preview processing state
+  isPreviewProcessing: boolean;
 
   // Phase 3 — Layout & Generate
   layoutConfig: LayoutConfig;
@@ -138,6 +169,11 @@ export type WorkflowAction =
   // Engine / master params
   | { type: 'SET_ENGINE_VERSION'; version: EngineVersion }
   | { type: 'SET_MASTER_PARAMS'; params: ProcessingParameters }
+  // Processing toggles
+  | { type: 'SET_PROCESSING_TOGGLES'; toggles: ProcessingToggleState }
+  // Single-page preview processing
+  | { type: 'SET_PREVIEW_PROCESSING'; isPreviewProcessing: boolean }
+  | { type: 'UPDATE_SINGLE_PROCESSED_PAGE'; pageIndex: number; page: ProcessedPage }
   // Layout
   | { type: 'SET_LAYOUT_CONFIG'; config: LayoutConfig }
   | { type: 'UPDATE_LAYOUT_CONFIG'; patch: Partial<LayoutConfig> }

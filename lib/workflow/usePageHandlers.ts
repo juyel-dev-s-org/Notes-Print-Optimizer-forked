@@ -9,25 +9,114 @@ import { OptimizationService } from '../services/OptimizationService';
 import { pwOptimizerStorage } from '../optimizer/storage';
 import { memoryManager } from '../optimizer/memoryManager';
 import { CheckpointManager } from '../pipeline/checkpoint/CheckpointManager';
-import type { GridFormat, LayoutConfig, OuterMarginConfig } from '../optimizer/types';
-import type { ResumeInfo } from './types';
+import { ParameterGenerator } from '../optimizer/parameterGenerator';
+import { getProcessingEngine } from '../optimizer/engine';
+import { getPdfjsLib } from '../optimizer/pdfjsLoader';
+import type {
+  GridFormat,
+  LayoutConfig,
+  OuterMarginConfig,
+  ProcessedPage,
+  ProcessingParameters,
+} from '../optimizer/types';
+import type { ProcessingToggleState, ResumeInfo } from './types';
+import { DEFAULT_PROCESSING_TOGGLES } from './types';
 
 const checkpointManager = new CheckpointManager();
 
+/* ----------------------------------------------------------------
+ * buildEffectiveParams
+ *
+ * Merges the selected preset defaults with any manually-enabled
+ * toggle overrides from the settings panel.
+ *
+ * - Stroke/Dilation OFF -> dilationKernelSize forced to 0
+ *   (raw PDF preserved, NO morphology at all).
+ * - Stroke/Dilation ON  -> uses the slider value from masterParams.
+ * - Other toggles OFF   -> preset default value is used.
+ * - Other toggles ON    -> masterParams slider value overrides preset.
+ * ---------------------------------------------------------------- */
+function buildEffectiveParams(
+  masterParams: ProcessingParameters,
+  toggles: ProcessingToggleState,
+): ProcessingParameters {
+  const presetDefaults = ParameterGenerator.getPresetParameters(masterParams.preset);
+
+  const effective: ProcessingParameters = {
+    ...presetDefaults,
+    preset: masterParams.preset,
+    invertMode: masterParams.invertMode,
+    smartColorMapping: masterParams.smartColorMapping,
+    bannerCropTopPct: masterParams.bannerCropTopPct,
+    bannerCropBottomPct: masterParams.bannerCropBottomPct,
+    autoTrimMargins: masterParams.autoTrimMargins,
+    binaizationThreshold: masterParams.binaizationThreshold,
+    outputQuality: masterParams.outputQuality,
+  };
+
+  // Stroke / Dilation
+  if (toggles.strokeDilation) {
+    effective.dilationKernelSize = masterParams.dilationKernelSize;
+    effective.strokeEnhancement = masterParams.strokeEnhancement;
+  } else {
+    effective.dilationKernelSize = 0;
+    effective.strokeEnhancement = 'none';
+  }
+
+  // Sharpen
+  effective.sharpenAmount = toggles.sharpen
+    ? masterParams.sharpenAmount
+    : presetDefaults.sharpenAmount;
+
+  // Contrast
+  effective.contrastEnhancement = toggles.contrast
+    ? masterParams.contrastEnhancement
+    : presetDefaults.contrastEnhancement;
+
+  // Denoise
+  effective.denoiseAmount = toggles.denoise
+    ? masterParams.denoiseAmount
+    : presetDefaults.denoiseAmount;
+
+  // BG Whitening
+  effective.backgroundWhiteningThreshold = toggles.bgWhitening
+    ? masterParams.backgroundWhiteningThreshold
+    : presetDefaults.backgroundWhiteningThreshold;
+
+  return effective;
+}
+
 export function usePageHandlers() {
   const { state, actions } = useWorkflow();
-  const { mergedPdfBytes, uploadedItems, processedPages, excludedPages, layoutConfig, selectedEngineVersion, masterParams } = state;
+  const {
+    mergedPdfBytes,
+    uploadedItems,
+    processedPages,
+    excludedPages,
+    layoutConfig,
+    selectedEngineVersion,
+    masterParams,
+    processingToggles,
+    selectedPageIndex,
+    pageProfiles,
+  } = state;
 
   const abortRef = useRef<AbortController | null>(null);
   const [resumeInfo, setResumeInfo] = useState<ResumeInfo | null>(null);
   const [progressiveThumbnails, setProgressiveThumbnails] = useState<Map<number, string>>(new Map());
   const snapshotsCheckedRef = useRef(false);
 
+  /**
+   * Tracks the blob URL of the current single-page preview so it can be
+   * revoked before a new one is created (prevents orphaned blob leaks).
+   */
+  const previewBlobUrlRef = useRef<string | null>(null);
+
   useEffect(() => {
     pwOptimizerStorage.clearCache();
     pwOptimizerStorage.evictStaleEntries();
     memoryManager.checkStorageQuota().then(q => {
-      if (q && !q.ok) console.warn(`[Storage] ${q.percentUsed.toFixed(0)}% used — near quota`);
+      if (q && !q.ok) console.warn(`[Storage] ${q.percentUsed.toFixed(0)}% used - near quota`);
     });
     if (!snapshotsCheckedRef.current) {
       snapshotsCheckedRef.current = true;
@@ -45,6 +134,16 @@ export function usePageHandlers() {
     const handleUnload = () => { pwOptimizerStorage.clearCache(); memoryManager.revokeAllBlobUrls(); };
     window.addEventListener('beforeunload', handleUnload);
     return () => { window.removeEventListener('beforeunload', handleUnload); handleUnload(); };
+  }, []);
+
+  /* Cleanup preview blob on unmount */
+  useEffect(() => {
+    return () => {
+      if (previewBlobUrlRef.current) {
+        memoryManager.revokeBlobUrl(previewBlobUrlRef.current);
+        previewBlobUrlRef.current = null;
+      }
+    };
   }, []);
 
   const handleCancelProcessing = useCallback(() => {
@@ -81,6 +180,10 @@ export function usePageHandlers() {
     if (abortRef.current) { abortRef.current.abort(); abortRef.current = null; }
     pwOptimizerStorage.clearCache();
     memoryManager.revokeAllBlobUrls();
+    if (previewBlobUrlRef.current) {
+      memoryManager.revokeBlobUrl(previewBlobUrlRef.current);
+      previewBlobUrlRef.current = null;
+    }
     setProgressiveThumbnails(new Map());
     actions.resetWorkflow();
   }, [actions]);
@@ -168,8 +271,9 @@ export function usePageHandlers() {
         } as unknown as Record<string, unknown>,
       });
       const service = new OptimizationService();
+      const effectiveParams = buildEffectiveParams(masterParams, processingToggles);
       const { processedPages: pages, docProfile: dProf } = await service.processDocument(
-        mergedPdfBytes.buffer as ArrayBuffer, pdfId, masterParams.preset,
+        mergedPdfBytes.buffer as ArrayBuffer, pdfId, effectiveParams.preset,
         selectedEngineVersion,
         (curr, total, action) => {
           if (signal.aborted) throw new Error('CANCELLED');
@@ -189,7 +293,7 @@ export function usePageHandlers() {
             return next;
           });
         },
-        masterParams,
+        effectiveParams,
       );
       if (signal.aborted) return;
       actions.setTiming({
@@ -199,12 +303,248 @@ export function usePageHandlers() {
       actions.setDocProfile(dProf);
       actions.setPageProfiles(dProf.pages);
       actions.setProcessedPages(pages);
-      // Keep mergedPdfBytes for potential re-processing with adjusted params
       actions.setPhase(2);
       await checkpointManager.remove(pdfId);
     }, 'Processing failed due to browser memory limits.', null);
     if (abortRef.current === abortController) abortRef.current = null;
-  }, [mergedPdfBytes, masterParams, selectedEngineVersion, actions, withProcessing]);
+  }, [mergedPdfBytes, masterParams, processingToggles, selectedEngineVersion, actions, withProcessing]);
+
+  /* ----------------------------------------------------------------
+   * handlePreviewReprocess  -  SINGLE-PAGE PREVIEW PROCESSING
+   *
+   * Memory & Processing Strategy:
+   *  1. Renders ONLY the selected page from the source PDF.
+   *  2. Processes it through the engine with effective params.
+   *  3. Generates a small thumbnail blob URL.
+   *  4. Stores optimized result in IndexedDB.
+   *  5. Updates ONLY processedPages[selectedPageIndex].
+   *  6. Immediately releases full-res ImageData + canvas.
+   *  7. Revokes the previous preview blob URL before creating new.
+   *
+   * Preview Memory Lifecycle:
+   *  - At most 1 page's full-res ImageData exists at any time.
+   *  - Canvas is acquired from pool and released back after use.
+   *  - Blob URLs are tracked via previewBlobUrlRef and revoked
+   *    on next preview or on unmount.
+   *  - No batch allocation; other pages remain untouched.
+   * ---------------------------------------------------------------- */
+  const handlePreviewReprocess = useCallback(async () => {
+    if (!mergedPdfBytes || processedPages.length === 0) return;
+    const pageIndex = selectedPageIndex;
+    if (pageIndex < 0 || pageIndex >= processedPages.length) return;
+
+    actions.setPreviewProcessing(true);
+    actions.setError(null);
+
+    let rawCanvas: HTMLCanvasElement | null = null;
+    let originalImageData: ImageData | null = null;
+    let optimizedImageData: ImageData | null = null;
+    let thumbCanvas: HTMLCanvasElement | null = null;
+    let pdfDoc: any = null;
+
+    try {
+      const effectiveParams = buildEffectiveParams(masterParams, processingToggles);
+      const engine = getProcessingEngine(selectedEngineVersion);
+
+      // 1. Render ONLY the selected page from the source PDF
+      const pdfjsLib = await getPdfjsLib();
+      pdfDoc = await pdfjsLib.getDocument({ data: new Uint8Array(mergedPdfBytes) }).promise;
+      const pdfPage = await pdfDoc.getPage(pageIndex + 1);
+
+      const viewport = pdfPage.getViewport({ scale: 1.0 });
+      const TARGET_DPI = 250;
+      const dpiScale = TARGET_DPI / 72;
+      const maxDim = Math.max(viewport.width, viewport.height);
+      const isMobile = memoryManager.isMobileDevice();
+      const dimCap = isMobile ? 1600 : 2400;
+      const dimCapScale = dimCap / maxDim;
+      const renderScale = Math.max(1.0, Math.min(4.0, Math.min(dpiScale, dimCapScale)));
+
+      const scaledViewport = pdfPage.getViewport({ scale: renderScale });
+      rawCanvas = memoryManager.acquireCanvas(
+        Math.floor(scaledViewport.width),
+        Math.floor(scaledViewport.height),
+      );
+      const rawCtx = rawCanvas.getContext('2d', { willReadFrequently: true })!;
+      await pdfPage.render({ canvasContext: rawCtx, viewport: scaledViewport }).promise;
+      originalImageData = rawCtx.getImageData(0, 0, rawCanvas.width, rawCanvas.height);
+
+      // Release the render canvas immediately - we have the ImageData
+      memoryManager.releaseCanvas(rawCanvas);
+      rawCanvas = null;
+
+      // 2. Get or reuse the existing page profile
+      const profile = pageProfiles[pageIndex]
+        ?? await engine.analyzePage(originalImageData, pageIndex);
+
+      // 3. Process through the engine
+      const result = await engine.processPage(
+        originalImageData, pageIndex, effectiveParams, profile,
+      );
+      optimizedImageData = result.optimizedImageData;
+
+      // Release original ImageData immediately after processing
+      originalImageData = null;
+
+      // 4. Generate thumbnail (small, memory-cheap)
+      const tw = Math.max(1, Math.round(optimizedImageData.width / 4));
+      const th = Math.max(1, Math.round(optimizedImageData.height / 4));
+      thumbCanvas = memoryManager.acquireCanvas(tw, th);
+      const thumbCtx = thumbCanvas.getContext('2d', { willReadFrequently: true })!;
+
+      const tmpCanvas = memoryManager.acquireCanvas(
+        optimizedImageData.width, optimizedImageData.height,
+      );
+      const tmpCtx = tmpCanvas.getContext('2d', { willReadFrequently: true })!;
+      tmpCtx.putImageData(optimizedImageData, 0, 0);
+      thumbCtx.drawImage(tmpCanvas, 0, 0, tw, th);
+      memoryManager.releaseCanvas(tmpCanvas);
+
+      // Revoke previous preview blob URL before creating a new one
+      if (previewBlobUrlRef.current) {
+        memoryManager.revokeBlobUrl(previewBlobUrlRef.current);
+        previewBlobUrlRef.current = null;
+      }
+
+      const thumbBlob = await new Promise<Blob>((resolve) => {
+        thumbCanvas!.toBlob(
+          (b) => resolve(b || new Blob([], { type: 'image/jpeg' })),
+          'image/jpeg',
+          0.6,
+        );
+      });
+      memoryManager.releaseCanvas(thumbCanvas);
+      thumbCanvas = null;
+
+      const thumbUrl = memoryManager.createTrackedBlobUrl(thumbBlob);
+      previewBlobUrlRef.current = thumbUrl;
+
+      // 5. Store optimized result in IndexedDB
+      const optBlob = await memoryManager.imageDataToBlob(optimizedImageData, effectiveParams.outputQuality);
+      const storageKey = `pw_opt_${Date.now()}_p${pageIndex}`;
+      try {
+        await pwOptimizerStorage.storePage(storageKey, optBlob, thumbBlob);
+      } catch {
+        // IDB write failure is non-fatal for preview
+      }
+
+      // Release optimized ImageData - no longer needed
+      const optWidth = optimizedImageData.width;
+      const optHeight = optimizedImageData.height;
+      optimizedImageData = null;
+
+      // 6. Update ONLY the selected page in processedPages
+      const updatedPage: ProcessedPage = {
+        pageIndex,
+        thumbnailDataUrl: thumbUrl,
+        profile,
+        parameters: effectiveParams,
+        inkCoverageBeforePct: result.inkCoverageBeforePct,
+        inkCoverageAfterPct: result.inkCoverageAfterPct,
+        width: optWidth,
+        height: optHeight,
+        storageKey,
+      };
+      actions.updateSingleProcessedPage(pageIndex, updatedPage);
+
+    } catch (err: any) {
+      if (err?.name !== 'AbortError') {
+        console.error('[PreviewReprocess] Failed:', err);
+        actions.setError('Preview processing failed. Try adjusting settings.');
+      }
+    } finally {
+      // 7. Guaranteed cleanup - release any remaining resources
+      if (rawCanvas) memoryManager.releaseCanvas(rawCanvas);
+      if (thumbCanvas) memoryManager.releaseCanvas(thumbCanvas);
+      originalImageData = null;
+      optimizedImageData = null;
+      if (pdfDoc) {
+        try { pdfDoc.destroy(); } catch { /* noop */ }
+      }
+      actions.setPreviewProcessing(false);
+    }
+  }, [
+    mergedPdfBytes, processedPages, selectedPageIndex, masterParams,
+    processingToggles, selectedEngineVersion, pageProfiles, actions,
+  ]);
+
+  /* ----------------------------------------------------------------
+   * handleReprocess  -  BATCH RE-PROCESS ALL PAGES
+   *
+   * This is the ONLY action that applies current settings to
+   * every page in the document. Triggered explicitly by the
+   * "Re-process All Pages" button.
+   *
+   * Memory Principles:
+   *  - Uses the engine's processDocument which handles per-page
+   *    ImageData lifecycle internally (render -> process -> store -> release).
+   *  - Revokes all previous preview blob URLs before starting.
+   *  - Clears progressive thumbnail cache.
+   *  - Resets excluded pages since all pages are re-processed.
+   * ---------------------------------------------------------------- */
+  const handleReprocess = useCallback(async () => {
+    if (!mergedPdfBytes) return;
+    const startTime = Date.now();
+    const abortController = new AbortController();
+    abortRef.current = abortController;
+    const pdfId = `pw_reprocess_${Date.now()}`;
+    setProgressiveThumbnails(new Map());
+
+    if (previewBlobUrlRef.current) {
+      memoryManager.revokeBlobUrl(previewBlobUrlRef.current);
+      previewBlobUrlRef.current = null;
+    }
+
+    await withProcessing(async () => {
+      const signal = abortController.signal;
+      const service = new OptimizationService();
+      const effectiveParams = buildEffectiveParams(masterParams, processingToggles);
+      const { processedPages: pages, docProfile: dProf } = await service.processDocument(
+        mergedPdfBytes.buffer as ArrayBuffer, pdfId, effectiveParams.preset,
+        selectedEngineVersion,
+        (curr, total, action) => {
+          if (signal.aborted) throw new Error('CANCELLED');
+          actions.setProgress({
+            stage: 'OPTIMIZING', currentPage: curr, totalPages: total,
+            percent: Math.round((curr / total) * 100), currentAction: action,
+            elapsedMs: Date.now() - startTime,
+          });
+        },
+        (pageIndex, thumbUrl) => {
+          setProgressiveThumbnails(prev => {
+            const next = new Map(prev);
+            next.set(pageIndex, thumbUrl);
+            return next;
+          });
+        },
+        effectiveParams,
+      );
+      if (signal.aborted) return;
+      actions.setTiming({
+        analysisTimeMs: Math.round((Date.now() - startTime) * 0.15),
+        optimizationTimeMs: Math.round((Date.now() - startTime) * 0.85),
+      });
+      actions.setDocProfile(dProf);
+      actions.setPageProfiles(dProf.pages);
+      actions.setProcessedPages(pages);
+      actions.setExcludedPages(new Set());
+    }, 'Re-processing failed. Try reducing settings values.', null);
+    if (abortRef.current === abortController) abortRef.current = null;
+  }, [mergedPdfBytes, masterParams, processingToggles, selectedEngineVersion, actions, withProcessing]);
+
+  /* ----------------------------------------------------------------
+   * handleResetSettings  -  RESET DEFAULTS
+   *
+   * Restores the selected preset defaults, turns OFF all manual
+   * overrides, resets Stroke/Dilation to its default OFF state.
+   * Updates ONLY the currently selected preview page.
+   * Does NOT automatically re-process the remaining pages.
+   * ---------------------------------------------------------------- */
+  const handleResetSettings = useCallback(() => {
+    const presetDefaults = ParameterGenerator.getPresetParameters(masterParams.preset);
+    actions.setMasterParams(presetDefaults);
+    actions.setProcessingToggles({ ...DEFAULT_PROCESSING_TOGGLES });
+  }, [masterParams.preset, actions]);
 
   const compilePhase3PrintLayout = useCallback(async (config: LayoutConfig, overrideExcludedPages?: Set<number>) => {
     const startTime = Date.now();
@@ -276,6 +616,10 @@ export function usePageHandlers() {
   const handleProceedToPhase4 = useCallback(() => {
     pwOptimizerStorage.clearCache();
     memoryManager.revokeAllBlobUrls();
+    if (previewBlobUrlRef.current) {
+      memoryManager.revokeBlobUrl(previewBlobUrlRef.current);
+      previewBlobUrlRef.current = null;
+    }
     actions.setPhase(4);
   }, [actions]);
 
@@ -320,56 +664,13 @@ export function usePageHandlers() {
     } catch { /* feedback is best-effort */ }
   }, [actions, state.rating, state.feedbackText]);
 
-  /** Re-process document with updated parameters (from settings panel) */
-  const handleReprocess = useCallback(async () => {
-    if (!mergedPdfBytes) return;
-    const startTime = Date.now();
-    const abortController = new AbortController();
-    abortRef.current = abortController;
-    const pdfId = `pw_reprocess_${Date.now()}`;
-    setProgressiveThumbnails(new Map());
-    await withProcessing(async () => {
-      const signal = abortController.signal;
-      const service = new OptimizationService();
-      const { processedPages: pages, docProfile: dProf } = await service.processDocument(
-        mergedPdfBytes.buffer as ArrayBuffer, pdfId, masterParams.preset,
-        selectedEngineVersion,
-        (curr, total, action) => {
-          if (signal.aborted) throw new Error('CANCELLED');
-          actions.setProgress({
-            stage: 'OPTIMIZING', currentPage: curr, totalPages: total,
-            percent: Math.round((curr / total) * 100), currentAction: action,
-            elapsedMs: Date.now() - startTime,
-          });
-        },
-        (pageIndex, thumbUrl) => {
-          setProgressiveThumbnails(prev => {
-            const next = new Map(prev);
-            next.set(pageIndex, thumbUrl);
-            return next;
-          });
-        },
-        masterParams,
-      );
-      if (signal.aborted) return;
-      actions.setTiming({
-        analysisTimeMs: Math.round((Date.now() - startTime) * 0.15),
-        optimizationTimeMs: Math.round((Date.now() - startTime) * 0.85),
-      });
-      actions.setDocProfile(dProf);
-      actions.setPageProfiles(dProf.pages);
-      actions.setProcessedPages(pages);
-      actions.setExcludedPages(new Set());
-    }, 'Re-processing failed. Try reducing settings values.', null);
-    if (abortRef.current === abortController) abortRef.current = null;
-  }, [mergedPdfBytes, masterParams, selectedEngineVersion, actions, withProcessing]);
-
   return {
     state, actions,
     handleResetWorkflow, handleFilesUpload, handleLoadSamplePdf,
     handleMoveItem, handleRemoveItem, handleDownloadMerged,
     handleProceedToPhase2, handleToggleExcludePage, handleDownloadOptimized1Up,
-    handleProceedToPhase3, handleReprocess,
+    handleProceedToPhase3, handleReprocess, handlePreviewReprocess,
+    handleResetSettings,
     handleSelectLayoutFormat, handleToggleOrientation, handleToggleBorders,
     handleTogglePageNumbers, handleUpdateOuterMargins, handleUpdateInnerMargin,
     handleApplyLayout, handleDownloadFinalPrintPdf, handleProceedToPhase4,

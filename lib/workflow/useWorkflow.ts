@@ -3,6 +3,7 @@
 import { useReducer, useMemo } from 'react';
 import { workflowReducer, initialState } from './workflowReducer';
 import type {
+  ProcessingToggleState,
   WorkflowAction,
   WorkflowPhase,
   WorkflowState,
@@ -41,6 +42,9 @@ export interface WorkflowActions {
   togglePageExcluded: (pageIndex: number) => void;
   setEngineVersion: (version: EngineVersion) => void;
   setMasterParams: (params: ProcessingParameters) => void;
+  setProcessingToggles: (toggles: ProcessingToggleState) => void;
+  setPreviewProcessing: (isPreviewProcessing: boolean) => void;
+  updateSingleProcessedPage: (pageIndex: number, page: ProcessedPage) => void;
   setLayoutConfig: (config: LayoutConfig) => void;
   updateLayoutConfig: (patch: Partial<LayoutConfig>) => void;
   setLayoutResult: (
@@ -96,6 +100,12 @@ export function useWorkflow(): {
         dispatch({ type: 'SET_ENGINE_VERSION', version }),
       setMasterParams: (params) =>
         dispatch({ type: 'SET_MASTER_PARAMS', params }),
+      setProcessingToggles: (toggles) =>
+        dispatch({ type: 'SET_PROCESSING_TOGGLES', toggles }),
+      setPreviewProcessing: (isPreviewProcessing) =>
+        dispatch({ type: 'SET_PREVIEW_PROCESSING', isPreviewProcessing }),
+      updateSingleProcessedPage: (pageIndex, page) =>
+        dispatch({ type: 'UPDATE_SINGLE_PROCESSED_PAGE', pageIndex, page }),
       setLayoutConfig: (config) =>
         dispatch({ type: 'SET_LAYOUT_CONFIG', config }),
       updateLayoutConfig: (patch) =>

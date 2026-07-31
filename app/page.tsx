@@ -40,7 +40,8 @@ export default function HomePage() {
     handleResetWorkflow, handleFilesUpload, handleLoadSamplePdf,
     handleMoveItem, handleRemoveItem, handleDownloadMerged,
     handleProceedToPhase2, handleToggleExcludePage, handleDownloadOptimized1Up,
-    handleProceedToPhase3, handleReprocess,
+    handleProceedToPhase3, handleReprocess, handlePreviewReprocess,
+    handleResetSettings,
     handleSelectLayoutFormat, handleToggleOrientation, handleToggleBorders,
     handleTogglePageNumbers, handleUpdateOuterMargins, handleUpdateInnerMargin,
     handleApplyLayout, handleDownloadFinalPrintPdf, handleProceedToPhase4,
@@ -100,6 +101,11 @@ export default function HomePage() {
           masterParams={state.masterParams}
           onMasterParamsChange={(p) => actions.setMasterParams(p)}
           onReprocess={handleReprocess}
+          processingToggles={state.processingToggles}
+          onProcessingTogglesChange={(t) => actions.setProcessingToggles(t)}
+          onPreviewReprocess={handlePreviewReprocess}
+          isPreviewProcessing={state.isPreviewProcessing}
+          onResetSettings={handleResetSettings}
           layoutDirty={state.layoutDirty}
           onApplyLayout={handleApplyLayout}
           layoutConfig={state.layoutConfig}
