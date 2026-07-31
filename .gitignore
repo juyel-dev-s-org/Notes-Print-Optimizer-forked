@@ -1,10 +1,44 @@
+# Dependencies
 node_modules/
+
+# Next.js
 .next/
+out/
+
+# Testing
 coverage/
-.DS_Store
-*.log
+
+# Build artifacts
+*.tsbuildinfo
+wasm/target/
+wasm/pkg/
+
+# Environment
 .env*
 !.env.example
-wasm/target/
-*.tsbuildinfo
-out/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+npm-debug.log*
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Misc
+*.pem
+.vercel
+
+# Sample files (too large for repo)
+samples/raw/*.pdf
+
+# Lock files (only keep package-lock.json)
+bun.lock
+yarn.lock
+pnpm-lock.yaml
