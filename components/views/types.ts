@@ -1,7 +1,7 @@
-import { WorkflowPhase } from '@/components/Header';
-import { EngineVersion } from '@/lib/optimizer/engine';
+import type { WorkflowPhase } from '@/lib/workflow/types';
+import type { EngineVersion } from '@/lib/optimizer/engine/types';
 import type { ResumeInfo } from '@/lib/workflow/types';
-import {
+import type {
   DocumentProfile,
   GridFormat,
   LayoutConfig,
