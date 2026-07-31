@@ -35,6 +35,10 @@ const MarginSettings = dynamic(() => import('@/components/MarginSettings').then(
   loading: () => <CardSkeleton />,
 });
 
+const ProcessingSettingsPanel = dynamic(() => import('@/components/ProcessingSettingsPanel').then(m => m.ProcessingSettingsPanel), {
+  loading: () => <CardSkeleton />,
+});
+
 export const MobileWorkflowUI: React.FC<WorkflowUIProps> = (props) => {
   const {
     currentPhase,
@@ -59,6 +63,9 @@ export const MobileWorkflowUI: React.FC<WorkflowUIProps> = (props) => {
     onToggleExcludePage,
     onToggleExcludeAll,
     onProceedToPhase3,
+    masterParams,
+    onMasterParamsChange,
+    onReprocess,
     layoutConfig,
     layoutDirty,
     onApplyLayout,
@@ -218,6 +225,14 @@ export const MobileWorkflowUI: React.FC<WorkflowUIProps> = (props) => {
               </div>
             </div>
           </div>
+
+          {/* Processing Settings (collapsible) */}
+          <ProcessingSettingsPanel
+            params={masterParams}
+            onParamsChange={onMasterParamsChange}
+            onReprocess={onReprocess}
+            isProcessing={isProcessing}
+          />
 
           {processedPages[selectedPageIndex] && (
             <BeforeAfterSlider page={processedPages[selectedPageIndex]} />
