@@ -58,6 +58,7 @@ export function processPage(
     bannerCropBottomPct: number;
     strokeEnhancement?: string;
     sharpenAmount: number;
+    dilationKernelSize?: number;
   },
   profile: { classification: string; darkBackgroundRatio: number }
 ): KernelProcessResult {
@@ -178,9 +179,12 @@ export function processPage(
     }
   }
 
-  /* Post-processing */
-  if (params.strokeEnhancement !== 'none') {
-    applyMaskDilation(fm, dw, dh, params.strokeEnhancement === 'strong' ? 5 : 3);
+  /* Post-processing: dilation with numeric kernel size override */
+  const ks = params.dilationKernelSize != null
+    ? params.dilationKernelSize
+    : (params.strokeEnhancement === 'strong' ? 5 : params.strokeEnhancement === 'normal' ? 3 : 0);
+  if (ks > 0) {
+    applyMaskDilation(fm, dw, dh, ks);
   }
 
   if (wasmKernels) {
