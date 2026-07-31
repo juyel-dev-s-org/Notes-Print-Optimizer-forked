@@ -36,7 +36,7 @@ describe('Phase 8.6: Worker crash recovery', () => {
   it('should process a task successfully', async () => {
     const task = pool.submitPixelTask({
       pageIndex: 1, buffer: new ArrayBuffer(100), width: 10, height: 10,
-      params: { invertMode: 'none', sharpenAmount: 0 },
+      params: { invertMode: 'none', sharpenAmount: 0, bannerCropTopPct: 0, bannerCropBottomPct: 0 },
       profile: { classification: 'LIGHT_SLIDE', darkBackgroundRatio: 0 },
     }, 5000);
     const worker = workers[0];
@@ -63,7 +63,7 @@ describe('Phase 8.6: Worker crash recovery', () => {
     try {
       const promise = failPool.submitPixelTask({
         pageIndex: 1, buffer: new ArrayBuffer(100), width: 10, height: 10,
-        params: { invertMode: 'none', sharpenAmount: 0 },
+        params: { invertMode: 'none', sharpenAmount: 0, bannerCropTopPct: 0, bannerCropBottomPct: 0 },
         profile: { classification: 'LIGHT_SLIDE', darkBackgroundRatio: 0 },
       }, 5000);
       await expect(promise).rejects.toThrow('Worker crashed');
