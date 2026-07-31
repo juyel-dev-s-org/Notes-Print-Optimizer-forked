@@ -267,10 +267,13 @@ export class ProcessingEngineV2 implements IProcessingEngine {
       sumBrightness += profile.averageBrightness;
       if (profile.classification === 'DARK_SLIDE') darkCount++;
 
-      /* Phase 3: Process */
-      const params = ParameterGenerator.getPresetParameters(
+      /* Phase 3: Process (merge preset defaults with user overrides) */
+      const baseParams = ParameterGenerator.getPresetParameters(
         profile.classification === 'DARK_SLIDE' ? 'PW_DARK_SLIDE' : 'LIGHT_HANDWRITTEN',
       );
+      const params = input.customParams
+        ? { ...baseParams, ...input.customParams }
+        : baseParams;
       const procResult = runProcessPage(
         srcImageData.data, srcImageData.width, srcImageData.height, params, profile,
       );
