@@ -8,6 +8,7 @@ import type {
   OptimizationMetrics,
   OuterMarginConfig,
   ProcessedPage,
+  ProcessingParameters,
   ProcessingProgress,
 } from '@/lib/optimizer/types';
 
@@ -64,6 +65,11 @@ export interface WorkflowUIProps {
   onToggleExcludeAll: (exclude: boolean) => void;
   onDownloadOptimized1Up: () => void;
   onProceedToPhase3: () => void;
+
+  // Phase 2: Processing Settings (adjustable parameters)
+  masterParams: ProcessingParameters;
+  onMasterParamsChange: (params: ProcessingParameters) => void;
+  onReprocess: () => void;
 
   // Phase 3: Layout & Print PDF
   layoutConfig: LayoutConfig;
