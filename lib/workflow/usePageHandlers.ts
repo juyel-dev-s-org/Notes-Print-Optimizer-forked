@@ -189,6 +189,7 @@ export function usePageHandlers() {
             return next;
           });
         },
+        masterParams,
       );
       if (signal.aborted) return;
       actions.setTiming({
@@ -198,7 +199,7 @@ export function usePageHandlers() {
       actions.setDocProfile(dProf);
       actions.setPageProfiles(dProf.pages);
       actions.setProcessedPages(pages);
-      actions.setMergeResult(null, null, []);
+      // Keep mergedPdfBytes for potential re-processing with adjusted params
       actions.setPhase(2);
       await checkpointManager.remove(pdfId);
     }, 'Processing failed due to browser memory limits.', null);
@@ -319,12 +320,56 @@ export function usePageHandlers() {
     } catch { /* feedback is best-effort */ }
   }, [actions, state.rating, state.feedbackText]);
 
+  /** Re-process document with updated parameters (from settings panel) */
+  const handleReprocess = useCallback(async () => {
+    if (!mergedPdfBytes) return;
+    const startTime = Date.now();
+    const abortController = new AbortController();
+    abortRef.current = abortController;
+    const pdfId = `pw_reprocess_${Date.now()}`;
+    setProgressiveThumbnails(new Map());
+    await withProcessing(async () => {
+      const signal = abortController.signal;
+      const service = new OptimizationService();
+      const { processedPages: pages, docProfile: dProf } = await service.processDocument(
+        mergedPdfBytes.buffer as ArrayBuffer, pdfId, masterParams.preset,
+        selectedEngineVersion,
+        (curr, total, action) => {
+          if (signal.aborted) throw new Error('CANCELLED');
+          actions.setProgress({
+            stage: 'OPTIMIZING', currentPage: curr, totalPages: total,
+            percent: Math.round((curr / total) * 100), currentAction: action,
+            elapsedMs: Date.now() - startTime,
+          });
+        },
+        (pageIndex, thumbUrl) => {
+          setProgressiveThumbnails(prev => {
+            const next = new Map(prev);
+            next.set(pageIndex, thumbUrl);
+            return next;
+          });
+        },
+        masterParams,
+      );
+      if (signal.aborted) return;
+      actions.setTiming({
+        analysisTimeMs: Math.round((Date.now() - startTime) * 0.15),
+        optimizationTimeMs: Math.round((Date.now() - startTime) * 0.85),
+      });
+      actions.setDocProfile(dProf);
+      actions.setPageProfiles(dProf.pages);
+      actions.setProcessedPages(pages);
+      actions.setExcludedPages(new Set());
+    }, 'Re-processing failed. Try reducing settings values.', null);
+    if (abortRef.current === abortController) abortRef.current = null;
+  }, [mergedPdfBytes, masterParams, selectedEngineVersion, actions, withProcessing]);
+
   return {
     state, actions,
     handleResetWorkflow, handleFilesUpload, handleLoadSamplePdf,
     handleMoveItem, handleRemoveItem, handleDownloadMerged,
     handleProceedToPhase2, handleToggleExcludePage, handleDownloadOptimized1Up,
-    handleProceedToPhase3,
+    handleProceedToPhase3, handleReprocess,
     handleSelectLayoutFormat, handleToggleOrientation, handleToggleBorders,
     handleTogglePageNumbers, handleUpdateOuterMargins, handleUpdateInnerMargin,
     handleApplyLayout, handleDownloadFinalPrintPdf, handleProceedToPhase4,
