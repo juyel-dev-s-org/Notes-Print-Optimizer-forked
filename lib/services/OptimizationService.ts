@@ -1,6 +1,6 @@
 import type { EngineVersion } from '../optimizer/engine/types';
 import { getProcessingEngine } from '../optimizer/engine';
-import type { ProcessedPage, LayoutConfig, OptimizationMetrics, PresetMode, DocumentProfile } from '../optimizer/types';
+import type { ProcessedPage, LayoutConfig, OptimizationMetrics, PresetMode, DocumentProfile, ProcessingParameters } from '../optimizer/types';
 import { metricsBus } from '../metrics/MetricsBus';
 
 export class OptimizationService {
@@ -11,6 +11,7 @@ export class OptimizationService {
     engineVersion?: EngineVersion,
     onProgress?: (current: number, total: number, action: string) => void,
     onPageOptimized?: (pageIndex: number, thumbnailUrl: string, inkBeforePct: number, inkAfterPct: number) => void,
+    customParams?: Partial<ProcessingParameters>,
   ): Promise<{ processedPages: ProcessedPage[]; docProfile: DocumentProfile }> {
     const engine = getProcessingEngine(engineVersion);
     const wrappedOnPageOptimized = (pageIndex: number, thumbnailUrl: string, inkBeforePct: number, inkAfterPct: number) => {
@@ -21,7 +22,7 @@ export class OptimizationService {
       onPageOptimized?.(pageIndex, thumbnailUrl, inkBeforePct, inkAfterPct);
     };
     const result = await engine.processDocument(
-      { pdfBuffer, pdfId, presetMode },
+      { pdfBuffer, pdfId, presetMode, customParams },
       {},
       onProgress,
       wrappedOnPageOptimized,
