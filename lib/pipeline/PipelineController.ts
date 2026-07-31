@@ -25,7 +25,7 @@ export interface PagePipelineResult {
   optimizedImageData: ImageData;
   inkBefore: number;
   inkAfter: number;
-  thumbnailUrl: string;
+  thumbnailUrl?: string;
 }
 
 export class PipelineController {

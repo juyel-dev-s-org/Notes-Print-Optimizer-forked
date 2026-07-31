@@ -26,6 +26,7 @@ export class ProcessingEngineV2 implements IProcessingEngine {
     engineDescription: 'v2: Plugin pipeline with bounded concurrency.',
   };
   private controller: PipelineController;
+  private activeThumbnailUrls: Set<string> = new Set();
 
   constructor(layoutConfig?: LayoutConfig) {
     const registry = new PluginRegistry();
@@ -85,83 +86,50 @@ export class ProcessingEngineV2 implements IProcessingEngine {
   ): Promise<EngineDocumentOutput> {
     const t0 = performance.now();
     const { pdfBuffer, pdfId, presetMode } = input;
+    
+    // Clear previous thumbnails to prevent memory leaks
+    this.activeThumbnailUrls.forEach(url => URL.revokeObjectURL(url));
+    this.activeThumbnailUrls.clear();
+
+    // Get total pages first to inform the pipeline controller
     const pdfjsLib = await (await import('../../pdfjsLoader')).getPdfjsLib();
     const pdfDoc = await pdfjsLib.getDocument({ data: new Uint8Array(pdfBuffer) }).promise;
     const totalPages = pdfDoc.numPages;
 
-    const renderPlugin = new RenderPlugin();
-    const analyzePlugin = new AnalyzePlugin();
-    const processPlugin = new ProcessPlugin();
-    const registry = new PluginRegistry();
-    registry.register(renderPlugin);
-    registry.register(analyzePlugin);
-    registry.register(processPlugin);
-    this.controller = new PipelineController(registry);
-
+    const { pages: pipelineResults, totalMetrics } = await this.controller.runDocument(pdfBuffer, {
+      documentId: pdfId,
+      totalPages,
+      signal: options.signal,
+      onProgress: (pageIndex, total, phase) => {
+        if (onProgress) onProgress(pageIndex, total, `[Engine v2] ${phase} page ${pageIndex}/${total}`);
+      }
+    });
+    
     const results: PagePipelineResult[] = [];
     const profiles: PageProfile[] = [];
     let sumBrightness = 0, darkCount = 0;
 
-    for (let i = 1; i <= totalPages; i++) {
-      if (onProgress) onProgress(i - 1, totalPages, `[Engine v2] Processing slide ${i}/${totalPages}...`);
+    for (const result of pipelineResults) {
+      profiles.push(result.profile);
+      sumBrightness += result.profile.averageBrightness;
+      if (result.profile.classification === 'DARK_SLIDE') darkCount++;
 
-      const page = await pdfDoc.getPage(i);
-      const viewport = page.getViewport({ scale: 1.8 });
-
-      const canvas = new OffscreenCanvas(viewport.width, viewport.height);
-      const ctx = canvas.getContext('2d')!;
-      await page.render({ canvasContext: ctx as unknown as CanvasRenderingContext2D, viewport }).promise;
-
-      const imageBitmap = canvas.transferToImageBitmap();
-      const tmpCanvas = new OffscreenCanvas(imageBitmap.width, imageBitmap.height);
-      const tmpCtx = tmpCanvas.getContext('2d')!;
-      tmpCtx.drawImage(imageBitmap, 0, 0);
-      const srcImageData = tmpCtx.getImageData(0, 0, imageBitmap.width, imageBitmap.height);
-      imageBitmap.close();
-
-      const profile = analyzePlugin.execute(
-        { imageData: srcImageData, pageNumber: i },
-        { documentId: pdfId, pageIndex: i, totalPages, signal: new AbortController().signal, progress: () => {}, log: () => {} }
-      );
-
-      const profileResult = await profile;
-      profiles.push(profileResult.data);
-
-      sumBrightness += profileResult.data.averageBrightness;
-      if (profileResult.data.classification === 'DARK_SLIDE') darkCount++;
-
-      const processInput = {
-        imageData: srcImageData,
-        pageNumber: i,
-        profile: profileResult.data,
-      };
-
-      const processResult = await processPlugin.execute(
-        processInput,
-        { documentId: pdfId, pageIndex: i, totalPages, signal: new AbortController().signal, progress: () => {}, log: () => {} }
-      );
-
-      const thumbDataUrl = await this.generateThumbnail(processResult.data.imageData);
+      // Generate thumbnail and track it for cleanup
+      const thumbDataUrl = await this.generateThumbnail(result.optimizedImageData);
+      this.activeThumbnailUrls.add(thumbDataUrl);
 
       if (onPageOptimized) {
-        onPageOptimized(i - 1, thumbDataUrl, processResult.data.inkBefore, processResult.data.inkAfter);
+        onPageOptimized(result.pageIndex, thumbDataUrl, result.inkBefore, result.inkAfter);
       }
 
-      results.push({
-        pageIndex: i - 1,
-        imageData: srcImageData,
-        profile: profileResult.data,
-        optimizedImageData: processResult.data.imageData,
-        inkBefore: processResult.data.inkBefore,
-        inkAfter: processResult.data.inkAfter,
-        thumbnailUrl: thumbDataUrl,
-      });
+      // Update result with thumbnail
+      result.thumbnailUrl = thumbDataUrl;
+      results.push(result);
 
-      const origBlob = await memoryManager.imageDataToBlob(srcImageData, 0.75);
-      const optBlob = await memoryManager.imageDataToBlob(processResult.data.imageData, 0.88);
-      await pwOptimizerStorage.storePagesBatch([{ pdfId, pageIndex: i - 1, originalBlob: origBlob, optimizedBlob: optBlob }]);
-
-      if (onProgress) onProgress(i, totalPages, `[Engine v2] Completed slide ${i}/${totalPages}`);
+      // Store blobs
+      const origBlob = await memoryManager.imageDataToBlob(result.imageData, 0.75);
+      const optBlob = await memoryManager.imageDataToBlob(result.optimizedImageData, 0.88);
+      await pwOptimizerStorage.storePagesBatch([{ pdfId, pageIndex: result.pageIndex, originalBlob: origBlob, optimizedBlob: optBlob }]);
     }
 
     const darkRatio = darkCount / totalPages;
@@ -177,9 +145,9 @@ export class ProcessingEngineV2 implements IProcessingEngine {
       },
     };
 
-    const processedPages: ProcessedPage[] = results.map((r, i) => ({
-      pageIndex: i,
-      thumbnailDataUrl: r.thumbnailUrl,
+    const processedPages: ProcessedPage[] = results.map((r) => ({
+      pageIndex: r.pageIndex,
+      thumbnailDataUrl: r.thumbnailUrl || '',
       profile: r.profile,
       parameters: {} as any,
       inkCoverageBeforePct: r.inkBefore,
@@ -189,16 +157,15 @@ export class ProcessingEngineV2 implements IProcessingEngine {
       storageKey: pdfId,
     }));
 
-    const totalMs = Math.round(performance.now() - t0);
     return {
       processedPages,
       docProfile: docProfile as any,
       engineVersion: this.version,
       engineId: this.id,
-      totalTimeMs: totalMs,
+      totalTimeMs: totalMetrics.durationMs,
       metrics: {
-        processingTimeMs: totalMs,
-        pagesPerSecond: Number((totalPages / (totalMs / 1000)).toFixed(2)),
+        processingTimeMs: totalMetrics.durationMs,
+        pagesPerSecond: totalMetrics.pagesPerSecond,
       },
     };
   }
@@ -220,5 +187,8 @@ export class ProcessingEngineV2 implements IProcessingEngine {
 
   dispose(): void {
     this.controller.abort();
+    // Cleanup all tracked thumbnails to prevent memory leaks
+    this.activeThumbnailUrls.forEach(url => URL.revokeObjectURL(url));
+    this.activeThumbnailUrls.clear();
   }
 }

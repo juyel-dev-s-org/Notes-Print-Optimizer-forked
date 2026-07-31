@@ -2,8 +2,7 @@ import type { IPlugin, PluginManifest, PluginContext, PluginResult, PluginMetric
 import { Channels } from '../pipeline/plugin/channels';
 import { processPage, calculateInkCoverage, createImageDataFromBuffer } from '../kernels';
 import { ParameterGenerator } from '../optimizer/parameterGenerator';
-import type { PageProfile, ProcessingParameters } from '../optimizer/types';
-import type { DocumentProfile } from '../optimizer/types';
+import type { PageProfile } from '../optimizer/types';
 
 const manifest: PluginManifest = {
   id: 'npo.process.optimize@1.0.0',
@@ -11,26 +10,28 @@ const manifest: PluginManifest = {
   version: '1.0.0',
   description: 'Optimizes page image data (inversion, sharpening, denoising)',
   dependsOn: ['npo.analyze.profile@1.0.0'],
-  inputChannel: Channels.PAGE_IMAGE,
+  inputChannel: Channels.PAGE_PROFILE,
   outputChannel: Channels.OPTIMIZED_IMAGE,
   executionTarget: 'auto',
   optional: false,
   resourceHint: { estimatedMemoryMB: 20, isCPUBound: true },
 };
 
-export interface ProcessPluginInput {
+export type ProcessPluginOutput = {
   imageData: ImageData;
   pageNumber: number;
   profile: PageProfile;
-}
+  inkBefore: number;
+  inkAfter: number;
+};
 
-export class ProcessPlugin implements IPlugin<ProcessPluginInput, { imageData: ImageData; inkBefore: number; inkAfter: number }> {
+export class ProcessPlugin implements IPlugin<{ imageData: ImageData; pageNumber: number; profile: PageProfile }, ProcessPluginOutput> {
   readonly manifest = manifest;
 
   async execute(
-    input: ProcessPluginInput,
+    input: { imageData: ImageData; pageNumber: number; profile: PageProfile },
     ctx: PluginContext,
-  ): Promise<PluginResult<{ imageData: ImageData; inkBefore: number; inkAfter: number }>> {
+  ): Promise<PluginResult<ProcessPluginOutput>> {
     const t0 = performance.now();
     const { imageData, profile } = input;
 
@@ -51,7 +52,13 @@ export class ProcessPlugin implements IPlugin<ProcessPluginInput, { imageData: I
     };
 
     return {
-      data: { imageData: optimizedImageData, inkBefore, inkAfter },
+      data: { 
+        imageData: optimizedImageData, 
+        pageNumber: input.pageNumber,
+        profile: input.profile,
+        inkBefore, 
+        inkAfter 
+      },
       metrics,
     };
   }

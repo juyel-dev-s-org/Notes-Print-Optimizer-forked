@@ -16,13 +16,19 @@ const manifest: PluginManifest = {
   resourceHint: { estimatedMemoryMB: 5, isCPUBound: true },
 };
 
-export class AnalyzePlugin implements IPlugin<{ imageData: ImageData; pageNumber: number }, PageProfile> {
+export type AnalyzePluginOutput = {
+  imageData: ImageData;
+  pageNumber: number;
+  profile: PageProfile;
+};
+
+export class AnalyzePlugin implements IPlugin<{ imageData: ImageData; pageNumber: number }, AnalyzePluginOutput> {
   readonly manifest = manifest;
 
   async execute(
     input: { imageData: ImageData; pageNumber: number },
     ctx: PluginContext,
-  ): Promise<PluginResult<PageProfile>> {
+  ): Promise<PluginResult<AnalyzePluginOutput>> {
     const t0 = performance.now();
     const profile = analyzeImageData(input.imageData, input.pageNumber - 1);
 
@@ -33,6 +39,13 @@ export class AnalyzePlugin implements IPlugin<{ imageData: ImageData; pageNumber
       pixelsProcessed: input.imageData.width * input.imageData.height,
     };
 
-    return { data: profile, metrics };
+    return { 
+      data: { 
+        imageData: input.imageData, 
+        pageNumber: input.pageNumber, 
+        profile 
+      }, 
+      metrics 
+    };
   }
 }

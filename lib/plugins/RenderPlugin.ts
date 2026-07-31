@@ -48,7 +48,9 @@ export class RenderPlugin implements IPlugin<ArrayBuffer, { imageData: ImageData
     const viewport = page.getViewport({ scale: this.renderScale });
 
     const canvas = new OffscreenCanvas(viewport.width, viewport.height);
-    const pageCtx = canvas.getContext('2d')!;
+    // Use 'any' to bypass the strict CanvasRenderingContext2D requirement of older pdf.js types
+    // while safely accepting OffscreenCanvasRenderingContext2D in modern browsers.
+    const pageCtx = canvas.getContext('2d') as any;
     await page.render({ canvasContext: pageCtx, viewport }).promise;
 
     const imageBitmap = canvas.transferToImageBitmap();
@@ -56,6 +58,8 @@ export class RenderPlugin implements IPlugin<ArrayBuffer, { imageData: ImageData
     const tmpCtx = tmpCanvas.getContext('2d')!;
     tmpCtx.drawImage(imageBitmap, 0, 0);
     const imageData = tmpCtx.getImageData(0, 0, imageBitmap.width, imageBitmap.height);
+    
+    // Cleanup to prevent memory leaks
     imageBitmap.close();
 
     const durationMs = performance.now() - t0;
