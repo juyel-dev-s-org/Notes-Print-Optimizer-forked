@@ -1,3 +1,12 @@
+/**
+ * WorkerPool - Managed worker pool with size limits and health checks.
+ *
+ * Production optimizations:
+ *  - MAX_WORKERS_PER_TYPE cap prevents unbounded worker spawning
+ *  - Idle worker reclamation after timeout (frees memory on low-end devices)
+ *  - Transferable-first message passing (zero-copy buffer handoff)
+ *  - Health check with PING/PONG and automatic crash recovery
+ */
 import type { WorkerType, WorkerInfo, TaskEntry, WorkerRequest, WorkerResponse, PixelTask, ComposeTask } from './protocol';
 import { generateTaskId } from './protocol';
 
@@ -5,6 +14,8 @@ const DEFAULT_TIMEOUT_MS = 30_000;
 const HEALTH_CHECK_INTERVAL_MS = 15_000;
 const MAX_RETRIES = 2;
 const PING_TIMEOUT_MS = 3_000;
+const MAX_WORKERS_PER_TYPE = 4;
+const IDLE_RECLAIM_MS = 60_000;
 
 export type WorkerFactory = (type: WorkerType) => Worker | null;
 
@@ -20,7 +31,14 @@ export class WorkerPool {
     this.factory = factory;
   }
 
+  private countByType(type: WorkerType): number {
+    return this.workers.filter(w => w.type === type).length;
+  }
+
   private spawnWorker(type: WorkerType): WorkerInfo | null {
+    /* Enforce pool size limit per worker type */
+    if (this.countByType(type) >= MAX_WORKERS_PER_TYPE) return null;
+
     const w = this.factory(type);
     if (!w) return null;
 
@@ -134,6 +152,7 @@ export class WorkerPool {
       return candidates[0];
     }
 
+    /* Only spawn if under limit */
     return this.spawnWorker(type);
   }
 
@@ -170,8 +189,17 @@ export class WorkerPool {
     if (this.healthTimer) return;
     this.healthTimer = setInterval(() => {
       const now = Date.now();
-      for (const info of this.workers) {
+      for (const info of [...this.workers]) {
         if (info.busy) continue;
+
+        /* Reclaim idle workers after timeout (frees memory) */
+        if (now - info.lastPong > IDLE_RECLAIM_MS && this.countByType(info.type) > 1) {
+          try { info.worker.terminate(); } catch (error) { console.warn('[WorkerPool] Non-fatal error:', error); }
+          const idx = this.workers.indexOf(info);
+          if (idx !== -1) this.workers.splice(idx, 1);
+          continue;
+        }
+
         if (now - info.lastPong > HEALTH_CHECK_INTERVAL_MS + PING_TIMEOUT_MS) {
           info.healthy = false;
           try { info.worker.terminate(); } catch (error) { console.warn('[WorkerPool] Non-fatal error:', error); }
@@ -252,6 +280,7 @@ export class WorkerPool {
       healthyCount: this.workers.filter(w => w.healthy).length,
       queueLength: this.taskQueue.length,
       pendingCount: this.pending.size,
+      maxPerType: MAX_WORKERS_PER_TYPE,
     };
   }
 

@@ -1,5 +1,11 @@
 /**
  * PipelineScheduler - Priority heap scheduler with retry & backpressure.
+ *
+ * Production optimizations:
+ *  - Zero-latency dispatch via queueMicrotask (was setTimeout 16ms)
+ *  - Configurable yield interval only for UI-bound work
+ *  - Exponential backoff with jitter on retries
+ *  - Backpressure detection with high-water mark
  */
 export interface SchedulerOptions { maxConcurrency: number; yieldIntervalMs: number; maxRetries: number; baseRetryDelayMs: number; queueHighWaterMark: number; }
 interface QueueEntry { task: () => Promise<void>; priority: number; reject: (err: Error) => void; retriesLeft: number; attempt: number; }
@@ -34,7 +40,7 @@ export class PipelineScheduler {
 
   constructor(opts: Partial<SchedulerOptions> = {}) {
     this.maxConcurrency = opts.maxConcurrency ?? 4;
-    this.yieldIntervalMs = opts.yieldIntervalMs ?? 16;
+    this.yieldIntervalMs = opts.yieldIntervalMs ?? 0;
     this.maxRetries = opts.maxRetries ?? 2;
     this.baseRetryDelayMs = opts.baseRetryDelayMs ?? 200;
     this.queueHighWaterMark = opts.queueHighWaterMark ?? 32;
@@ -54,8 +60,12 @@ export class PipelineScheduler {
   private scheduleDispatch(): void {
     if (this.dispatchScheduled || this.aborted) return;
     this.dispatchScheduled = true;
-    if (this.yieldIntervalMs > 0) { setTimeout(() => { this.dispatchScheduled = false; this.dispatch(); }, this.yieldIntervalMs); }
-    else { queueMicrotask(() => { this.dispatchScheduled = false; this.dispatch(); }); }
+    /* Zero-latency dispatch: use microtask instead of setTimeout(16ms) */
+    if (this.yieldIntervalMs > 0) {
+      setTimeout(() => { this.dispatchScheduled = false; this.dispatch(); }, this.yieldIntervalMs);
+    } else {
+      queueMicrotask(() => { this.dispatchScheduled = false; this.dispatch(); });
+    }
   }
 
   private dispatch(): void {

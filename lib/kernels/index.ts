@@ -1,6 +1,6 @@
 export { getLuminance } from './luminance';
 export { rgbToHsv } from './hsv';
-export { ensureCC, getCCLabels, getCCQueue } from './connectedComponents';
+export { ensureCC, getCCLabels, getCCQueue, shrinkCC, releaseCC } from './connectedComponents';
 export { stripDecorativeFills, removeNoise } from './noise';
 export { applyMaskDilation } from './maskOps';
 export { applyUnsharpMask } from './sharpen';

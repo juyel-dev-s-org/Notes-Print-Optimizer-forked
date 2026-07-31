@@ -1,13 +1,17 @@
 /**
- * ProcessingEngineV2 - Memory-optimized pipeline engine.
+ * ProcessingEngineV2 - Memory-optimized pipeline engine (Production).
  *
  * Key optimizations for 4 GB RAM phones & 250+ page documents:
+ *  - Hoisted imports: zero per-page dynamic import overhead
  *  - Sequential page processing with immediate IndexedDB persistence
  *  - ImageData released after each page (never accumulated)
- *  - Adaptive render scale based on device memory / screen
+ *  - Adaptive render scale based on device memory / live pressure
  *  - DOM-canvas fallback when OffscreenCanvas is unavailable
  *  - Cooperative UI yielding between pages (prevents ANR)
- *  - MemoryGuard pressure checks with forced-GC pause between pages
+ *  - MemoryGuard pressure checks with buffer pool shrink
+ *  - Zero-copy ink coverage (passes ArrayBuffer directly)
+ *  - Batched IDB writes (reduces transaction overhead)
+ *  - Adaptive yield frequency per device class
  */
 import { PipelineController } from '../../../pipeline/PipelineController';
 import { PluginRegistry } from '../../../pipeline/PluginRegistry';
@@ -30,6 +34,17 @@ import { memoryManager } from '../../memoryManager';
 import { pwOptimizerStorage } from '../../storage';
 import { memoryGuard } from '../../../pipeline/MemoryGuard';
 import { detectDeviceProfile } from '../../../pipeline/types';
+import { bufferPool } from '../../perf/bufferPool';
+
+/* Hoisted imports: eliminate per-page dynamic import overhead */
+import { analyzeImageData } from '../../analysis';
+import {
+  processPage as runProcessPage,
+  calculateInkCoverage,
+  createImageDataFromBuffer,
+} from '../../../kernels';
+import { ParameterGenerator } from '../../parameterGenerator';
+import { getPdfjsLib } from '../../pdfjsLoader';
 
 /* ------------------------------------------------------------------ */
 /*  Helpers                                                            */
@@ -37,9 +52,10 @@ import { detectDeviceProfile } from '../../../pipeline/types';
 
 function adaptiveScale(): number {
   const dev = detectDeviceProfile();
-  if (dev.isMobile || dev.memoryGB <= 4) return 1.2;
-  if (dev.isTablet || dev.memoryGB <= 8) return 1.5;
-  return 1.8;
+  const pressureMul = memoryGuard.isCritical() ? 0.8 : memoryGuard.isUnderPressure() ? 0.9 : 1.0;
+  if (dev.isMobile || dev.memoryGB <= 4) return 1.2 * pressureMul;
+  if (dev.isTablet || dev.memoryGB <= 8) return 1.5 * pressureMul;
+  return 1.8 * pressureMul;
 }
 
 function createCanvas2D(w: number, h: number): {
@@ -135,7 +151,6 @@ export class ProcessingEngineV2 implements IProcessingEngine {
   }
 
   async analyzePage(imageData: ImageData, pageIndex: number): Promise<PageProfile> {
-    const { analyzeImageData } = await import('../../analysis');
     return analyzeImageData(imageData, pageIndex);
   }
 
@@ -146,19 +161,14 @@ export class ProcessingEngineV2 implements IProcessingEngine {
     profile: PageProfile,
   ): Promise<EnginePageProcessResult> {
     const t0 = performance.now();
-    const {
-      processPage: runProcess,
-      calculateInkCoverage,
-      createImageDataFromBuffer,
-    } = await import('../../../kernels');
-    const result = runProcess(
+    const result = runProcessPage(
       imageData.data, imageData.width, imageData.height, params, profile,
     );
     const optimizedImageData = createImageDataFromBuffer(
       result.buffer, result.width, result.height,
     );
     const ib = calculateInkCoverage(imageData.data);
-    const ia = calculateInkCoverage(new Uint8ClampedArray(result.buffer));
+    const ia = calculateInkCoverage(result.buffer);
     return {
       pageIndex,
       optimizedImageData,
@@ -189,7 +199,7 @@ export class ProcessingEngineV2 implements IProcessingEngine {
       signal.addEventListener('abort', () => this.abortController?.abort(), { once: true });
     }
 
-    const pdfjsLib = await (await import('../../pdfjsLoader')).getPdfjsLib();
+    const pdfjsLib = await getPdfjsLib();
     const pdfDoc = await pdfjsLib.getDocument({
       data: new Uint8Array(pdfBuffer),
     }).promise;
@@ -197,6 +207,7 @@ export class ProcessingEngineV2 implements IProcessingEngine {
     const scale = adaptiveScale();
     const device = detectDeviceProfile();
     const isLowEnd = device.isMobile || device.memoryGB <= 4;
+    const yieldEveryNPages = isLowEnd ? 1 : device.isTablet ? 3 : 5;
 
     const profiles: PageProfile[] = [];
     const pageMeta: Array<{
@@ -212,11 +223,25 @@ export class ProcessingEngineV2 implements IProcessingEngine {
     let sumBrightness = 0;
     let darkCount = 0;
 
+    /* Batched IDB writes */
+    const idbBatch: Array<{ pdfId: string; pageIndex: number; originalBlob: Blob; optimizedBlob: Blob }> = [];
+    const IDB_BATCH_SIZE = isLowEnd ? 2 : 4;
+    let idbFlushChain: Promise<void> = Promise.resolve();
+
+    const flushIdb = (): void => {
+      if (idbBatch.length === 0) return;
+      const batch = idbBatch.splice(0, idbBatch.length);
+      idbFlushChain = idbFlushChain
+        .then(() => pwOptimizerStorage.storePagesBatch(batch))
+        .catch(e => console.warn('[V2] IDB batch write failed:', e));
+    };
+
     for (let i = 1; i <= totalPages; i++) {
       if (localSignal.aborted) throw new DOMException('Aborted', 'AbortError');
 
       onProgress?.(i - 1, totalPages, `[V2] Rendering page ${i}/${totalPages}`);
 
+      /* Phase 1: Render */
       const page = await pdfDoc.getPage(i);
       const viewport = page.getViewport({ scale });
       const vw = Math.ceil(viewport.width);
@@ -236,32 +261,31 @@ export class ProcessingEngineV2 implements IProcessingEngine {
 
       if (localSignal.aborted) throw new DOMException('Aborted', 'AbortError');
 
-      const { analyzeImageData } = await import('../../analysis');
+      /* Phase 2: Analyze */
       const profile = analyzeImageData(srcImageData, i - 1);
       profiles.push(profile);
       sumBrightness += profile.averageBrightness;
       if (profile.classification === 'DARK_SLIDE') darkCount++;
 
-      const {
-        processPage: runProcess,
-        calculateInkCoverage,
-        createImageDataFromBuffer,
-      } = await import('../../../kernels');
-      const { ParameterGenerator } = await import('../../parameterGenerator');
+      /* Phase 3: Process */
       const params = ParameterGenerator.getPresetParameters(
         profile.classification === 'DARK_SLIDE' ? 'PW_DARK_SLIDE' : 'LIGHT_HANDWRITTEN',
       );
-      const procResult = runProcess(
+      const procResult = runProcessPage(
         srcImageData.data, srcImageData.width, srcImageData.height, params, profile,
       );
+
+      /* Zero-copy ink coverage on raw buffers */
+      const inkBefore = calculateInkCoverage(srcImageData.data);
+      const inkAfter = calculateInkCoverage(procResult.buffer);
+
       const optimizedImageData = createImageDataFromBuffer(
         procResult.buffer, procResult.width, procResult.height,
       );
-      const inkBefore = calculateInkCoverage(srcImageData.data);
-      const inkAfter = calculateInkCoverage(new Uint8ClampedArray(procResult.buffer));
 
       if (localSignal.aborted) throw new DOMException('Aborted', 'AbortError');
 
+      /* Phase 4: Thumbnail */
       let thumbUrl = '';
       try {
         thumbUrl = await this.generateThumbnail(optimizedImageData);
@@ -270,12 +294,12 @@ export class ProcessingEngineV2 implements IProcessingEngine {
 
       onPageOptimized?.(i - 1, thumbUrl, inkBefore, inkAfter);
 
+      /* Phase 5: Persist (batched) */
       try {
         const origBlob = await memoryManager.imageDataToBlob(srcImageData, 0.75);
         const optBlob = await memoryManager.imageDataToBlob(optimizedImageData, 0.88);
-        await pwOptimizerStorage.storePagesBatch([
-          { pdfId, pageIndex: i - 1, originalBlob: origBlob, optimizedBlob: optBlob },
-        ]);
+        idbBatch.push({ pdfId, pageIndex: i - 1, originalBlob: origBlob, optimizedBlob: optBlob });
+        if (idbBatch.length >= IDB_BATCH_SIZE) flushIdb();
       } catch (e) {
         console.warn(`[V2] Persist failed page ${i}:`, e);
       }
@@ -292,14 +316,20 @@ export class ProcessingEngineV2 implements IProcessingEngine {
 
       onProgress?.(i, totalPages, `[V2] Completed page ${i}/${totalPages}`);
 
-      if (isLowEnd || i % 5 === 0) {
+      /* Cooperative yielding & memory pressure */
+      if (i % yieldEveryNPages === 0 || isLowEnd) {
         await yieldToUI();
       }
       if (memoryGuard.isCritical()) {
-        await new Promise(r => setTimeout(r, 150));
+        bufferPool.shrink(8);
+        await new Promise(r => setTimeout(r, 200));
+      } else if (memoryGuard.isUnderPressure()) {
+        bufferPool.shrink(16);
       }
     }
 
+    flushIdb();
+    await idbFlushChain;
     try { pdfDoc.destroy(); } catch { /* */ }
 
     const darkRatio = totalPages > 0 ? darkCount / totalPages : 0;
@@ -348,7 +378,7 @@ export class ProcessingEngineV2 implements IProcessingEngine {
     const target = createCanvas2D(tw, th);
     if (!target) return '';
     const src = createCanvas2D(imageData.width, imageData.height);
-    if (!src) return '';
+    if (!src) { freeCanvas(target.canvas, target.isOffscreen); return ''; }
 
     src.ctx.putImageData(imageData, 0, 0);
     target.ctx.drawImage(src.canvas as any, 0, 0, tw, th);
@@ -373,5 +403,6 @@ export class ProcessingEngineV2 implements IProcessingEngine {
     this.abortController?.abort();
     this.controller.abort();
     this.cleanupThumbnails();
+    bufferPool.shrink(0);
   }
 }

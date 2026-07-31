@@ -1,3 +1,13 @@
+/**
+ * processPage - Core pixel processing kernel.
+ *
+ * Production optimizations:
+ *  - Lazy channel mask allocation: only allocates masks for channels with data
+ *  - Single-pass HSV classification with early-exit for dark pixels
+ *  - Zero-copy crop via subarray (no intermediate buffer)
+ *  - Bulk row copy via set() for fast path
+ *  - Fast V-check avoids full HSV conversion for dark pixel rejection
+ */
 import { getLuminance } from './luminance';
 import { rgbToHsv } from './hsv';
 import { stripDecorativeFills, removeNoise } from './noise';
@@ -33,6 +43,11 @@ export interface KernelProcessResult {
   height: number;
 }
 
+/** Fast max-channel check (avoids full HSV for dark pixel rejection) */
+function fastMaxChannel(r: number, g: number, b: number): number {
+  return r > g ? (r > b ? r : b) : (g > b ? g : b);
+}
+
 export function processPage(
   srcData: Uint8ClampedArray,
   width: number,
@@ -50,64 +65,144 @@ export function processPage(
   const ct = Math.floor(sh * (params.bannerCropTopPct / 100));
   const cb = Math.floor(sh * (params.bannerCropBottomPct / 100));
   const dw = sw, dh = Math.max(10, sh - ct - cb);
-  const dst = new Uint8ClampedArray(dw * dh * 4);
+  const totalPixels = dw * dh;
+  const dst = new Uint8ClampedArray(totalPixels * 4);
+
   const convertColors = params.invertMode === 'smart';
   const isDark = profile.classification === 'DARK_SLIDE' || profile.darkBackgroundRatio > 0.4;
   const shouldProcess = params.invertMode !== 'none' || isDark;
+
+  /* Fast path: no processing, just crop copy */
   if (!shouldProcess) {
-    for (let y = 0; y < dh; y++) { const sro = (y + ct) * sw * 4, dro = y * dw * 4;
-      for (let x = 0; x < dw; x++) { const si = sro + x * 4, di = dro + x * 4;
-        dst[di] = srcData[si]; dst[di + 1] = srcData[si + 1]; dst[di + 2] = srcData[si + 2]; dst[di + 3] = 255; } }
+    const srcRowBytes = sw * 4;
+    const dstRowBytes = dw * 4;
+    const srcOffset = ct * srcRowBytes;
+    for (let y = 0; y < dh; y++) {
+      const srcStart = srcOffset + y * srcRowBytes;
+      const dstStart = y * dstRowBytes;
+      dst.set(srcData.subarray(srcStart, srcStart + dstRowBytes), dstStart);
+    }
+    for (let i = 3; i < dst.length; i += 4) dst[i] = 255;
     return { buffer: dst.buffer, width: dw, height: dh };
   }
-  const tp = dw * dh; const fm = new Uint8Array(tp);
+
+  /* Foreground mask extraction */
+  const fm = new Uint8Array(totalPixels);
+
   if (convertColors && wasmKernels) {
+    /* WASM-accelerated path */
     const cropped = srcData.subarray(ct * sw * 4, (ct + dh) * sw * 4);
-    const hsv = wasmKernels.rgbToHsvBatch(cropped, dw * dh);
-    const channels = wasmKernels.classifyColors(hsv, dw * dh);
+    const hsv = wasmKernels.rgbToHsvBatch(cropped, totalPixels);
+    const channels = wasmKernels.classifyColors(hsv, totalPixels);
+
     for (let c = 0; c < 7; c++) {
-      const cm = new Uint8Array(tp);
       let hasData = false;
-      for (let i = 0; i < tp; i++) {
-        if (channels[i * 7 + c] === 1) { cm[i] = 1; hasData = true; }
+      for (let i = c; i < totalPixels * 7; i += 7) {
+        if (channels[i] === 1) { hasData = true; break; }
       }
-      if (hasData) {
-        wasmKernels.stripDecorativeFills(cm, dw, dh);
-        for (let i = 0; i < tp; i++) if (cm[i] === 1) fm[i] = 1;
+      if (!hasData) continue;
+
+      const cm = new Uint8Array(totalPixels);
+      for (let i = 0; i < totalPixels; i++) {
+        if (channels[i * 7 + c] === 1) cm[i] = 1;
+      }
+      wasmKernels.stripDecorativeFills(cm, dw, dh);
+      for (let i = 0; i < totalPixels; i++) {
+        if (cm[i] === 1) fm[i] = 1;
       }
     }
   } else if (convertColors) {
+    /* JS fallback: single-pass HSV with LAZY channel masks */
     const hsv: [number, number, number] = [0, 0, 0];
-    const cm: Uint8Array[] = []; const cf: boolean[] = [false, false, false, false, false, false, false];
-    for (let c = 0; c < 7; c++) cm.push(new Uint8Array(tp));
-    for (let y = 0; y < dh; y++) { const sro = (y + ct) * sw * 4, dro = y * dw;
-      for (let x = 0; x < dw; x++) { const si = sro + x * 4;
-        rgbToHsv(srcData[si], srcData[si + 1], srcData[si + 2], hsv);
+    const cm: (Uint8Array | null)[] = [null, null, null, null, null, null, null];
+
+    for (let y = 0; y < dh; y++) {
+      const srcRowOffset = (y + ct) * sw * 4;
+      const dstRowOffset = y * dw;
+
+      for (let x = 0; x < dw; x++) {
+        const si = srcRowOffset + x * 4;
+        const r = srcData[si], g = srcData[si + 1], b = srcData[si + 2];
+
+        /* Early exit: skip dark pixels without full HSV conversion */
+        if (fastMaxChannel(r, g, b) < 70) continue;
+
+        rgbToHsv(r, g, b, hsv);
         const h = hsv[0], s = hsv[1], v = hsv[2];
-        if (v < 70) continue; const pi = dro + x;
-        if (s < 55 && v > 155) { cm[0][pi] = 1; cf[0] = true; }
-        if (h >= 15 && h <= 35 && s > 80 && v > 100) { cm[1][pi] = 1; cf[1] = true; }
-        if (h >= 36 && h <= 85 && s > 55 && v > 75) { cm[2][pi] = 1; cf[2] = true; }
-        if (h >= 86 && h <= 105 && s > 55 && v > 75) { cm[3][pi] = 1; cf[3] = true; }
-        if (h >= 106 && h <= 135 && s > 55 && v > 65) { cm[4][pi] = 1; cf[4] = true; }
-        if (h >= 136 && h <= 175 && s > 55 && v > 75) { cm[5][pi] = 1; cf[5] = true; }
-        if (((h <= 15) || (h >= 175)) && s > 75 && v > 95) { cm[6][pi] = 1; cf[6] = true; } } }
+        const pi = dstRowOffset + x;
+
+        if (s < 55 && v > 155) {
+          if (!cm[0]) cm[0] = new Uint8Array(totalPixels);
+          cm[0][pi] = 1;
+        } else if (h >= 15 && h <= 35 && s > 80 && v > 100) {
+          if (!cm[1]) cm[1] = new Uint8Array(totalPixels);
+          cm[1][pi] = 1;
+        } else if (h >= 36 && h <= 85 && s > 55 && v > 75) {
+          if (!cm[2]) cm[2] = new Uint8Array(totalPixels);
+          cm[2][pi] = 1;
+        } else if (h >= 86 && h <= 105 && s > 55 && v > 75) {
+          if (!cm[3]) cm[3] = new Uint8Array(totalPixels);
+          cm[3][pi] = 1;
+        } else if (h >= 106 && h <= 135 && s > 55 && v > 65) {
+          if (!cm[4]) cm[4] = new Uint8Array(totalPixels);
+          cm[4][pi] = 1;
+        } else if (h >= 136 && h <= 175 && s > 55 && v > 75) {
+          if (!cm[5]) cm[5] = new Uint8Array(totalPixels);
+          cm[5][pi] = 1;
+        } else if (((h <= 15) || (h >= 175)) && s > 75 && v > 95) {
+          if (!cm[6]) cm[6] = new Uint8Array(totalPixels);
+          cm[6][pi] = 1;
+        }
+      }
+    }
+
     for (let c = 0; c < 7; c++) {
-      if (cf[c]) { stripDecorativeFills(cm[c], dw, dh); for (let i = 0; i < tp; i++) if (cm[c][i] === 1) fm[i] = 1; } }
+      const mask = cm[c];
+      if (!mask) continue;
+      stripDecorativeFills(mask, dw, dh);
+      for (let i = 0; i < totalPixels; i++) {
+        if (mask[i] === 1) fm[i] = 1;
+      }
+    }
   } else {
-    for (let y = 0; y < dh; y++) { const sro = (y + ct) * sw * 4, dro = y * dw;
-      for (let x = 0; x < dw; x++) { const si = sro + x * 4;
-        if (getLuminance(srcData[si], srcData[si + 1], srcData[si + 2]) >= 70) fm[dro + x] = 1; } }
+    /* Simple luminance-based extraction */
+    for (let y = 0; y < dh; y++) {
+      const srcRowOffset = (y + ct) * sw * 4;
+      const dstRowOffset = y * dw;
+      for (let x = 0; x < dw; x++) {
+        const si = srcRowOffset + x * 4;
+        if (getLuminance(srcData[si], srcData[si + 1], srcData[si + 2]) >= 70) {
+          fm[dstRowOffset + x] = 1;
+        }
+      }
+    }
   }
-  if (params.strokeEnhancement !== 'none') applyMaskDilation(fm, dw, dh, params.strokeEnhancement === 'strong' ? 5 : 3);
+
+  /* Post-processing */
+  if (params.strokeEnhancement !== 'none') {
+    applyMaskDilation(fm, dw, dh, params.strokeEnhancement === 'strong' ? 5 : 3);
+  }
+
   if (wasmKernels) {
     wasmKernels.removeNoise(fm, dw, dh);
   } else {
     removeNoise(fm, dw, dh);
   }
-  for (let i = 0; i < tp; i++) { const di = i * 4, val = fm[i] === 1 ? 0 : 255;
-    dst[di] = val; dst[di + 1] = val; dst[di + 2] = val; dst[di + 3] = 255; }
-  if (params.sharpenAmount > 0) applyUnsharpMask(dst, dw, dh, params.sharpenAmount / 100);
+
+  /* Composite: mask to B/W output */
+  for (let i = 0; i < totalPixels; i++) {
+    const di = i * 4;
+    const val = fm[i] === 1 ? 0 : 255;
+    dst[di] = val;
+    dst[di + 1] = val;
+    dst[di + 2] = val;
+    dst[di + 3] = 255;
+  }
+
+  if (params.sharpenAmount > 0) {
+    applyUnsharpMask(dst, dw, dh, params.sharpenAmount / 100);
+  }
+
   return { buffer: dst.buffer, width: dw, height: dh };
 }
 
@@ -115,8 +210,7 @@ export function createImageDataFromBuffer(
   buffer: ArrayBuffer,
   width: number,
   height: number,
-  data?: Uint8ClampedArray<ArrayBuffer>
 ): ImageData {
-  const clamped: Uint8ClampedArray<ArrayBuffer> = data ?? new Uint8ClampedArray(buffer);
-  return new ImageData(clamped, width, height);
+  const data = new Uint8ClampedArray(buffer);
+  return new ImageData(data, width, height);
 }
