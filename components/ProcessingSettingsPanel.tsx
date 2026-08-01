@@ -170,15 +170,20 @@ export const ProcessingSettingsPanel: React.FC<ProcessingSettingsPanelProps> = (
   const [isOpen, setIsOpen] = useState(false);
   const [isDirty, setIsDirty] = useState(false);
 
-  /* Debounced preview reprocess - avoids hammering on rapid slider drags */
+  /* Debounced preview reprocess - avoids hammering on rapid slider drags.
+   * A ref is used so the timeout ALWAYS calls the latest onPreviewReprocess,
+   * eliminating the stale-closure bug where the captured callback had
+   * outdated masterParams / processingToggles. */
   const previewTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const onPreviewReprocessRef = useRef(onPreviewReprocess);
+  onPreviewReprocessRef.current = onPreviewReprocess;   // always latest
 
   const schedulePreviewReprocess = useCallback(() => {
     if (previewTimerRef.current) clearTimeout(previewTimerRef.current);
     previewTimerRef.current = setTimeout(() => {
-      onPreviewReprocess();
+      onPreviewReprocessRef.current();
     }, 300);
-  }, [onPreviewReprocess]);
+  }, []);   // stable — reads from ref
 
   useEffect(() => {
     return () => {

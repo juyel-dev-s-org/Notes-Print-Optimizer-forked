@@ -273,7 +273,7 @@ export function usePageHandlers() {
       const service = new OptimizationService();
       const effectiveParams = buildEffectiveParams(masterParams, processingToggles);
       const { processedPages: pages, docProfile: dProf } = await service.processDocument(
-        mergedPdfBytes.buffer as ArrayBuffer, pdfId, effectiveParams.preset,
+        mergedPdfBytes.slice().buffer as ArrayBuffer, pdfId, effectiveParams.preset,
         selectedEngineVersion,
         (curr, total, action) => {
           if (signal.aborted) throw new Error('CANCELLED');
@@ -328,11 +328,16 @@ export function usePageHandlers() {
    *    on next preview or on unmount.
    *  - No batch allocation; other pages remain untouched.
    * ---------------------------------------------------------------- */
+  /** Guards against overlapping preview-reprocess invocations. */
+  const previewInFlightRef = useRef(false);
+
   const handlePreviewReprocess = useCallback(async () => {
-    if (!mergedPdfBytes || processedPages.length === 0) return;
+    if (!mergedPdfBytes || mergedPdfBytes.length === 0 || processedPages.length === 0) return;
     const pageIndex = selectedPageIndex;
     if (pageIndex < 0 || pageIndex >= processedPages.length) return;
+    if (previewInFlightRef.current) return;   // already running — skip
 
+    previewInFlightRef.current = true;
     actions.setPreviewProcessing(true);
     actions.setError(null);
 
@@ -348,7 +353,7 @@ export function usePageHandlers() {
 
       // 1. Render ONLY the selected page from the source PDF
       const pdfjsLib = await getPdfjsLib();
-      pdfDoc = await pdfjsLib.getDocument({ data: new Uint8Array(mergedPdfBytes) }).promise;
+      pdfDoc = await pdfjsLib.getDocument({ data: mergedPdfBytes.slice() }).promise;
       const pdfPage = await pdfDoc.getPage(pageIndex + 1);
 
       const viewport = pdfPage.getViewport({ scale: 1.0 });
@@ -464,6 +469,7 @@ export function usePageHandlers() {
       if (pdfDoc) {
         try { pdfDoc.destroy(); } catch { /* noop */ }
       }
+      previewInFlightRef.current = false;
       actions.setPreviewProcessing(false);
     }
   }, [
@@ -503,7 +509,7 @@ export function usePageHandlers() {
       const service = new OptimizationService();
       const effectiveParams = buildEffectiveParams(masterParams, processingToggles);
       const { processedPages: pages, docProfile: dProf } = await service.processDocument(
-        mergedPdfBytes.buffer as ArrayBuffer, pdfId, effectiveParams.preset,
+        mergedPdfBytes.slice().buffer as ArrayBuffer, pdfId, effectiveParams.preset,
         selectedEngineVersion,
         (curr, total, action) => {
           if (signal.aborted) throw new Error('CANCELLED');
