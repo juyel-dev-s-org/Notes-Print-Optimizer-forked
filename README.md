@@ -10,6 +10,7 @@ Mobile-first adaptive print optimizer and PDF engine for Physics Wallah (PW) and
 
 ## Features
 
+- **Smart PDF Rearrangement** - Auto-detects related series (e.g. *Calculus 1..13 Class Notes*) and natural-sorts them, with drag & drop fine-tuning
 - **Print Optimization** - Converts dark-background slides to ink-efficient print layouts
 - **Adaptive Layout Engine** - Supports 1-up, 2-up, 4-up, 6-up, 8-up, and 10-up arrangements
 - **WASM-Powered Kernels** - Rust-compiled image processing for near-native speed
@@ -79,6 +80,7 @@ components/                 React UI components
   shared/                   Shared UI (skeletons, metrics, error boundary)
 lib/
   config/                   App configuration and validation
+  rearrange/                Smart PDF rearrangement (parser, normalizer, sorter, rule engine)
   feedback/                 Feedback system (Google Apps Script)
   i18n/                     Internationalization strings
   kernels/                  JS image processing kernels

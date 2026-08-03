@@ -5,6 +5,23 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+- Smart PDF Rearrangement: automatic detection of related PDF series
+  (e.g. "Basic Maths and Calculus 1..13 Class Notes") with rule-based
+  natural sorting (numbers, ordinals, roman numerals, zero-padding)
+- New `lib/rearrange` module with a modular parser / normalizer / sorter /
+  rule-engine architecture (zero new dependencies, browser-only)
+- Drag & drop reordering of uploaded files in all platform views
+  (arrow buttons remain as the touch/keyboard fallback)
+- One-click "Smart Arrange" action with series detection badge in the
+  Phase-1 file sequence panel (`components/FileSequencePanel.tsx`)
+- Uploaded series are auto-arranged as files arrive; unrelated files keep
+  their upload order
+- Unit test coverage for the rearrangement pipeline (parser, normalizer,
+  sorter, rule engine, edge cases, performance smoke test)
+
 ## [1.0.0] - 2026-07-31
 
 ### Added

@@ -41,6 +41,10 @@ export interface WorkflowUIProps {
   onLoadSample: () => void;
   onMoveItem: (index: number, direction: 'UP' | 'DOWN') => void;
   onRemoveItem: (index: number) => void;
+  /** Smart PDF rearrangement: drag & drop move from one index to another. */
+  onReorderItem: (fromIndex: number, toIndex: number) => void;
+  /** Smart PDF rearrangement: one-click rule-based series ordering. */
+  onSmartArrange: () => void;
   onDownloadMerged: () => void;
   onProceedToPhase2: () => void;
 

@@ -39,6 +39,7 @@ export default function HomePage() {
     state, actions,
     handleResetWorkflow, handleFilesUpload, handleLoadSamplePdf,
     handleMoveItem, handleRemoveItem, handleDownloadMerged,
+    handleSmartArrange, handleReorderItem,
     handleProceedToPhase2, handleToggleExcludePage, handleDownloadOptimized1Up,
     handleProceedToPhase3, handleReprocess, handlePreviewReprocess,
     handleResetSettings,
@@ -83,6 +84,8 @@ export default function HomePage() {
           onLoadSample={handleLoadSamplePdf}
           onMoveItem={handleMoveItem}
           onRemoveItem={handleRemoveItem}
+          onReorderItem={handleReorderItem}
+          onSmartArrange={handleSmartArrange}
           onDownloadMerged={handleDownloadMerged}
           onProceedToPhase2={handleProceedToPhase2}
           processedPages={state.processedPages}

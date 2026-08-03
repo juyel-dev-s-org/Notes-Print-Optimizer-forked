@@ -4,6 +4,7 @@ import React from 'react';
 import dynamic from 'next/dynamic';
 import { WorkflowUIProps } from '../types';
 import { UploadArea } from '@/components/UploadArea';
+import { FileSequencePanel } from '@/components/FileSequencePanel';
 import { BeforeAfterSlider } from '@/components/BeforeAfterSlider';
 import { PageGrid } from '@/components/PageGrid';
 import { PageSequencePreview } from '@/components/PageSequencePreview';
@@ -12,9 +13,6 @@ import {
   Download,
   ArrowLeft,
   ArrowRight,
-  Trash2,
-  ArrowUp,
-  ArrowDown,
   CheckCircle2,
   RotateCcw,
   Check,
@@ -54,6 +52,8 @@ export const MobileWorkflowUI: React.FC<WorkflowUIProps> = (props) => {
     onLoadSample,
     onMoveItem,
     onRemoveItem,
+    onReorderItem,
+    onSmartArrange,
     onDownloadMerged,
     onProceedToPhase2,
     processedPages,
@@ -124,56 +124,16 @@ export const MobileWorkflowUI: React.FC<WorkflowUIProps> = (props) => {
                 </span>
               </div>
 
-              {/* Mobile Reorderable File Cards */}
-              <div className="flex flex-col gap-2">
-                {uploadedItems.map((item, idx) => (
-                  <div
-                    key={item.id}
-                    className="flex items-center justify-between rounded-xl border border-slate-800 bg-slate-950 p-2.5 active:bg-slate-800/80 transition-colors"
-                  >
-                    <div className="flex items-center gap-2.5 min-w-0">
-                      <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-indigo-600/30 text-indigo-300 font-bold text-xs border border-indigo-500/30">
-                        {idx + 1}
-                      </div>
-                      <div className="min-w-0 flex-1">
-                        <p className="text-xs font-bold text-slate-100 truncate">
-                          {item.name}
-                        </p>
-                        <p className="text-[10px] text-slate-400">{item.sizeMB} MB</p>
-                      </div>
-                    </div>
-
-                    <div className="flex items-center gap-1 shrink-0">
-                      <button
-                        type="button"
-                        onClick={() => onMoveItem(idx, 'UP')}
-                        disabled={idx === 0}
-                        className="flex h-9 w-9 items-center justify-center rounded-lg text-slate-400 active:bg-slate-800 disabled:opacity-20"
-                        title="Move Up"
-                      >
-                        <ArrowUp className="h-4 w-4" />
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => onMoveItem(idx, 'DOWN')}
-                        disabled={idx === uploadedItems.length - 1}
-                        className="flex h-9 w-9 items-center justify-center rounded-lg text-slate-400 active:bg-slate-800 disabled:opacity-20"
-                        title="Move Down"
-                      >
-                        <ArrowDown className="h-4 w-4" />
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => onRemoveItem(idx)}
-                        className="flex h-9 w-9 items-center justify-center rounded-lg text-red-400 active:bg-red-950/60"
-                        title="Remove"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </button>
-                    </div>
-                  </div>
-                ))}
-              </div>
+              {/* Smart PDF Rearrangement: series-aware auto sort + drag & drop */}
+              <FileSequencePanel
+                items={uploadedItems}
+                isProcessing={isProcessing}
+                onMoveItem={onMoveItem}
+                onRemoveItem={onRemoveItem}
+                onReorderItem={onReorderItem}
+                onSmartArrange={onSmartArrange}
+                compact
+              />
 
               {/* Modular Processing Engine Selector */}
               <EngineSelector

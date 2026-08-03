@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useWorkflow } from './useWorkflow';
 import { UploadService, type UploadedItem } from '../services/UploadService';
+import { planSmartOrder } from '../rearrange';
 import { LayoutService } from '../services/LayoutService';
 import { ExportService } from '../services/ExportService';
 import { OptimizationService } from '../services/OptimizationService';
@@ -211,7 +212,13 @@ export function usePageHandlers() {
   const handleFilesUpload = useCallback(async (newFiles: File[]) => {
     await withProcessing(async () => {
       const items = await UploadService.readFiles(newFiles);
-      const updatedList = [...uploadedItems, ...items];
+      const combined = [...uploadedItems, ...items];
+      // Smart PDF rearrangement: auto-detect related series ("Calculus 1..13
+      // Class Notes") and natural-sort them as files arrive. The rule engine
+      // returns the untouched order when no confident pattern is found, so
+      // this is a no-op for unrelated uploads.
+      const smartPlan = planSmartOrder(combined);
+      const updatedList = smartPlan.changed ? smartPlan.orderedItems : combined;
       actions.setUploadedItems(updatedList);
       await generateMergedPreview(updatedList);
     }, 'PDF cannot be opened or is corrupted.', {
@@ -237,6 +244,31 @@ export function usePageHandlers() {
     if (targetIdx < 0 || targetIdx >= uploadedItems.length) return;
     const newList = [...uploadedItems];
     [newList[index], newList[targetIdx]] = [newList[targetIdx], newList[index]];
+    actions.setUploadedItems(newList);
+    await generateMergedPreview(newList);
+  }, [uploadedItems, actions, generateMergedPreview]);
+
+  /**
+   * Smart PDF Rearrangement - one-click rule-based ordering.
+   * Detects related series ("Basic Maths and Calculus 1..13 Class Notes")
+   * and natural-sorts them; standalone files keep their relative order.
+   */
+  const handleSmartArrange = useCallback(async () => {
+    if (uploadedItems.length < 2) return;
+    const plan = planSmartOrder(uploadedItems);
+    if (!plan.changed) return;
+    actions.setUploadedItems(plan.orderedItems);
+    await generateMergedPreview(plan.orderedItems);
+  }, [uploadedItems, actions, generateMergedPreview]);
+
+  /** Drag & drop reorder: move item at fromIndex into position toIndex. */
+  const handleReorderItem = useCallback(async (fromIndex: number, toIndex: number) => {
+    if (fromIndex === toIndex) return;
+    if (fromIndex < 0 || fromIndex >= uploadedItems.length) return;
+    if (toIndex < 0 || toIndex >= uploadedItems.length) return;
+    const newList = [...uploadedItems];
+    const [moved] = newList.splice(fromIndex, 1);
+    newList.splice(toIndex, 0, moved);
     actions.setUploadedItems(newList);
     await generateMergedPreview(newList);
   }, [uploadedItems, actions, generateMergedPreview]);
@@ -677,6 +709,7 @@ export function usePageHandlers() {
     state, actions,
     handleResetWorkflow, handleFilesUpload, handleLoadSamplePdf,
     handleMoveItem, handleRemoveItem, handleDownloadMerged,
+    handleSmartArrange, handleReorderItem,
     handleProceedToPhase2, handleToggleExcludePage, handleDownloadOptimized1Up,
     handleProceedToPhase3, handleReprocess, handlePreviewReprocess,
     handleResetSettings,
