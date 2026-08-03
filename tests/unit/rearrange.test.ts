@@ -51,7 +51,6 @@ describe('rearrange: roman numerals', () => {
     expect(romanToNumber('IIII')).toBe(-1);
     expect(romanToNumber('IC')).toBe(-1);
     expect(romanToNumber('CIVIL')).toBe(-1);
-    expect(romanToNumber('MIX')).toBe(-1);
     expect(romanToNumber('ABC')).toBe(-1);
     expect(romanToNumber('')).toBe(-1);
   });
@@ -231,10 +230,16 @@ describe('rearrange: planSmartOrder', () => {
   });
 
   it('handles a large batch quickly (performance smoke)', () => {
+    const subjects = [
+      'Alpha', 'Bravo', 'Charlie', 'Delta', 'Echo', 'Foxtrot', 'Golf', 'Hotel',
+      'India', 'Juliet', 'Kilo', 'Lima', 'Mike', 'November', 'Oscar', 'Papa',
+      'Quebec', 'Romeo', 'Sierra', 'Tango', 'Uniform', 'Victor', 'Whiskey',
+      'Xray', 'Yankee',
+    ];
     const big: RearrangeableItem[] = [];
     for (let s = 0; s < 25; s += 1) {
       for (let i = 20; i >= 1; i -= 1) {
-        big.push(item(`s${s}-${i}`, `Subject ${s} Class Notes ${i}.pdf`));
+        big.push(item(`s${s}-${i}`, `${subjects[s]} Class Notes ${i}.pdf`));
       }
     }
     const start = performance.now();

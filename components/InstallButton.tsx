@@ -1,87 +1,29 @@
 'use client';
 
-import { useEffect, useState, useCallback } from 'react';
+import React, { useState } from 'react';
+import { useInstallPrompt } from '@/lib/pwa/useInstallPrompt';
 
-type InstallPromptEvent = Event & {
-  prompt: () => Promise<void>;
-  userChoice: Promise<{ outcome: 'accepted' | 'dismissed'; platform: string }>;
-};
-
-function getIsStandalone(): boolean {
-  if (typeof window === 'undefined') return false;
-  return (
-    window.matchMedia('(display-mode: standalone)').matches ||
-    (window.navigator as any).standalone === true
-  );
-}
-
-function getIsIOS(): boolean {
-  if (typeof window === 'undefined') return false;
-  return (
-    /iPad|iPhone|iPod/.test(navigator.userAgent) ||
-    (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1)
-  );
-}
-
+/**
+ * Compact header-style install button. Shares install logic with
+ * `InstallBanner` via the `useInstallPrompt` hook. Hidden once installed.
+ */
 export function InstallButton() {
-  const [deferredPrompt, setDeferredPrompt] =
-    useState<InstallPromptEvent | null>(null);
-  const [isIOS, setIsIOS] = useState(false);
-  const [isStandalone, setIsStandalone] = useState(false);
+  const { canInstall, isIOS, promptInstall } = useInstallPrompt();
   const [showIOSGuide, setShowIOSGuide] = useState(false);
 
-  useEffect(() => {
-    setIsIOS(getIsIOS());
-    setIsStandalone(getIsStandalone());
+  const handleInstall = async () => {
+    const outcome = await promptInstall();
+    if (outcome === 'ios') setShowIOSGuide((prev) => !prev);
+  };
 
-    const handler = (e: Event) => {
-      e.preventDefault();
-      setDeferredPrompt(e as InstallPromptEvent);
-    };
-
-    const installedHandler = () => {
-      setDeferredPrompt(null);
-      setIsStandalone(true);
-    };
-
-    window.addEventListener('beforeinstallprompt', handler);
-    window.addEventListener('appinstalled', installedHandler);
-
-    const mql = window.matchMedia('(display-mode: standalone)');
-    const displayChangeHandler = (e: MediaQueryListEvent) => {
-      if (e.matches) setIsStandalone(true);
-    };
-    mql.addEventListener('change', displayChangeHandler);
-
-    return () => {
-      window.removeEventListener('beforeinstallprompt', handler);
-      window.removeEventListener('appinstalled', installedHandler);
-      mql.removeEventListener('change', displayChangeHandler);
-    };
-  }, []);
-
-  const handleInstall = useCallback(async () => {
-    if (isIOS) {
-      setShowIOSGuide((prev) => !prev);
-      return;
-    }
-    if (!deferredPrompt) return;
-    await deferredPrompt.prompt();
-    const choice = await deferredPrompt.userChoice;
-    if (choice.outcome === 'accepted') {
-      setDeferredPrompt(null);
-    }
-  }, [deferredPrompt, isIOS]);
-
-  if (isStandalone) return null;
-  if (!deferredPrompt && !isIOS) return null;
+  if (!canInstall) return null;
 
   return (
     <div className="relative">
       <button
         type="button"
         onClick={handleInstall}
-        className="flex h-9 items-center gap-1.5 rounded-lg border border-emerald-500/40 bg-emerald-600/20 px-3 text-xs font-semibold text-emerald-300 hover:bg-emerald-600/30 transition-colors cursor-pointer"
+        className="flex h-9 cursor-pointer items-center gap-1.5 rounded-lg border border-emerald-500/40 bg-emerald-600/20 px-3 text-xs font-semibold text-emerald-300 transition-colors hover:bg-emerald-600/30"
         aria-label="Install PW Notes Print Optimizer"
       >
         <svg
@@ -103,13 +45,13 @@ export function InstallButton() {
       </button>
 
       {showIOSGuide && isIOS && (
-        <div className="absolute right-0 top-full mt-2 z-50 w-64 rounded-xl border border-slate-700 bg-slate-900 p-4 shadow-2xl">
-          <div className="flex items-center justify-between mb-3">
+        <div className="absolute right-0 top-full z-50 mt-2 w-64 rounded-xl border border-slate-700 bg-slate-900 p-4 shadow-2xl">
+          <div className="mb-3 flex items-center justify-between">
             <h3 className="text-sm font-bold text-white">Install on iOS</h3>
             <button
               type="button"
               onClick={() => setShowIOSGuide(false)}
-              className="text-slate-400 hover:text-white cursor-pointer"
+              className="cursor-pointer text-slate-400 hover:text-white"
               aria-label="Close"
             >
               <svg
@@ -130,29 +72,16 @@ export function InstallButton() {
           </div>
           <ol className="space-y-2 text-xs text-slate-300">
             <li className="flex items-start gap-2">
-              <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-indigo-600 text-[10px] font-bold text-white">
-                1
-              </span>
-              <span>
-                Tap the <strong>Share</strong> button in Safari
-              </span>
+              <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-indigo-600 text-[10px] font-bold text-white">1</span>
+              <span>Tap the <strong>Share</strong> button in Safari</span>
             </li>
             <li className="flex items-start gap-2">
-              <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-indigo-600 text-[10px] font-bold text-white">
-                2
-              </span>
-              <span>
-                Scroll down and tap{' '}
-                <strong>&quot;Add to Home Screen&quot;</strong>
-              </span>
+              <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-indigo-600 text-[10px] font-bold text-white">2</span>
+              <span>Scroll down and tap <strong>&quot;Add to Home Screen&quot;</strong></span>
             </li>
             <li className="flex items-start gap-2">
-              <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-indigo-600 text-[10px] font-bold text-white">
-                3
-              </span>
-              <span>
-                Tap <strong>&quot;Add&quot;</strong> in the top-right corner
-              </span>
+              <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-indigo-600 text-[10px] font-bold text-white">3</span>
+              <span>Tap <strong>&quot;Add&quot;</strong> in the top-right corner</span>
             </li>
           </ol>
         </div>

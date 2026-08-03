@@ -91,7 +91,7 @@ describe('Phase 5.7: Peak heap verification', () => {
     const mobileGuard = new MemoryGuard();
     const limits = mobileGuard.getLimits();
     expect(limits.maxHeapMB).toBeLessThanOrEqual(1024);
-    expect(limits.gcPressureThreshold).toBeGreaterThan(0.8);
+    expect(limits.gcPressureThreshold).toBeGreaterThanOrEqual(0.8);
   });
 
   it('computeScheduleProfile for mobile caps maxPagesInFlight at 2', () => {

@@ -8,6 +8,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- Unit tests for the menu module: Markdown renderer (escaping/XSS/lists/links),
+  MenuRegistry (register/resolve/validate/hidden filtering) and contentLoader
+  (fetch mocking + caching), plus a config-integration sanity suite
+- PWA install banner in the Settings drawer, shown only while the app is not
+  installed; shared `useInstallPrompt` hook (lib/pwa) now backs both the banner
+  and the header InstallButton
+
 - Settings & Information Center: the hamburger drawer is now a config-driven
   menu (Tools, Privacy, Community, Resources, Legal, Developer) rendered from
   `lib/menu` metadata with an accessible accordion UI
