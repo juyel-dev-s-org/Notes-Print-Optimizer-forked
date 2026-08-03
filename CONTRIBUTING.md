@@ -1,19 +1,52 @@
 # Contributing to Notes Print Optimizer
 
-Thank you for your interest in contributing! This document provides guidelines and information for contributors.
+Thank you for your interest in contributing! This document explains the development
+and release workflow and the coding guidelines for this project.
 
-## Getting Started
+## Development & Release Workflow
 
-1. Fork the repository
-2. Clone your fork: `git clone https://github.com/YOUR_USERNAME/Notes-Print-Optimizer.git`
-3. Install dependencies: `npm install`
-4. Create a branch: `git checkout -b feature/your-feature-name`
-5. Make your changes
-6. Run tests: `npm run test`
-7. Run lint: `npm run lint`
-8. Build to verify: `npm run build`
-9. Commit and push to your fork
-10. Open a Pull Request
+This project uses a **two-repository model** to keep production safe:
+
+| Repository | Role | Branch |
+|------------|------|--------|
+| `juyel-dev/Notes-Print-Optimizer` | **Production** (live users) | `main` (protected) |
+| `juyel-dev-s-org/Notes-Print-Optimizer-forked` | **Development / testing / preview** | `main` + feature branches |
+
+**Rules:**
+
+- **All development happens in the fork** (`Notes-Print-Optimizer-forked`).
+  New features, bug fixes, refactors, and experiments are committed and pushed
+  to the fork only.
+- **The production repository is never changed directly.** Its `main` branch is
+  protected and only updated via an approved Pull Request from the fork.
+- **The fork auto-deploys a preview** on every push to its `main` branch, so the
+  latest development build can be tested at:
+
+  > **Preview:** https://juyel-dev-s-org.github.io/Notes-Print-Optimizer-forked/
+
+- The fork's base path is derived automatically from the repository name, so the
+  same build config works in both repositories.
+
+### Day-to-day flow
+
+1. Create a feature branch in the fork: `git checkout -b feature/your-feature`
+2. Make your changes, run `npm run test`, `npm run lint`, `npm run build`
+3. Merge/commit into the fork's `main` to update the preview
+4. Test the preview URL and exercise the functionality
+5. When confirmed, open a **Pull Request from the fork to the production repo**
+6. The PR must pass CI and receive approval before it is merged to production
+
+> **Note:** The original repository also keeps a `develop` branch for historical
+> reasons, but active development no longer uses it. All new work goes to the fork.
+
+## Getting Started (local)
+
+1. Clone the fork: `git clone https://github.com/juyel-dev-s-org/Notes-Print-Optimizer-forked.git`
+2. Install dependencies: `npm install`
+3. Create a branch: `git checkout -b feature/your-feature-name`
+4. Run locally: `npm run dev`
+5. Run tests: `npm run test`
+6. Build to verify: `npm run build`
 
 ## Development Guidelines
 
