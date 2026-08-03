@@ -63,10 +63,10 @@ export const UploadArea: React.FC<UploadAreaProps> = ({
         onDragLeave={handleDragLeave}
         onDrop={handleDrop}
         onClick={() => fileInputRef.current?.click()}
-        className={`group relative flex min-h-[240px] cursor-pointer flex-col items-center justify-center rounded-2xl border-2 border-dashed p-6 text-center transition-all ${
+        className={`group relative flex min-h-[240px] lg:min-h-[300px] cursor-pointer flex-col items-center justify-center rounded-2xl lg:rounded-[20px] border-2 border-dashed p-6 lg:p-10 text-center transition-all ${
           isDragging
             ? 'border-indigo-500 bg-indigo-950/40 scale-[1.01]'
-            : 'border-slate-700 bg-slate-900/90 hover:border-indigo-500 hover:bg-slate-800/80 shadow-lg'
+            : 'border-slate-700 bg-slate-900/90 hover:border-indigo-500 hover:bg-slate-800/80 shadow-lg lg:shadow-xl lg:hover:shadow-indigo-500/10'
         }`}
       >
         <input
@@ -78,28 +78,28 @@ export const UploadArea: React.FC<UploadAreaProps> = ({
           className="hidden"
         />
 
-        <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-indigo-600/20 text-indigo-400 border border-indigo-500/30 group-hover:scale-110 group-hover:bg-indigo-600 group-hover:text-white transition-all shadow-md">
-          <FileUp className="h-8 w-8" />
+        <div className="flex h-16 w-16 lg:h-20 lg:w-20 items-center justify-center rounded-2xl bg-indigo-600/20 text-indigo-400 border border-indigo-500/30 group-hover:scale-110 group-hover:bg-indigo-600 group-hover:text-white transition-all shadow-md">
+          <FileUp className="h-8 w-8 lg:h-10 lg:w-10" />
         </div>
 
-        <div className="mt-4 flex flex-col items-center gap-1">
-          <h3 className="text-base font-bold text-white sm:text-lg">
+        <div className="mt-4 lg:mt-6 flex flex-col items-center gap-1.5">
+          <h3 className="text-base font-bold text-white sm:text-lg lg:text-2xl">
             Upload Class Note PDFs
           </h3>
-          <p className="text-xs text-slate-400 max-w-sm leading-relaxed">
+          <p className="text-xs text-slate-400 max-w-sm leading-relaxed lg:max-w-md lg:text-sm">
             Tap to choose PDFs from your phone or drag & drop lecture slides to convert for eco-friendly printing.
           </p>
         </div>
 
         {/* Action Buttons with Large Touch Area (min 48px height) */}
-        <div className="mt-5 flex flex-col sm:flex-row items-center justify-center gap-3 w-full max-w-xs">
+        <div className="mt-5 lg:mt-8 flex flex-col sm:flex-row items-center justify-center gap-3 lg:gap-4 w-full max-w-xs lg:max-w-md">
           <button
             type="button"
             onClick={(e) => {
               e.stopPropagation();
               fileInputRef.current?.click();
             }}
-            className="w-full flex h-12 items-center justify-center gap-2 rounded-xl bg-indigo-600 px-5 text-sm font-bold text-white shadow-md hover:bg-indigo-500 active:scale-98 transition-all"
+            className="w-full flex h-12 items-center justify-center gap-2 rounded-xl lg:rounded-[14px] bg-indigo-600 px-5 lg:px-6 text-sm font-bold text-white shadow-md hover:bg-indigo-500 hover:shadow-lg hover:shadow-indigo-500/25 active:scale-98 transition-all duration-150"
           >
             <Upload className="h-4 w-4" />
             <span>Select PDF Files</span>
@@ -112,7 +112,7 @@ export const UploadArea: React.FC<UploadAreaProps> = ({
               onLoadSample();
             }}
             disabled={isProcessing}
-            className="w-full flex h-12 items-center justify-center gap-2 rounded-xl border border-indigo-500/40 bg-indigo-950/50 px-4 text-sm font-bold text-indigo-300 hover:bg-indigo-900/60 active:scale-98 transition-all disabled:opacity-50"
+            className="w-full flex h-12 items-center justify-center gap-2 rounded-xl lg:rounded-[14px] border border-indigo-500/40 bg-indigo-950/50 px-4 lg:px-6 text-sm font-bold text-indigo-300 hover:bg-indigo-900/60 active:scale-98 transition-all duration-150 disabled:opacity-50"
           >
             <Sparkles className="h-4 w-4 text-indigo-400" />
             <span>Try Demo PDF</span>
@@ -120,7 +120,7 @@ export const UploadArea: React.FC<UploadAreaProps> = ({
         </div>
 
         {/* Feature Pills */}
-        <div className="mt-6 flex flex-wrap items-center justify-center gap-2.5 pt-4 border-t border-slate-800 text-[11px] text-slate-400">
+        <div className="mt-6 lg:mt-8 flex flex-wrap items-center justify-center gap-2.5 pt-4 border-t border-slate-800 text-[11px] text-slate-400">
           <span className="flex items-center gap-1 font-semibold text-emerald-400">
             <ShieldCheck className="h-3.5 w-3.5" />
             100% Private On-Device

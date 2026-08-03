@@ -43,10 +43,10 @@ export const Header: React.FC<HeaderProps> = ({
   return (
     <>
       <header id="app-header" className="sticky top-0 z-40 w-full bg-slate-900/95 backdrop-blur-md border-b border-slate-800 text-white pt-safe">
-        <div className="mx-auto max-w-7xl px-3 py-2.5 sm:px-6">
-          <div className="flex items-center justify-between gap-2">
+        <div className="mx-auto max-w-7xl px-3 py-2.5 sm:px-6 lg:py-3">
+          <div className="flex items-center justify-between gap-2 lg:grid lg:grid-cols-[1fr_auto_1fr] lg:gap-4">
             {/* Left: Hamburger Menu Button & Logo */}
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 lg:justify-self-start">
               <button
                 type="button"
                 onClick={() => setIsMenuOpen(!isMenuOpen)}
@@ -57,8 +57,8 @@ export const Header: React.FC<HeaderProps> = ({
               </button>
 
               <div className="flex items-center gap-2">
-                <AppLogo className="h-9 w-9 text-indigo-400 drop-shadow-md" />
-                <div className="flex flex-col">
+                <AppLogo className="h-9 w-9 text-indigo-400 drop-shadow-md lg:h-10 lg:w-10" />
+                <div className="flex flex-col gap-0.5">
                   <div className="flex items-center gap-1.5">
                     <h1 className="text-sm font-bold tracking-tight text-white sm:text-base">
                       PW Optimizer
@@ -75,7 +75,7 @@ export const Header: React.FC<HeaderProps> = ({
             </div>
 
             {/* Middle: Compact Stepper Indicator for Mobile & Tablet */}
-            <nav aria-label="Progress Stepper" className="flex items-center rounded-xl bg-slate-800/70 p-1 border border-slate-700/50">
+            <nav aria-label="Progress Stepper" className="flex items-center gap-1 rounded-xl bg-slate-800/70 p-1 border border-slate-700/50 lg:justify-self-center">
               {steps.map((step, idx) => {
                 const isActive = currentPhase === step.phase;
                 const isCompleted = currentPhase > step.phase;
@@ -91,7 +91,7 @@ export const Header: React.FC<HeaderProps> = ({
                     disabled={!isCompleted && !isActive}
                     className={`flex items-center gap-1 rounded-lg px-2 py-1 text-xs font-semibold transition-all ${
                       isActive
-                        ? 'bg-indigo-600 text-white shadow-xs'
+                        ? 'bg-indigo-600 text-white shadow-xs lg:scale-105'
                         : isCompleted
                         ? 'text-emerald-400 hover:bg-slate-700/60'
                         : 'text-slate-500 cursor-not-allowed'
@@ -115,7 +115,7 @@ export const Header: React.FC<HeaderProps> = ({
             </nav>
 
             {/* Right: Quick Action Buttons for Desktop / Tablet */}
-            <div className="hidden md:flex items-center gap-2">
+            <div className="hidden md:flex items-center gap-2 lg:justify-self-end">
               <div className="flex items-center gap-1.5 rounded-lg border border-emerald-500/30 bg-emerald-500/10 px-2.5 py-1 text-xs font-medium text-emerald-300">
                 <ShieldCheck className="h-3.5 w-3.5 text-emerald-400" />
                 <span>100% Offline</span>
@@ -153,7 +153,7 @@ export const Header: React.FC<HeaderProps> = ({
             className="h-full bg-gradient-to-r from-indigo-500 via-sky-400 to-emerald-400"
             initial={{ width: '25%' }}
             animate={{ width: `${(currentPhase / 4) * 100}%` }}
-            transition={{ duration: 0.3, ease: 'easeInOut' }}
+            transition={{ duration: 0.2, ease: 'easeInOut' }}
           />
         </div>
       </header>

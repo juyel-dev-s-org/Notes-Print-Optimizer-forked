@@ -52,7 +52,7 @@ export default function HomePage() {
   } = usePageHandlers();
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 font-sans flex flex-col pb-safe">
+    <div className="min-h-screen bg-slate-950 app-shell-bg text-slate-100 font-sans flex flex-col pb-safe">
       <Header
         currentPhase={state.currentPhase}
         onReset={handleResetWorkflow}
@@ -66,7 +66,7 @@ export default function HomePage() {
           {state.errorMessage}
         </div>
       )}
-      <main className="mx-auto w-full max-w-5xl flex-1 px-3 py-4 sm:px-6 sm:py-6 pb-28 md:pb-8">
+      <main className="mx-auto w-full max-w-5xl lg:max-w-6xl flex-1 px-3 py-4 sm:px-6 sm:py-6 pb-28 md:pb-8">
         <PlatformUIOrchestrator
           currentPhase={state.currentPhase}
           setCurrentPhase={(phase) => actions.setPhase(phase)}
@@ -140,13 +140,17 @@ export default function HomePage() {
           progressiveThumbnails={progressiveThumbnails}
         />
       </main>
-      <footer className="border-t border-slate-800/60 px-4 py-4 text-center text-[11px] text-slate-500">
-        <p>&copy; 2026 Juyel Hossain &middot; Juyel Source License v1.0</p>
-        <p className="mt-1">
-          <a href="mailto:myself.juyel.dev@gmail.com" className="text-indigo-400 hover:underline">
+      <footer className="border-t border-slate-800/60 px-4 py-6 text-center text-[11px] text-slate-500">
+        <div className="mx-auto flex max-w-md flex-col items-center gap-1.5">
+          <p className="font-medium text-slate-400">&copy; 2026 Juyel Hossain</p>
+          <p>Juyel Source License v1.0</p>
+          <a
+            href="mailto:myself.juyel.dev@gmail.com"
+            className="text-indigo-400 transition-colors duration-150 hover:text-indigo-300 hover:underline"
+          >
             myself.juyel.dev@gmail.com
           </a>
-        </p>
+        </div>
       </footer>
     </div>
   );

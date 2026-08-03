@@ -27,7 +27,7 @@ export const PlatformUIOrchestrator: React.FC<WorkflowUIProps> = (props) => {
   return (
     <div className="w-full max-w-full">
       {/* Device Viewport Override Toolbar */}
-      <div className="mb-4 flex items-center justify-between gap-2 rounded-xl border border-slate-800 bg-slate-900/60 p-2 text-xs">
+      <div className="mb-4 lg:mb-3 flex items-center justify-between gap-2 rounded-xl border border-slate-800 bg-slate-900/60 p-2 lg:p-1.5 text-xs">
         <div className="flex items-center gap-2">
           <Settings2 className="h-3.5 w-3.5 text-indigo-400" />
           <span className="font-bold text-slate-300 text-[11px]">Platform Layout Mode:</span>
