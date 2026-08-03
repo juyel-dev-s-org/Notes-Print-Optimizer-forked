@@ -140,6 +140,14 @@ export default function HomePage() {
           progressiveThumbnails={progressiveThumbnails}
         />
       </main>
+      <footer className="border-t border-slate-800/60 px-4 py-4 text-center text-[11px] text-slate-500">
+        <p>&copy; 2026 Juyel Hossain &middot; Juyel Source License v1.0</p>
+        <p className="mt-1">
+          <a href="mailto:myself.juyel.dev@gmail.com" className="text-indigo-400 hover:underline">
+            myself.juyel.dev@gmail.com
+          </a>
+        </p>
+      </footer>
     </div>
   );
 }

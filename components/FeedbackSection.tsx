@@ -60,7 +60,7 @@ export const FeedbackSection: React.FC<FeedbackSectionProps> = ({
   analysisTimeMs,
   optimizationTimeMs,
   layoutTimeMs,
-  endpointUrl = 'https://script.google.com/macros/s/AKfycbxQ-ENm_QT9lUD9wwX-GhSc-apEW_myrocrys46zX1Kj28q5xXZ4QCNYHIJk7lB3-DX9w/exec',
+  endpointUrl = 'https://script.google.com/macros/s/AKfycbyYBvhRphdbvTAEI-hktpUWcpYyFjdsOjSHhHwuQyt0K310uqIX3ManTNfQ1Kx7UEtw/exec',
 }) => {
   // Form State
   const [rating, setRating] = useState<number>(5);

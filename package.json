@@ -51,7 +51,7 @@
   },
   "description": "Mobile-first adaptive print optimizer and PDF engine for PW lecture notes",
   "author": "juyel-dev",
-  "license": "MIT",
+  "license": "SEE LICENSE IN LICENSE",
   "repository": {
     "type": "git",
     "url": "https://github.com/juyel-dev/Notes-Print-Optimizer.git"

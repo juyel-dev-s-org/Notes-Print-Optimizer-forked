@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import {
   Menu,
   X,
@@ -8,15 +8,10 @@ import {
   CheckCircle2,
   Sparkles,
   RefreshCw,
-  Download,
-  Smartphone,
-  Info,
-  Zap,
-  HardDrive,
-  FileText,
 } from 'lucide-react';
 import { AppLogo } from './AppLogo';
 import { motion, AnimatePresence } from 'motion/react';
+import { SettingsDrawer } from './menu/SettingsDrawer';
 
 import type { WorkflowPhase } from '@/lib/workflow/types';
 export type { WorkflowPhase };
@@ -37,44 +32,6 @@ export const Header: React.FC<HeaderProps> = ({
   isProcessing = false,
 }) => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
-  const [isAppInstalled, setIsAppInstalled] = useState<boolean>(() => {
-    if (typeof window !== 'undefined') {
-      return window.matchMedia('(display-mode: standalone)').matches;
-    }
-    return false;
-  });
-
-  useEffect(() => {
-    // Listen for PWA installation event
-    const handleBeforeInstallPrompt = (e: Event) => {
-      e.preventDefault();
-      setDeferredPrompt(e);
-    };
-
-    const handleAppInstalled = () => {
-      setIsAppInstalled(true);
-      setDeferredPrompt(null);
-    };
-
-    window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
-    window.addEventListener('appinstalled', handleAppInstalled);
-
-    return () => {
-      window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
-      window.removeEventListener('appinstalled', handleAppInstalled);
-    };
-  }, []);
-
-  const handleInstallClick = async () => {
-    if (!deferredPrompt) return;
-    deferredPrompt.prompt();
-    const { outcome } = await deferredPrompt.userChoice;
-    if (outcome === 'accepted') {
-      setIsAppInstalled(true);
-    }
-    setDeferredPrompt(null);
-  };
 
   const steps = [
     { phase: 1 as WorkflowPhase, label: 'Upload' },
@@ -228,7 +185,7 @@ export const Header: React.FC<HeaderProps> = ({
                   <AppLogo className="h-8 w-8 text-indigo-400" />
                   <div>
                     <h2 className="text-sm font-bold text-white">PW Print Optimizer</h2>
-                    <p className="text-[11px] text-slate-400">Mobile PWA Engine v1.2</p>
+                    <p className="text-[11px] text-slate-400">Settings &amp; Information</p>
                   </div>
                 </div>
                 <button
@@ -241,143 +198,27 @@ export const Header: React.FC<HeaderProps> = ({
                 </button>
               </div>
 
-              {/* Drawer Body */}
-              <div className="flex-1 overflow-y-auto p-4 space-y-5">
-                {/* PWA Install Banner inside Drawer */}
-                {deferredPrompt && !isAppInstalled && (
-                  <div className="rounded-xl border border-indigo-500/40 bg-gradient-to-br from-indigo-950 to-slate-900 p-3.5 shadow-lg">
-                    <div className="flex items-center gap-2.5 text-indigo-300 font-semibold text-xs mb-1">
-                      <Smartphone className="h-4 w-4 text-indigo-400" />
-                      <span>Install App</span>
-                    </div>
-                    <p className="text-[11px] text-slate-300 mb-3 leading-relaxed">
-                      Install PW Optimizer on your device for home screen access, offline support, and full-screen workspace.
-                    </p>
-                    <button
-                      type="button"
-                      onClick={handleInstallClick}
-                      className="w-full flex items-center justify-center gap-2 rounded-lg bg-indigo-600 px-3 py-2 text-xs font-bold text-white shadow-md active:scale-98 transition-all hover:bg-indigo-500"
-                    >
-                      <Download className="h-3.5 w-3.5" />
-                      <span>Install App</span>
-                    </button>
-                  </div>
-                )}
-
-                {/* Workflow Navigation Shortcuts */}
-                <div>
-                  <h3 className="text-[11px] font-bold uppercase tracking-wider text-slate-400 mb-2">
-                    Workflow Stages
-                  </h3>
-                  <div className="space-y-1">
-                    {steps.map((step) => {
-                      const isActive = currentPhase === step.phase;
-                      const isCompleted = currentPhase > step.phase;
-                      return (
-                        <button
-                          key={step.phase}
-                          type="button"
-                          onClick={() => {
-                            if ((isCompleted || isActive) && onNavigatePhase) {
-                              onNavigatePhase(step.phase);
-                              setIsMenuOpen(false);
-                            }
-                          }}
-                          disabled={!isCompleted && !isActive}
-                          className={`w-full flex items-center justify-between rounded-lg px-3 py-2.5 text-xs font-medium transition-colors ${
-                            isActive
-                              ? 'bg-indigo-600 text-white font-semibold'
-                              : isCompleted
-                              ? 'bg-slate-800/80 text-slate-200 hover:bg-slate-800'
-                              : 'text-slate-500 cursor-not-allowed opacity-60'
-                          }`}
-                        >
-                          <div className="flex items-center gap-2.5">
-                            <span
-                              className={`flex h-5 w-5 items-center justify-center rounded-full text-[10px] font-bold ${
-                                isActive
-                                  ? 'bg-white text-indigo-700'
-                                  : isCompleted
-                                  ? 'bg-emerald-500 text-slate-950'
-                                  : 'bg-slate-700 text-slate-400'
-                              }`}
-                            >
-                              {step.phase}
-                            </span>
-                            <span>
-                              {step.phase === 1 && '1. Upload & Merge PDFs'}
-                              {step.phase === 2 && '2. Adaptive Optimization'}
-                              {step.phase === 3 && '3. N-Up Page Grid Layout'}
-                              {step.phase === 4 && '4. Export & Print PDF'}
-                            </span>
-                          </div>
-                          {isCompleted && <CheckCircle2 className="h-4 w-4 text-emerald-400" />}
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
-
-                {/* Quick Actions */}
-                <div>
-                  <h3 className="text-[11px] font-bold uppercase tracking-wider text-slate-400 mb-2">
-                    Quick Tools
-                  </h3>
-                  <div className="space-y-2">
-                    {currentPhase === 1 && onLoadSample && (
-                      <button
-                        type="button"
-                        onClick={() => {
-                          onLoadSample();
-                          setIsMenuOpen(false);
-                        }}
-                        disabled={isProcessing}
-                        className="w-full flex items-center gap-2.5 rounded-lg border border-indigo-500/30 bg-indigo-950/40 px-3 py-2 text-xs font-semibold text-indigo-300 hover:bg-indigo-900/50 transition-colors"
-                      >
-                        <Sparkles className="h-4 w-4 text-indigo-400" />
-                        <span>Load Sample Physics Notes</span>
-                      </button>
-                    )}
-
-                    {currentPhase > 1 && onReset && (
-                      <button
-                        type="button"
-                        onClick={() => {
-                          onReset();
-                          setIsMenuOpen(false);
-                        }}
-                        className="w-full flex items-center gap-2.5 rounded-lg border border-slate-700 bg-slate-800/60 px-3 py-2 text-xs font-medium text-slate-300 hover:bg-slate-800 hover:text-white transition-colors"
-                      >
-                        <RefreshCw className="h-4 w-4 text-amber-400" />
-                        <span>Start Over / Clear RAM</span>
-                      </button>
-                    )}
-                  </div>
-                </div>
-
-                {/* Local Privacy & RAM Engine Badge */}
-                <div className="rounded-xl bg-slate-800/50 p-3 border border-slate-800 text-xs space-y-2">
-                  <div className="flex items-center gap-2 text-emerald-400 font-semibold">
-                    <ShieldCheck className="h-4 w-4" />
-                    <span>100% Client-Side Privacy</span>
-                  </div>
-                  <p className="text-[11px] text-slate-400 leading-relaxed">
-                    Your PDF files are processed locally inside your phone browser using WebAssembly and Canvas API. No data is ever uploaded to external servers.
-                  </p>
-                  <div className="flex items-center justify-between text-[10px] text-slate-500 pt-1 border-t border-slate-700/50">
-                    <span className="flex items-center gap-1">
-                      <Zap className="h-3 w-3 text-amber-400" /> Memory Garbage Collected
-                    </span>
-                    <span className="flex items-center gap-1">
-                      <HardDrive className="h-3 w-3 text-sky-400" /> Auto-Purge
-                    </span>
-                  </div>
-                </div>
+              {/* Drawer Body: Settings & Information Center */}
+              <div className="flex-1 overflow-y-auto p-3">
+                <SettingsDrawer
+                  onAppAction={(name) => {
+                    if (name === 'goto-merge') {
+                      setIsMenuOpen(false);
+                      if (onNavigatePhase) onNavigatePhase(1);
+                    }
+                  }}
+                />
               </div>
 
               {/* Drawer Footer */}
-              <div className="border-t border-slate-800 p-3 text-center text-[10px] text-slate-500">
-                PW Notes Print Optimizer &bull; Native PWA Shell
+              <div className="space-y-0.5 border-t border-slate-800 p-3 text-center text-[10px] text-slate-500">
+                <div>&copy; 2026 Juyel Hossain &bull; JSL v1.0</div>
+                <a
+                  href="mailto:myself.juyel.dev@gmail.com"
+                  className="text-indigo-400 hover:underline"
+                >
+                  myself.juyel.dev@gmail.com
+                </a>
               </div>
             </motion.aside>
           </div>

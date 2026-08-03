@@ -3,7 +3,7 @@
 Mobile-first adaptive print optimizer and PDF engine for Physics Wallah (PW) and lecture class notes. Convert dark-background lecture slides to print-ready PDFs with optimal ink and paper usage.
 
 [![CI + Deploy](https://github.com/juyel-dev/Notes-Print-Optimizer/actions/workflows/deploy.yml/badge.svg)](https://github.com/juyel-dev/Notes-Print-Optimizer/actions/workflows/deploy.yml)
-[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+[![License: JSL v1.0](https://img.shields.io/badge/License-JSL%20v1.0-blue.svg)](LICENSE)
 [![Next.js](https://img.shields.io/badge/Next.js-15-black?logo=next.js)](https://nextjs.org)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.9-blue?logo=typescript)](https://typescriptlang.org)
 [![PWA Ready](https://img.shields.io/badge/PWA-Ready-5A0FC8?logo=pwa)](https://web.dev/progressive-web-apps/)
@@ -157,7 +157,7 @@ See [SECURITY.md](SECURITY.md) for our security policy.
 
 ## License
 
-[MIT](LICENSE) - juyel-dev
+[Juyel Source License (JSL) v1.0](LICENSE) - © 2026 Juyel Hossain. Free for personal, educational, and research use; commercial use requires written permission.
 
 ## Acknowledgments
 
