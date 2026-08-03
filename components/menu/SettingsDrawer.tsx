@@ -8,7 +8,7 @@ import type { ContentId, MenuItemConfig, ResolvedMenuSection } from '@/lib/menu'
 import { getMenuIcon } from './icons';
 import { ContentModal } from './ContentModal';
 import { FeedbackModal } from './FeedbackModal';
-import { InstallBanner } from '@/components/InstallBanner';
+import { InstallShareCard } from '@/components/InstallShareCard';
 
 interface SettingsDrawerProps {
   /** Escape hatch for app-level actions declared in config (e.g. 'goto-merge'). */
@@ -162,8 +162,8 @@ export const SettingsDrawer: React.FC<SettingsDrawerProps> = ({ onAppAction }) =
 
   return (
     <div className="space-y-2">
-      {/* PWA install banner - visible only while the app is not installed */}
-      <InstallBanner />
+      {/* PWA install/share card - install when not installed, share once installed */}
+      <InstallShareCard />
 
       {/* Transient notice (e.g. cache cleared) */}
       <AnimatePresence>
