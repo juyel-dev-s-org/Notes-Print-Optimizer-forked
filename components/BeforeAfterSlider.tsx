@@ -8,10 +8,12 @@ import { memoryManager } from '@/lib/optimizer/memoryManager';
 
 interface BeforeAfterSliderProps {
   page: ProcessedPage;
+  /** Merged source PDF bytes - used to lazily re-render the original page. */
+  mergedPdfBytes?: Uint8Array | null;
   onClose?: () => void;
 }
 
-export const BeforeAfterSlider: React.FC<BeforeAfterSliderProps> = ({ page }) => {
+export const BeforeAfterSlider: React.FC<BeforeAfterSliderProps> = ({ page, mergedPdfBytes }) => {
   const [sliderPos, setSliderPos] = useState(50); // 0% to 100%
   const [isDragging, setIsDragging] = useState(false);
   const [zoom, setZoom] = useState(1);
@@ -26,7 +28,8 @@ export const BeforeAfterSlider: React.FC<BeforeAfterSliderProps> = ({ page }) =>
     const loadImages = async () => {
       setIsLoadingImages(true);
       try {
-        const { originalImageData, optimizedImageData } = await PdfExporter.loadPageImageData(page);
+        const optimizedImageData = await PdfExporter.loadOptimizedImageData(page);
+        const originalImageData = await PdfExporter.loadOriginalImageData(page, mergedPdfBytes ?? null);
 
         const origCanvas = document.createElement('canvas');
         origCanvas.width = originalImageData.width;
@@ -65,7 +68,7 @@ export const BeforeAfterSlider: React.FC<BeforeAfterSliderProps> = ({ page }) =>
     return () => {
       isCancelled = true;
     };
-  }, [page]);
+  }, [page, mergedPdfBytes]);
 
   const handleMove = (clientX: number) => {
     if (!containerRef.current) return;
