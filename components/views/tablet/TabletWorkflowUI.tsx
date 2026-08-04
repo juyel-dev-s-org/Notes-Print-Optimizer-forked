@@ -207,7 +207,7 @@ export const TabletWorkflowUI: React.FC<WorkflowUIProps> = (props) => {
           />
 
           {processedPages[selectedPageIndex] && (
-            <BeforeAfterSlider page={processedPages[selectedPageIndex]} />
+            <BeforeAfterSlider page={processedPages[selectedPageIndex]} mergedPdfBytes={mergedPdfBytes} />
           )}
 
           <PageGrid
