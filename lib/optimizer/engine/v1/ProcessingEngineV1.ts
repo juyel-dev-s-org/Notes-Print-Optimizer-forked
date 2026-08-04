@@ -13,7 +13,7 @@ import { metricsBus } from '../../../metrics/MetricsBus';
 interface PendingWrite {
   pdfId: string;
   pageIndex: number;
-  originalBlob: Blob;
+  originalBlob: Blob | null;
   optimizedBlob: Blob;
 }
 
@@ -242,11 +242,10 @@ export class ProcessingEngineV1 implements IProcessingEngine {
       }
 
       t = performance.now();
-      const origBlob = await memoryManager.imageDataToBlob(srcImageData, 0.75);
       const optBlob = await memoryManager.imageDataToBlob(pageRes.optimizedImageData, 0.88);
 
-      /* Batched IDB write — enqueue instead of per-page transaction (H-5) */
-      this.enqueueWrite({ pdfId, pageIndex: i - 1, originalBlob: origBlob, optimizedBlob: optBlob });
+      /* Batched IDB write — original is re-rendered lazily for before/after (Phase-1) */
+      this.enqueueWrite({ pdfId, pageIndex: i - 1, originalBlob: null, optimizedBlob: optBlob });
       const persistMs = performance.now() - t;
 
       /* Phase-0: accumulate + emit per-phase timing */
