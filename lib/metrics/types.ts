@@ -7,7 +7,9 @@ export type MetricEventType =
   | 'memory:eviction'
   | 'worker:task'
   | 'worker:crashed'
-  | 'pipeline:phase';
+  | 'pipeline:phase'
+  | 'page:phases'
+  | 'doc:phases';
 
 export interface BaseMetricEvent {
   type: MetricEventType;
@@ -63,6 +65,29 @@ export interface PipelinePhaseEvent extends BaseMetricEvent {
   documentId: string;
 }
 
+/** Phase-0: per-page timing breakdown (milliseconds). */
+export interface PagePhasesEvent extends BaseMetricEvent {
+  type: 'page:phases';
+  pageIndex: number;
+  renderMs: number;
+  analyzeMs: number;
+  processMs: number;
+  thumbnailMs: number;
+  persistMs: number;
+}
+
+/** Phase-0: document-level aggregated timing breakdown. */
+export interface DocPhasesEvent extends BaseMetricEvent {
+  type: 'doc:phases';
+  totalPages: number;
+  pagesPerSecond: number;
+  renderMs: number;
+  analyzeMs: number;
+  processMs: number;
+  thumbnailMs: number;
+  persistMs: number;
+}
+
 export type MetricEvent =
   | PageProcessedEvent
   | PluginExecuteEvent
@@ -71,7 +96,9 @@ export type MetricEvent =
   | MemoryEvictionEvent
   | WorkerTaskEvent
   | WorkerCrashedEvent
-  | PipelinePhaseEvent;
+  | PipelinePhaseEvent
+  | PagePhasesEvent
+  | DocPhasesEvent;
 
 export type MetricEventListener = (event: MetricEvent) => void;
 
