@@ -32,17 +32,49 @@ export class PdfExporter {
     return { processedPages: result.processedPages, docProfile: result.docProfile };
   }
 
-  public static async loadPageImageData(page: ProcessedPage): Promise<{ originalImageData: ImageData; optimizedImageData: ImageData }> {
-    const cached = await pwOptimizerStorage.getPage(page.storageKey!, page.pageIndex);
-    if (cached) return { originalImageData: await memoryManager.blobToImageData(cached.originalBlob),
-      optimizedImageData: await memoryManager.blobToImageData(cached.optimizedBlob) };
-    throw new Error(`Failed to load page ${page.pageIndex + 1}`);
+  public static async loadPageImageData(page: ProcessedPage, mergedPdfBytes: Uint8Array | null = null): Promise<{ originalImageData: ImageData; optimizedImageData: ImageData }> {
+    return {
+      originalImageData: await this.loadOriginalImageData(page, mergedPdfBytes),
+      optimizedImageData: await this.loadOptimizedImageData(page),
+    };
   }
 
   public static async loadOptimizedImageData(page: ProcessedPage): Promise<ImageData> {
     const cached = await pwOptimizerStorage.getPage(page.storageKey!, page.pageIndex);
     if (cached) return memoryManager.blobToImageData(cached.optimizedBlob);
     throw new Error(`Failed to load optimized page ${page.pageIndex + 1}`);
+  }
+
+  /**
+   * Loads the original (pre-optimization) page. Uses the cached originalBlob
+   * when present (legacy records), otherwise lazily re-renders it from the
+   * merged PDF. This lets processing skip the expensive original JPEG encode.
+   */
+  public static async loadOriginalImageData(page: ProcessedPage, mergedPdfBytes: Uint8Array | null): Promise<ImageData> {
+    const cached = await pwOptimizerStorage.getPage(page.storageKey!, page.pageIndex);
+    if (cached?.originalBlob) return memoryManager.blobToImageData(cached.originalBlob);
+    if (mergedPdfBytes) return this.renderOriginalFromPdf(mergedPdfBytes, page.pageIndex);
+    throw new Error(`Failed to load original for page ${page.pageIndex + 1}`);
+  }
+
+  private static async renderOriginalFromPdf(mergedPdfBytes: Uint8Array, pageIndex: number): Promise<ImageData> {
+    const pdfjsLib = await getPdfjsLib();
+    const pdfDoc = await pdfjsLib.getDocument({ data: mergedPdfBytes.slice() }).promise;
+    try {
+      const pdfPage = await pdfDoc.getPage(pageIndex + 1);
+      const scale = Math.min(3.0, 200 / 72); /* ~200 DPI cap for inspection */
+      const viewport = pdfPage.getViewport({ scale });
+      const canvas = document.createElement('canvas');
+      canvas.width = Math.floor(viewport.width);
+      canvas.height = Math.floor(viewport.height);
+      const ctx = canvas.getContext('2d', { willReadFrequently: true })!;
+      await pdfPage.render({ canvasContext: ctx, viewport }).promise;
+      const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+      memoryManager.disposeCanvas(canvas);
+      return imageData;
+    } finally {
+      try { pdfDoc.destroy(); } catch { /* noop */ }
+    }
   }
 
   private static async composeSheetWithWorker(
