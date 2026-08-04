@@ -8,7 +8,49 @@ This file records the performance metrics for the optimizer pipeline across re-a
 - Kernel bench: 1000x1000px random RGBA data (1 MPx)
 - Runner: Vitest (jsdom + @napi-rs/canvas)
 
+## Phase 0 — Performance Baseline (2026-08)
+
+Goal: measure where processing time is actually spent before optimizing.
+
+### CPU-bound per-page pipeline (Vitest, main-thread JS, no rendering)
+
+Config: 1600x900 (1.44 MPx) synthetic dark slides, 10 pages, `PW_DARK_SLIDE` preset.
+Source: `tests/benchmarks/phase0Baseline.bench.ts` (runs in CI).
+
+| Phase | ms / page | Share |
+|---|---|---|
+| analyze | 13.2 | 9% |
+| **processPage (pixel kernel)** | **123.9** | **85%** |
+| inkCoverage (before + after) | 7.9 | 5% |
+| **CPU total** | **145.0** | 100% |
+
+- Throughput (CPU only): **~6.9 pages/sec**
+- Runner: GitHub Actions CI (Node 20, vitest)
+
+### Key finding
+
+`processPage` (HSV classification + channel masks + dilate + denoise + composite + unsharp)
+is **~85% of per-page CPU**. This is the single biggest target for parallelisation
+(worker pool) and WASM acceleration.
+
+### Instrumentation added in Phase 0
+
+- V1 engine emits `page:phases` (per-page render / analyze / process / thumbnail / persist)
+  and `doc:phases` (document aggregate) to the MetricsBus.
+- Browser harness: call `window.__npoBenchmark()` in the console, or open the app with
+  `?bench=1` (and optional `&pages=20`), to measure the **full pipeline including pdfjs
+  rendering** on a real device.
+- Vitest benchmark guards against CPU regressions in CI.
+
+### Decision points for Phase 1+
+
+- Capture the full render-vs-process split via `?bench=1` on a real device.
+- If `process` stays dominant, Phase 1 (worker-pool parallelism) and Phase 2 (WASM) are justified.
+
+---
+
 ## Pipeline Benchmarks
+
 
 | Phase | Analyze (ms) | Process (ms) | TOTAL (ms) | Analyze (MPx/s) | Process (MPx/s) | Notes |
 |-------|-------------|-------------|-----------|----------------|----------------|-------|
