@@ -224,7 +224,7 @@ export class ProcessingEngineV2 implements IProcessingEngine {
     let darkCount = 0;
 
     /* Batched IDB writes */
-    const idbBatch: Array<{ pdfId: string; pageIndex: number; originalBlob: Blob; optimizedBlob: Blob }> = [];
+    const idbBatch: Array<{ pdfId: string; pageIndex: number; originalBlob: Blob | null; optimizedBlob: Blob }> = [];
     const IDB_BATCH_SIZE = isLowEnd ? 2 : 4;
     let idbFlushChain: Promise<void> = Promise.resolve();
 
@@ -297,11 +297,10 @@ export class ProcessingEngineV2 implements IProcessingEngine {
 
       onPageOptimized?.(i - 1, thumbUrl, inkBefore, inkAfter);
 
-      /* Phase 5: Persist (batched) */
+      /* Phase 5: Persist (batched) — original re-rendered lazily for before/after (Phase-1) */
       try {
-        const origBlob = await memoryManager.imageDataToBlob(srcImageData, 0.75);
         const optBlob = await memoryManager.imageDataToBlob(optimizedImageData, 0.88);
-        idbBatch.push({ pdfId, pageIndex: i - 1, originalBlob: origBlob, optimizedBlob: optBlob });
+        idbBatch.push({ pdfId, pageIndex: i - 1, originalBlob: null, optimizedBlob: optBlob });
         if (idbBatch.length >= IDB_BATCH_SIZE) flushIdb();
       } catch (e) {
         console.warn(`[V2] Persist failed page ${i}:`, e);
