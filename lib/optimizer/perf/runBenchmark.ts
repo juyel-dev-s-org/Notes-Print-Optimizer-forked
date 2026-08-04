@@ -84,8 +84,10 @@ export async function runFullBenchmark(
     unsub();
 
     const n = Math.max(1, result.processedPages.length);
-    const phases: PhaseBreakdown = doc
-      ? { renderMs: doc.renderMs, analyzeMs: doc.analyzeMs, processMs: doc.processMs, thumbnailMs: doc.thumbnailMs, persistMs: doc.persistMs }
+    /* Re-widen: TS can't see the metricsBus callback mutates `doc`. */
+    const docEvent = doc as DocPhasesEvent | null;
+    const phases: PhaseBreakdown = docEvent
+      ? { renderMs: docEvent.renderMs, analyzeMs: docEvent.analyzeMs, processMs: docEvent.processMs, thumbnailMs: docEvent.thumbnailMs, persistMs: docEvent.persistMs }
       : { renderMs: 0, analyzeMs: 0, processMs: 0, thumbnailMs: 0, persistMs: 0 };
 
     return {
