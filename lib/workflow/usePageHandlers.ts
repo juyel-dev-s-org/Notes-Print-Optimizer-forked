@@ -420,10 +420,7 @@ export function usePageHandlers() {
       );
       optimizedImageData = result.optimizedImageData;
 
-      // Create original blob for IDB storage BEFORE releasing ImageData
-      const originalBlob = await memoryManager.imageDataToBlob(originalImageData, 0.85);
-
-      // Release original ImageData immediately after blob creation
+      // Release original ImageData (original is re-rendered lazily for before/after)
       originalImageData = null;
 
       // 4. Generate thumbnail (small, memory-cheap)
@@ -463,7 +460,7 @@ export function usePageHandlers() {
       const optBlob = await memoryManager.imageDataToBlob(optimizedImageData, effectiveParams.outputQuality);
       const previewPdfId = `pw_preview_${Date.now()}`;
       try {
-        await pwOptimizerStorage.storePage(previewPdfId, pageIndex, originalBlob, optBlob);
+        await pwOptimizerStorage.storePage(previewPdfId, pageIndex, null, optBlob);
       } catch {
         // IDB write failure is non-fatal for preview
       }
