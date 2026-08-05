@@ -46,6 +46,8 @@ import {
 import { ParameterGenerator } from '../../parameterGenerator';
 import { getPdfjsLib } from '../../pdfjsLoader';
 import { metricsBus } from '../../../metrics/MetricsBus';
+import { ensureWasmKernels, isWasmLoaded, getKernels } from '../../../wasm/loader';
+import { setWasmKernelsHooks } from '../../../kernels/processPage';
 
 /* ------------------------------------------------------------------ */
 /*  Helpers                                                            */
@@ -199,6 +201,12 @@ export class ProcessingEngineV2 implements IProcessingEngine {
       if (signal.aborted) throw new DOMException('Aborted', 'AbortError');
       signal.addEventListener('abort', () => this.abortController?.abort(), { once: true });
     }
+
+    /* Phase-2: load WASM kernels (JS fallback if unavailable) */
+    try {
+      await ensureWasmKernels();
+      if (isWasmLoaded()) setWasmKernelsHooks(getKernels());
+    } catch { /* wasm unavailable - JS path */ }
 
     const pdfjsLib = await getPdfjsLib();
     const pdfDoc = await pdfjsLib.getDocument({

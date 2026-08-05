@@ -42,7 +42,7 @@ export const initialState: WorkflowState = {
   selectedPageIndex: 0,
   excludedPages: new Set<number>(),
 
-  selectedEngineVersion: 'v1' as EngineVersion,
+  selectedEngineVersion: 'v2' as EngineVersion,
   masterParams: ParameterGenerator.getPresetParameters('AUTO_ADAPTIVE'),
 
   processingToggles: { ...DEFAULT_PROCESSING_TOGGLES },

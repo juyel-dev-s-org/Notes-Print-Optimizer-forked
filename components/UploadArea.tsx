@@ -83,9 +83,9 @@ export const UploadArea: React.FC<UploadAreaProps> = ({
         </div>
 
         <div className="mt-4 lg:mt-6 flex flex-col items-center gap-1.5">
-          <h3 className="text-base font-bold text-white sm:text-lg lg:text-2xl">
+          <h2 className="text-base font-bold text-white sm:text-lg lg:text-2xl">
             Upload Class Note PDFs
-          </h3>
+          </h2>
           <p className="text-xs text-slate-400 max-w-sm leading-relaxed lg:max-w-md lg:text-sm">
             Tap to choose PDFs from your phone or drag & drop lecture slides to convert for eco-friendly printing.
           </p>

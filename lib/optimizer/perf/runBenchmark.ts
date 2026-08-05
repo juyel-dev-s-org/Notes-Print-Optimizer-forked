@@ -11,6 +11,7 @@
  */
 
 import { metricsBus } from '../../metrics/MetricsBus';
+import { ensureWasmKernels, isWasmLoaded } from '../../wasm/loader';
 import type { DocPhasesEvent } from '../../metrics/types';
 import type { EngineVersion } from '../engine/types';
 
@@ -25,6 +26,7 @@ export interface PhaseBreakdown {
 export interface FullBenchmarkReport {
   engineId: string;
   engineVersion: string;
+  wasmLoaded: boolean;
   totalPages: number;
   totalMs: number;
   pagesPerSecond: number;
@@ -74,6 +76,9 @@ export async function runFullBenchmark(
   let doc: DocPhasesEvent | null = null;
   const unsub = metricsBus.on('doc:phases', (e) => { doc = e as DocPhasesEvent; });
 
+  /* Pre-warm WASM so the timed run excludes one-time module load. */
+  try { await ensureWasmKernels(); } catch { /* JS fallback */ }
+
   try {
     const t0 = performance.now();
     const result = await engine.processDocument(
@@ -93,6 +98,7 @@ export async function runFullBenchmark(
     return {
       engineId: result.engineId,
       engineVersion: result.engineVersion,
+      wasmLoaded: isWasmLoaded(),
       totalPages: result.processedPages.length,
       totalMs,
       pagesPerSecond: result.processedPages.length / (totalMs / 1000),
@@ -129,7 +135,7 @@ export function installGlobalBenchmark(): void {
         engineVersion: opts?.engineVersion as EngineVersion | undefined,
       });
       console.log('%c[NPO Phase-0 Benchmark] Full pipeline report', 'color:#818cf8;font-weight:bold');
-      console.log(`  engine=${report.engineId} pages=${report.totalPages} total=${report.totalMs.toFixed(0)}ms pps=${report.pagesPerSecond.toFixed(2)}`);
+      console.log(`  engine=${report.engineId} wasm=${report.wasmLoaded ? 'ON' : 'OFF(js)'} pages=${report.totalPages} total=${report.totalMs.toFixed(0)}ms pps=${report.pagesPerSecond.toFixed(2)}`);
       console.log(`  per-page avg: render=${report.perPageAvg.renderMs.toFixed(1)}ms analyze=${report.perPageAvg.analyzeMs.toFixed(1)}ms process=${report.perPageAvg.processMs.toFixed(1)}ms thumb=${report.perPageAvg.thumbnailMs.toFixed(1)}ms persist=${report.perPageAvg.persistMs.toFixed(1)}ms`);
       console.log('[NPO Benchmark]', report);
       return report;

@@ -4,17 +4,31 @@ import { jsKernels } from './jsFallback';
 let wasmModule: IWasmKernels | null = null;
 let initPromise: Promise<IWasmKernels> | null = null;
 
+function basePath(): string {
+  return process.env.NEXT_PUBLIC_BASE_PATH || '';
+}
+
 async function loadWasm(): Promise<IWasmKernels | null> {
   try {
-    const wasmUrl = Array.of('../../wasm/pkg/npo_wasm.js')[0];
-    const wasm = await import(wasmUrl);
-    try {
-      await wasm.default();
-    } catch {
-      const resp = await fetch('/wasm/npo_wasm_bg.wasm');
-      const mod = await WebAssembly.compile(await resp.arrayBuffer());
-      wasm.initSync({ module_or_path: mod });
+    // The wasm-pack glue (npo_wasm.js) is served from public/wasm/.
+    // `webpackIgnore` keeps this as a native runtime import (not bundled),
+    // so the generated glue can be committed and served as a static asset.
+    const glueUrl = `${basePath()}/wasm/npo_wasm.js`;
+    const wasm = await import(/* webpackIgnore: true */ glueUrl);
+
+    // Initialise the module. The default export fetches npo_wasm_bg.wasm
+    // relative to the glue file (same public/wasm/ directory).
+    if (typeof wasm.default === 'function') {
+      try {
+        await wasm.default();
+      } catch {
+        // Fallback: compile the binary ourselves and hand it to initSync.
+        const resp = await fetch(`${basePath()}/wasm/npo_wasm_bg.wasm`);
+        const mod = await WebAssembly.compile(await resp.arrayBuffer());
+        wasm.initSync({ module_or_path: mod });
+      }
     }
+
     const exports = wasm as {
       rgb_to_hsv_batch: (rgba: Uint8Array, pixel_count: number) => Float32Array;
       classify_colors: (hsv: Float32Array, pixel_count: number) => Uint8Array;
@@ -24,8 +38,9 @@ async function loadWasm(): Promise<IWasmKernels | null> {
       dilate_mask: (mask: Uint8Array, width: number, height: number, ks: number) => void;
       unsharp_mask: (data: Uint8Array, width: number, height: number, amt: number) => void;
       ink_coverage: (data: Uint8Array, pixel_count: number, threshold: number) => number;
+      process_page: (rgba: Uint8Array, width: number, height: number, invert_mode_smart: boolean, is_dark: boolean, dilation_ks: number, sharpen_amount: number) => Uint8Array;
     };
-    return {
+    const kernels: IWasmKernels = {
       rgbToHsvBatch(rgba: Uint8ClampedArray, pixelCount: number) {
         return exports.rgb_to_hsv_batch(new Uint8Array(rgba.buffer, rgba.byteOffset, rgba.byteLength), pixelCount);
       },
@@ -51,6 +66,15 @@ async function loadWasm(): Promise<IWasmKernels | null> {
         return exports.ink_coverage(new Uint8Array(data.buffer, data.byteOffset, data.byteLength), pixelCount, threshold);
       },
     };
+    // Only expose the monolithic processPage when the binary actually exports
+    // `process_page`. Older builds lack it; callers feature-detect via
+    // `typeof kernels.processPage === 'function'` and fall back to the
+    // per-kernel WASM/JS path, so this must not be defined unconditionally.
+    if (typeof exports.process_page === 'function') {
+      kernels.processPage = (rgba, width, height, invertModeSmart, isDark, dilationKs, sharpenAmount) =>
+        exports.process_page(rgba, width, height, invertModeSmart, isDark, dilationKs, sharpenAmount);
+    }
+    return kernels;
   } catch (e) {
     console.warn('[WASM] Failed to load wasm module, using JS fallback:', e);
     return null;

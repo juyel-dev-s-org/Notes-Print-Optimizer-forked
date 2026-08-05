@@ -1,21 +1,15 @@
-/*
-  X-Content-Type-Options: nosniff
-  X-Frame-Options: DENY
-  X-XSS-Protection: 1; mode=block
-  Referrer-Policy: strict-origin-when-cross-origin
-  Permissions-Policy: camera=(), microphone=(), geolocation=()
-  Cache-Control: public, max-age=3600
-
-/*.wasm
-  Content-Type: application/wasm
-  Cache-Control: public, max-age=31536000, immutable
-
+# Cache static assets for 1 year (immutable)
 /_next/static/*
   Cache-Control: public, max-age=31536000, immutable
 
-/sw.js
-  Cache-Control: no-cache, no-store, must-revalidate
-
-/manifest.webmanifest
-  Content-Type: application/manifest+json
-  Cache-Control: no-cache
+# Cache other assets for 1 month
+/*.js
+  Cache-Control: public, max-age=2592000
+/*.css
+  Cache-Control: public, max-age=2592000
+/*.png
+  Cache-Control: public, max-age=2592000
+/*.jpg
+  Cache-Control: public, max-age=2592000
+/*.svg
+  Cache-Control: public, max-age=2592000
