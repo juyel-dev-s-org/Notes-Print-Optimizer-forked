@@ -142,7 +142,8 @@ export function installGlobalBenchmark(): void {
     if (params.get('bench') === '1' && !w.__npoAutoRan) {
       w.__npoAutoRan = true;
       const pages = Number(params.get('pages') || 12);
-      setTimeout(() => { (w.__npoBenchmark as (o?: { pageCount?: number }) => void)({ pageCount: pages }); }, 1200);
+      const engine = params.get('engine') || undefined;
+      setTimeout(() => { (w.__npoBenchmark as (o?: { pageCount?: number; engineVersion?: string }) => void)({ pageCount: pages, engineVersion: engine }); }, 1200);
     }
   } catch { /* noop */ }
 }
