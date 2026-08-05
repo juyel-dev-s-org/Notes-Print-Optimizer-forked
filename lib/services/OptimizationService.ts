@@ -1,5 +1,4 @@
 import type { EngineVersion } from '../optimizer/engine/types';
-import { getProcessingEngine } from '../optimizer/engine';
 import type { ProcessedPage, LayoutConfig, OptimizationMetrics, PresetMode, DocumentProfile, ProcessingParameters } from '../optimizer/types';
 import { metricsBus } from '../metrics/MetricsBus';
 
@@ -13,6 +12,8 @@ export class OptimizationService {
     onPageOptimized?: (pageIndex: number, thumbnailUrl: string, inkBeforePct: number, inkAfterPct: number) => void,
     customParams?: Partial<ProcessingParameters>,
   ): Promise<{ processedPages: ProcessedPage[]; docProfile: DocumentProfile }> {
+    // Defer the processing engines until a document is actually processed.
+    const { getProcessingEngine } = await import('../optimizer/engine');
     const engine = getProcessingEngine(engineVersion);
     const wrappedOnPageOptimized = (pageIndex: number, thumbnailUrl: string, inkBeforePct: number, inkAfterPct: number) => {
       metricsBus.emit({
