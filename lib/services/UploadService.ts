@@ -1,5 +1,3 @@
-import { PdfExporter } from '../optimizer/pdfExporter';
-
 export interface UploadedItem {
   id: string;
   file: File;
@@ -27,6 +25,8 @@ export class UploadService {
 
   static async mergeAndPreview(items: UploadedItem[]): Promise<{ pdfBlob: Blob; pdfBytes: Uint8Array; thumbnails: string[] } | null> {
     if (items.length === 0) return null;
+    // Defer pdf-lib (via PdfExporter) until a merge is actually requested.
+    const { PdfExporter } = await import('../optimizer/pdfExporter');
     const buffers = items.map(it => it.arrayBuffer);
     const { pdfBytes, pdfBlob } = await PdfExporter.mergePdfBuffers(buffers);
     const pdfjsLib = await PdfExporter.initPdfJs();
