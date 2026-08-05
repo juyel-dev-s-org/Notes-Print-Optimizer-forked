@@ -140,7 +140,7 @@ export default function HomePage() {
           progressiveThumbnails={progressiveThumbnails}
         />
       </main>
-      <footer className="border-t border-slate-800/60 px-4 py-6 text-center text-[11px] text-slate-500">
+      <footer className="border-t border-slate-800/60 px-4 py-6 text-center text-[11px] text-slate-400">
         <div className="mx-auto flex max-w-md flex-col items-center gap-1.5">
           <p className="font-medium text-slate-400">&copy; 2026 Juyel Hossain</p>
           <p>Juyel Source License v1.0</p>
