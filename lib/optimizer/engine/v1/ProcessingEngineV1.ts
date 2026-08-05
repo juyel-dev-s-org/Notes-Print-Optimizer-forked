@@ -8,6 +8,8 @@ import { getPdfjsLib } from '../../pdfjsLoader';
 import { canCreateImageBitmap } from '../../features';
 import type { IImageProcessor } from '../../processor/IImageProcessor';
 import { metricsBus } from '../../../metrics/MetricsBus';
+import { ensureWasmKernels, isWasmLoaded, getKernels } from '../../../wasm/loader';
+import { setWasmKernelsHooks } from '../../../kernels/processPage';
 
 /** Batched IDB write queue — reduces per-page transactions (H-5). */
 interface PendingWrite {
@@ -177,6 +179,12 @@ export class ProcessingEngineV1 implements IProcessingEngine {
     const t0 = performance.now();
     const { pdfBuffer, pdfId, presetMode = 'AUTO_ADAPTIVE' } = input;
     const userRenderScale = options.renderScale ?? null;
+    /* Phase-2: load WASM kernels (JS fallback if unavailable) */
+    try {
+      await ensureWasmKernels();
+      if (isWasmLoaded()) setWasmKernelsHooks(getKernels());
+    } catch { /* wasm unavailable - JS path */ }
+
     const pdfjsLib = await getPdfjsLib();
     const pdfDoc = await pdfjsLib.getDocument({ data: new Uint8Array(pdfBuffer) }).promise;
     const totalPages = pdfDoc.numPages;
