@@ -73,6 +73,25 @@ export function processPage(
   const isDark = profile.classification === 'DARK_SLIDE' || profile.darkBackgroundRatio > 0.4;
   const shouldProcess = params.invertMode !== 'none' || isDark;
 
+  const ks = params.dilationKernelSize != null
+    ? params.dilationKernelSize
+    : (params.strokeEnhancement === 'strong' ? 5 : params.strokeEnhancement === 'normal' ? 3 : 0);
+
+  /* Monolithic WASM path: single call, 2 copies (in+out) vs ~15 round-trips.
+   * Falls through to per-kernel path if WASM isn't loaded or processPage
+   * isn't available in the current module. */
+  if (shouldProcess && wasmKernels && typeof wasmKernels.processPage === 'function') {
+    const cropped = srcData.subarray(ct * sw * 4, (ct + dh) * sw * 4);
+    const rgbaView = new Uint8Array(cropped.buffer, cropped.byteOffset, cropped.byteLength);
+    const out = wasmKernels.processPage(
+      rgbaView, dw, dh,
+      convertColors, isDark,
+      ks,
+      params.sharpenAmount / 100,
+    );
+    return { buffer: out.buffer, width: dw, height: dh };
+  }
+
   /* Fast path: no processing, just crop copy */
   if (!shouldProcess) {
     const srcRowBytes = sw * 4;
@@ -180,9 +199,6 @@ export function processPage(
   }
 
   /* Post-processing: dilation with numeric kernel size override */
-  const ks = params.dilationKernelSize != null
-    ? params.dilationKernelSize
-    : (params.strokeEnhancement === 'strong' ? 5 : params.strokeEnhancement === 'normal' ? 3 : 0);
   if (ks > 0) {
     applyMaskDilation(fm, dw, dh, ks);
   }
