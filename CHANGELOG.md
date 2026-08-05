@@ -26,6 +26,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Smart PDF Rearrangement: automatic series detection with rule-based natural
   sorting, drag & drop reordering and one-click "Smart Arrange"
 
+### Performance
+- **Phase-0 measurement infrastructure**: per-phase timing instrumentation
+  (`page:phases` / `doc:phases` MetricsBus events) on both V1 and V2 engines,
+  a CI CPU baseline benchmark, and a browser benchmark harness
+  (`?bench=1`, `&pages=N`, `&engine=v1|v2`)
+- **Lazy original re-render**: skip the original-slide JPEG encode during
+  processing; the Before/After slider now re-renders the original on demand
+  from the merged PDF (full quality, no compression artifacts)
+  - `persist` phase ~17% faster; V1 throughput ~4.6 pages/sec on desktop
+    (20-page benchmark, charging / best-performance)
+
 ### Changed
 - Install prompt UI now lives **only inside the drawer** (nothing renders
   outside the hamburger menu); shared `useInstallPrompt` hook (lib/pwa)
