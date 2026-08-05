@@ -69,6 +69,32 @@ export function ink_coverage(data, pixel_count, threshold) {
 }
 
 /**
+ * @param {Uint8Array} rgba
+ * @param {number} width
+ * @param {number} height
+ * @param {boolean} invert_mode_smart
+ * @param {boolean} is_dark
+ * @param {number} dilation_ks
+ * @param {number} sharpen_amount
+ * @returns {Uint8Array}
+ */
+export function process_page(rgba, width, height, invert_mode_smart, is_dark, dilation_ks, sharpen_amount) {
+    try {
+        const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
+        const ptr0 = passArray8ToWasm0(rgba, wasm.__wbindgen_export);
+        const len0 = WASM_VECTOR_LEN;
+        wasm.process_page(retptr, ptr0, len0, width, height, invert_mode_smart, is_dark, dilation_ks, sharpen_amount);
+        var r0 = getDataViewMemory0().getInt32(retptr + 4 * 0, true);
+        var r1 = getDataViewMemory0().getInt32(retptr + 4 * 1, true);
+        var v2 = getArrayU8FromWasm0(r0, r1).slice();
+        wasm.__wbindgen_export2(r0, r1 * 1, 1);
+        return v2;
+    } finally {
+        wasm.__wbindgen_add_to_stack_pointer(16);
+    }
+}
+
+/**
  * @param {Uint8Array} mask
  * @param {number} width
  * @param {number} height
