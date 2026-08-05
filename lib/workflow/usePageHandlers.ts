@@ -11,7 +11,6 @@ import { pwOptimizerStorage } from '../optimizer/storage';
 import { memoryManager } from '../optimizer/memoryManager';
 import { CheckpointManager } from '../pipeline/checkpoint/CheckpointManager';
 import { ParameterGenerator } from '../optimizer/parameterGenerator';
-import { getProcessingEngine } from '../optimizer/engine';
 import { getPdfjsLib } from '../optimizer/pdfjsLoader';
 import type {
   GridFormat,
@@ -381,6 +380,7 @@ export function usePageHandlers() {
 
     try {
       const effectiveParams = buildEffectiveParams(masterParams, processingToggles);
+      const { getProcessingEngine } = await import('../optimizer/engine');
       const engine = getProcessingEngine(selectedEngineVersion);
 
       // 1. Render ONLY the selected page from the source PDF
