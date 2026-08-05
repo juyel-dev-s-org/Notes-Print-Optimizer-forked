@@ -67,3 +67,35 @@ html, body {
     background-position: center top, center bottom, 0 0, 0 0;
   }
 }
+
+/* ------------------------------------------------------------------ */
+/* Accessibility: visible keyboard focus + skip-to-content link       */
+/* ------------------------------------------------------------------ */
+
+/* Ensure keyboard users always see a clear focus ring (WCAG 2.4.7) */
+:focus-visible {
+  outline: 2px solid #818cf8; /* indigo-400 */
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+/* Skip link: visually hidden until focused, then appears top-left (WCAG 2.4.1) */
+.skip-link {
+  position: absolute;
+  left: -9999px;
+  top: 0;
+  z-index: 100;
+  padding: 0.75rem 1.25rem;
+  background: #4f46e5; /* indigo-600 */
+  color: #ffffff;
+  font-size: 0.875rem;
+  font-weight: 600;
+  text-decoration: none;
+  border-radius: 0 0 0.5rem 0;
+}
+.skip-link:focus {
+  left: 0;
+  top: 0;
+  outline: 2px solid #c7d2fe; /* indigo-200 */
+  outline-offset: 2px;
+}
