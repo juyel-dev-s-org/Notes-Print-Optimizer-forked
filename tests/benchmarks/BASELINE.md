@@ -8,7 +8,70 @@ This file records the performance metrics for the optimizer pipeline across re-a
 - Kernel bench: 1000x1000px random RGBA data (1 MPx)
 - Runner: Vitest (jsdom + @napi-rs/canvas)
 
+## Phase 0 — Performance Baseline (2026-08)
+
+Goal: measure where processing time is actually spent before optimizing.
+
+### CPU-bound per-page pipeline (Vitest, main-thread JS, no rendering)
+
+Config: 1600x900 (1.44 MPx) synthetic dark slides, 10 pages, `PW_DARK_SLIDE` preset.
+Source: `tests/benchmarks/phase0Baseline.bench.ts` (runs in CI).
+
+| Phase | ms / page | Share |
+|---|---|---|
+| analyze | 13.2 | 9% |
+| **processPage (pixel kernel)** | **123.9** | **85%** |
+| inkCoverage (before + after) | 7.9 | 5% |
+| **CPU total** | **145.0** | 100% |
+
+- Throughput (CPU only): **~6.9 pages/sec**
+- Runner: GitHub Actions CI (Node 20, vitest)
+
+### Key finding
+
+`processPage` (HSV classification + channel masks + dilate + denoise + composite + unsharp)
+is **~85% of per-page CPU**. This is the single biggest target for parallelisation
+(worker pool) and WASM acceleration.
+
+### Instrumentation added in Phase 0
+
+- V1 engine emits `page:phases` (per-page render / analyze / process / thumbnail / persist)
+  and `doc:phases` (document aggregate) to the MetricsBus.
+- Browser harness: call `window.__npoBenchmark()` in the console, or open the app with
+  `?bench=1` (and optional `&pages=20`), to measure the **full pipeline including pdfjs
+  rendering** on a real device.
+- Vitest benchmark guards against CPU regressions in CI.
+
+### Decision points for Phase 1+
+
+- Capture the full render-vs-process split via `?bench=1` on a real device.
+- If `process` stays dominant, Phase 1 (worker-pool parallelism) and Phase 2 (WASM) are justified.
+
+### Engine comparison (20 pages, charging / best-performance, after lazy-original)
+
+V2 (sequential) gives the true per-phase cost; V1 (parallel, 4 concurrent)
+numbers are inflated by contention. Both measured via `?bench=1&engine=...`.
+
+| Phase | V1 (parallel) | V2 (sequential) |
+|---|---|---|
+| render | 153.5ms | 27.4ms |
+| analyze | 1.4ms | 1.5ms |
+| process | 147.1ms | 157.9ms |
+| thumb | 292.0ms | 25.1ms |
+| persist | 248.7ms | 33.3ms |
+| **pages/sec** | **4.63** | 3.76 |
+
+- V1 wins on desktop (parallelism); V2 is memory-safe / sequential.
+- V2's clean breakdown shows `process` (pixel kernel) is the true bottleneck
+  (~64% of sequential per-page cost).
+- Power state dominates: same code gave 4.6 pps (charging) vs 1.5 pps
+  (battery saver). Always benchmark on AC / best-performance.
+- Next target: move `process` kernels to WASM.
+
+---
+
 ## Pipeline Benchmarks
+
 
 | Phase | Analyze (ms) | Process (ms) | TOTAL (ms) | Analyze (MPx/s) | Process (MPx/s) | Notes |
 |-------|-------------|-------------|-----------|----------------|----------------|-------|

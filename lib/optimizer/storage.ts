@@ -6,7 +6,7 @@ const MAX_CACHE_BUDGET = 200 * 1048576;
 
 interface CachedPageRecord {
   id: string; pdfId: string; pageIndex: number;
-  originalBlob: Blob; optimizedBlob: Blob; timestamp: number; cacheVersion: number;
+  originalBlob?: Blob; optimizedBlob: Blob; timestamp: number; cacheVersion: number;
   sizeBytes: number;
 }
 
@@ -42,38 +42,38 @@ class PWOptimizerStorage {
     return this.dbPromise;
   }
 
-  public async storePage(pdfId: string, pageIndex: number, originalBlob: Blob, optimizedBlob: Blob): Promise<void> {
+  public async storePage(pdfId: string, pageIndex: number, originalBlob: Blob | null, optimizedBlob: Blob): Promise<void> {
     try {
-      const sizeBytes = originalBlob.size + optimizedBlob.size;
+      const sizeBytes = (originalBlob?.size ?? 0) + optimizedBlob.size;
       await this.evictIfNeeded(sizeBytes);
       const db = await this.getDB();
       const tx = db.transaction(STORE_NAME, 'readwrite');
       tx.objectStore(STORE_NAME).put({
         id: `${pdfId}_page_${pageIndex}`, pdfId, pageIndex,
-        originalBlob, optimizedBlob, timestamp: Date.now(), cacheVersion: CACHE_VERSION, sizeBytes,
+        originalBlob: originalBlob ?? undefined, optimizedBlob, timestamp: Date.now(), cacheVersion: CACHE_VERSION, sizeBytes,
       } as CachedPageRecord);
       return new Promise((resolve, reject) => { tx.oncomplete = () => resolve(); tx.onerror = () => reject(tx.error); });
     } catch (e) { console.warn('IDB write failed', e); }
   }
 
-  public async storePagesBatch(pages: Array<{ pdfId: string; pageIndex: number; originalBlob: Blob; optimizedBlob: Blob }>): Promise<void> {
+  public async storePagesBatch(pages: Array<{ pdfId: string; pageIndex: number; originalBlob: Blob | null; optimizedBlob: Blob }>): Promise<void> {
     if (pages.length === 0) return;
     try {
-      const totalBytes = pages.reduce((s, p) => s + p.originalBlob.size + p.optimizedBlob.size, 0);
+      const totalBytes = pages.reduce((s, p) => s + (p.originalBlob?.size ?? 0) + p.optimizedBlob.size, 0);
       await this.evictIfNeeded(totalBytes);
       const db = await this.getDB();
       const tx = db.transaction(STORE_NAME, 'readwrite');
       const store = tx.objectStore(STORE_NAME); const now = Date.now();
       for (const p of pages) {
-        const sizeBytes = p.originalBlob.size + p.optimizedBlob.size;
+        const sizeBytes = (p.originalBlob?.size ?? 0) + p.optimizedBlob.size;
         store.put({ id: `${p.pdfId}_page_${p.pageIndex}`, pdfId: p.pdfId, pageIndex: p.pageIndex,
-          originalBlob: p.originalBlob, optimizedBlob: p.optimizedBlob, timestamp: now, cacheVersion: CACHE_VERSION, sizeBytes } as CachedPageRecord);
+          originalBlob: p.originalBlob ?? undefined, optimizedBlob: p.optimizedBlob, timestamp: now, cacheVersion: CACHE_VERSION, sizeBytes } as CachedPageRecord);
       }
       return new Promise((resolve, reject) => { tx.oncomplete = () => resolve(); tx.onerror = () => reject(tx.error); });
     } catch (e) { console.warn('IDB batch write failed', e); }
   }
 
-  public async getPage(pdfId: string, pageIndex: number): Promise<{ originalBlob: Blob; optimizedBlob: Blob } | null> {
+  public async getPage(pdfId: string, pageIndex: number): Promise<{ originalBlob?: Blob; optimizedBlob: Blob } | null> {
     try { const db = await this.getDB();
       const req = db.transaction(STORE_NAME, 'readonly').objectStore(STORE_NAME).get(`${pdfId}_page_${pageIndex}`);
       return new Promise((resolve) => {

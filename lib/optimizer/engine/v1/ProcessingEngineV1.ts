@@ -7,12 +7,13 @@ import { pwOptimizerStorage } from '../../storage';
 import { getPdfjsLib } from '../../pdfjsLoader';
 import { canCreateImageBitmap } from '../../features';
 import type { IImageProcessor } from '../../processor/IImageProcessor';
+import { metricsBus } from '../../../metrics/MetricsBus';
 
 /** Batched IDB write queue — reduces per-page transactions (H-5). */
 interface PendingWrite {
   pdfId: string;
   pageIndex: number;
-  originalBlob: Blob;
+  originalBlob: Blob | null;
   optimizedBlob: Blob;
 }
 
@@ -182,6 +183,8 @@ export class ProcessingEngineV1 implements IProcessingEngine {
     const profiles: PageProfile[] = new Array(totalPages);
     const processedPages: ProcessedPage[] = new Array(totalPages);
     let sumBrightness = 0, darkCount = 0;
+    /* Phase-0 instrumentation: per-phase timing accumulators */
+    let sumRenderMs = 0, sumAnalyzeMs = 0, sumProcessMs = 0, sumThumbMs = 0, sumPersistMs = 0;
 
     /* Reset write queue for new document (H-5) */
     this.writeQueue = [];
@@ -208,29 +211,49 @@ export class ProcessingEngineV1 implements IProcessingEngine {
       const canvas = document.createElement('canvas');
       canvas.width = viewport.width; canvas.height = viewport.height;
       const ctx = canvas.getContext('2d', { willReadFrequently: true })!;
+
+      /* Phase-0 instrumentation */
+      let t = performance.now();
       await page.render({ canvasContext: ctx, viewport }).promise;
       const srcImageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+      const renderMs = performance.now() - t;
+
+      t = performance.now();
       const profile = await this.processor.analyzePage(srcImageData, i - 1);
+      const analyzeMs = performance.now() - t;
       profiles[i - 1] = profile; sumBrightness += profile.averageBrightness;
       if (profile.classification === 'DARK_SLIDE') darkCount++;
       const partialDoc: DocumentProfile = { totalPages, averageBrightness: 128, darkSlideRatio: 0.5,
         recommendedPreset: presetMode, pages: profiles, detectedBanners: { topPct: 0, bottomPct: 0 } };
       const params = ParameterGenerator.generateAdaptiveForPage(profile, partialDoc, presetMode);
       if (input.customParams) Object.assign(params, input.customParams);
+
+      t = performance.now();
       const pageRes = await this.processPage(srcImageData, i - 1, params, profile);
+      const processMs = performance.now() - t;
 
       /* Thumbnail via shared canvas + blob URL (M-4) */
+      t = performance.now();
       const thumbnailDataUrl = await this.generateThumbnail(pageRes.optimizedImageData, i - 1);
+      const thumbnailMs = performance.now() - t;
 
       if (onPageOptimized) {
         onPageOptimized(i - 1, thumbnailDataUrl, pageRes.inkCoverageBeforePct, pageRes.inkCoverageAfterPct);
       }
 
-      const origBlob = await memoryManager.imageDataToBlob(srcImageData, 0.75);
+      t = performance.now();
       const optBlob = await memoryManager.imageDataToBlob(pageRes.optimizedImageData, 0.88);
 
-      /* Batched IDB write — enqueue instead of per-page transaction (H-5) */
-      this.enqueueWrite({ pdfId, pageIndex: i - 1, originalBlob: origBlob, optimizedBlob: optBlob });
+      /* Batched IDB write — original is re-rendered lazily for before/after (Phase-1) */
+      this.enqueueWrite({ pdfId, pageIndex: i - 1, originalBlob: null, optimizedBlob: optBlob });
+      const persistMs = performance.now() - t;
+
+      /* Phase-0: accumulate + emit per-phase timing */
+      sumRenderMs += renderMs; sumAnalyzeMs += analyzeMs; sumProcessMs += processMs;
+      sumThumbMs += thumbnailMs; sumPersistMs += persistMs;
+      metricsBus.emit({ type: 'page:phases', timestamp: Date.now(), pageIndex: i - 1,
+        renderMs, analyzeMs, processMs, thumbnailMs, persistMs,
+        durationMs: renderMs + analyzeMs + processMs + thumbnailMs + persistMs });
 
       memoryManager.disposeCanvas(canvas);
       processedPages[i - 1] = { pageIndex: i - 1, thumbnailDataUrl, profile, parameters: params,
@@ -254,6 +277,11 @@ export class ProcessingEngineV1 implements IProcessingEngine {
       detectedBanners: { topPct: profiles.reduce((a, p) => Math.max(a, p?.topBannerHeightPct ?? 0), 0),
         bottomPct: profiles.reduce((a, p) => Math.max(a, p?.bottomBannerHeightPct ?? 0), 0) } };
     const totalMs = Math.round(performance.now() - t0);
+    /* Phase-0: emit document-level phase summary */
+    metricsBus.emit({ type: 'doc:phases', timestamp: Date.now(), durationMs: totalMs,
+      totalPages, pagesPerSecond: Number((totalPages / (totalMs / 1000)).toFixed(2)),
+      renderMs: sumRenderMs, analyzeMs: sumAnalyzeMs, processMs: sumProcessMs,
+      thumbnailMs: sumThumbMs, persistMs: sumPersistMs });
     return { processedPages, docProfile, engineVersion: this.version, engineId: this.id, totalTimeMs: totalMs,
       metrics: { processingTimeMs: totalMs, pagesPerSecond: Number((totalPages / (totalMs / 1000)).toFixed(2)) } };
   }

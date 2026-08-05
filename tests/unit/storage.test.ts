@@ -38,7 +38,7 @@ describe('PWOptimizerStorage', () => {
     expect(record!.originalBlob).toBeDefined();
     expect(record!.optimizedBlob).toBeDefined();
     // fake-indexeddb may drop properties when cloning jsdom Blobs, handle gracefully
-    if (record!.originalBlob.size !== undefined) {
+    if (record!.originalBlob && record!.originalBlob.size !== undefined) {
       expect(record!.originalBlob.size).toBe(13);
       expect(record!.optimizedBlob.size).toBe(14);
     }
