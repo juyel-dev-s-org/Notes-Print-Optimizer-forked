@@ -81,19 +81,24 @@ export function processPage(
    * Falls through to per-kernel path if WASM isn't loaded or processPage
    * isn't available in the current module. */
   if (shouldProcess && wasmKernels && typeof wasmKernels.processPage === 'function') {
-    const cropped = srcData.subarray(ct * sw * 4, (ct + dh) * sw * 4);
-    const rgbaView = new Uint8Array(cropped.buffer, cropped.byteOffset, cropped.byteLength);
-    const out = wasmKernels.processPage(
-      rgbaView, dw, dh,
-      convertColors, isDark,
-      ks,
-      params.sharpenAmount / 100,
-    );
-    /* process_page returns an owned Vec<u8>; copy into a fresh ArrayBuffer so the
-       result is decoupled from WASM linear memory and typed as ArrayBuffer. */
-    const outBuffer = new ArrayBuffer(out.byteLength);
-    new Uint8Array(outBuffer).set(out);
-    return { buffer: outBuffer, width: dw, height: dh };
+    try {
+      const cropped = srcData.subarray(ct * sw * 4, (ct + dh) * sw * 4);
+      const rgbaView = new Uint8Array(cropped.buffer, cropped.byteOffset, cropped.byteLength);
+      const out = wasmKernels.processPage(
+        rgbaView, dw, dh,
+        convertColors, isDark,
+        ks,
+        params.sharpenAmount / 100,
+      );
+      /* process_page returns an owned Vec<u8>; copy into a fresh ArrayBuffer so the
+         result is decoupled from WASM linear memory and typed as ArrayBuffer. */
+      const outBuffer = new ArrayBuffer(out.byteLength);
+      new Uint8Array(outBuffer).set(out);
+      return { buffer: outBuffer, width: dw, height: dh };
+    } catch {
+      /* WASM process_page trapped/failed at runtime; fall through to the
+         per-kernel WASM/JS path below instead of crashing the page. */
+    }
   }
 
   /* Fast path: no processing, just crop copy */
