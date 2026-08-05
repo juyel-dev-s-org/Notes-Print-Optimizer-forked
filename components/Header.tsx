@@ -89,6 +89,7 @@ export const Header: React.FC<HeaderProps> = ({
                       }
                     }}
                     disabled={!isCompleted && !isActive}
+                    aria-current={isActive ? 'step' : undefined}
                     className={`flex items-center gap-1 rounded-lg px-2 py-1 text-xs font-semibold transition-all ${
                       isActive
                         ? 'bg-indigo-600 text-white shadow-xs lg:scale-105'
