@@ -53,6 +53,8 @@ export default function HomePage() {
 
   return (
     <div className="min-h-screen bg-slate-950 app-shell-bg text-slate-100 font-sans flex flex-col pb-safe">
+      {/* Skip link: lets keyboard / screen-reader users bypass header & nav (WCAG 2.4.1) */}
+      <a href="#main-content" className="skip-link">Skip to main content</a>
       <Header
         currentPhase={state.currentPhase}
         onReset={handleResetWorkflow}
@@ -66,7 +68,7 @@ export default function HomePage() {
           {state.errorMessage}
         </div>
       )}
-      <main className="mx-auto w-full max-w-5xl lg:max-w-6xl flex-1 px-3 py-4 sm:px-6 sm:py-6 pb-28 md:pb-8">
+      <main id="main-content" className="mx-auto w-full max-w-5xl lg:max-w-6xl flex-1 px-3 py-4 sm:px-6 sm:py-6 pb-28 md:pb-8">
         <PlatformUIOrchestrator
           currentPhase={state.currentPhase}
           setCurrentPhase={(phase) => actions.setPhase(phase)}
