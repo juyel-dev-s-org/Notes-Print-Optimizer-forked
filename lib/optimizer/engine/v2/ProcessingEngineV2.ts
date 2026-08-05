@@ -47,7 +47,8 @@ import { ParameterGenerator } from '../../parameterGenerator';
 import { getPdfjsLib } from '../../pdfjsLoader';
 import { metricsBus } from '../../../metrics/MetricsBus';
 import { ensureWasmKernels, isWasmLoaded, getKernels } from '../../../wasm/loader';
-import { setWasmKernelsHooks } from '../../../kernels/processPage';
+import { setWasmKernelsHooks, clearWasmKernelsHooks } from '../../../kernels/processPage';
+import { featureFlags } from '../../features';
 
 /* ------------------------------------------------------------------ */
 /*  Helpers                                                            */
@@ -164,9 +165,19 @@ export class ProcessingEngineV2 implements IProcessingEngine {
     profile: PageProfile,
   ): Promise<EnginePageProcessResult> {
     const t0 = performance.now();
-    const result = runProcessPage(
-      imageData.data, imageData.width, imageData.height, params, profile,
-    );
+    let result: ReturnType<typeof runProcessPage>;
+    try {
+      result = runProcessPage(
+        imageData.data, imageData.width, imageData.height, params, profile,
+      );
+    } catch (procErr) {
+      console.warn(`[V2] processPage failed on page ${pageIndex}, using original render:`, procErr);
+      result = {
+        buffer: new Uint8ClampedArray(imageData.data).buffer,
+        width: imageData.width,
+        height: imageData.height,
+      };
+    }
     const optimizedImageData = createImageDataFromBuffer(
       result.buffer, result.width, result.height,
     );
@@ -202,11 +213,17 @@ export class ProcessingEngineV2 implements IProcessingEngine {
       signal.addEventListener('abort', () => this.abortController?.abort(), { once: true });
     }
 
-    /* Phase-2: load WASM kernels (JS fallback if unavailable) */
-    try {
-      await ensureWasmKernels();
-      if (isWasmLoaded()) setWasmKernelsHooks(getKernels());
-    } catch { /* wasm unavailable - JS path */ }
+    /* Phase-2: WASM kernels are experimental and OFF by default (feature flag
+       engine.v2.wasm_kernels). The pure-JS kernels are the stable, proven path.
+       Always clear stale hooks first so a previous run can never leak WASM
+       kernels into this document. */
+    clearWasmKernelsHooks();
+    if (featureFlags.isEnabled('engine.v2.wasm_kernels')) {
+      try {
+        await ensureWasmKernels();
+        if (isWasmLoaded()) setWasmKernelsHooks(getKernels());
+      } catch { /* wasm unavailable - JS path */ }
+    }
 
     const pdfjsLib = await getPdfjsLib();
     const pdfDoc = await pdfjsLib.getDocument({
@@ -290,9 +307,21 @@ export class ProcessingEngineV2 implements IProcessingEngine {
       const params = input.customParams
         ? { ...baseParams, ...input.customParams }
         : baseParams;
-      const procResult = runProcessPage(
-        srcImageData.data, srcImageData.width, srcImageData.height, params, profile,
-      );
+      /* Robustness: one page failing must never abort the whole document.
+         Fall back to the original render if processing throws. */
+      let procResult: ReturnType<typeof runProcessPage>;
+      try {
+        procResult = runProcessPage(
+          srcImageData.data, srcImageData.width, srcImageData.height, params, profile,
+        );
+      } catch (procErr) {
+        console.warn(`[V2] processPage failed on page ${i}, using original render:`, procErr);
+        procResult = {
+          buffer: new Uint8ClampedArray(srcImageData.data).buffer,
+          width: srcImageData.width,
+          height: srcImageData.height,
+        };
+      }
 
       /* Zero-copy ink coverage on raw buffers */
       const inkBefore = calculateInkCoverage(srcImageData.data);
