@@ -45,6 +45,7 @@ import {
 } from '../../../kernels';
 import { ParameterGenerator } from '../../parameterGenerator';
 import { getPdfjsLib } from '../../pdfjsLoader';
+import { metricsBus } from '../../../metrics/MetricsBus';
 
 /* ------------------------------------------------------------------ */
 /*  Helpers                                                            */
@@ -222,6 +223,8 @@ export class ProcessingEngineV2 implements IProcessingEngine {
 
     let sumBrightness = 0;
     let darkCount = 0;
+    /* Phase-0 instrumentation: per-phase timing accumulators */
+    let sumRenderMs = 0, sumAnalyzeMs = 0, sumProcessMs = 0, sumThumbMs = 0, sumPersistMs = 0;
 
     /* Batched IDB writes */
     const idbBatch: Array<{ pdfId: string; pageIndex: number; originalBlob: Blob | null; optimizedBlob: Blob }> = [];
@@ -242,6 +245,7 @@ export class ProcessingEngineV2 implements IProcessingEngine {
       onProgress?.(i - 1, totalPages, `[V2] Rendering page ${i}/${totalPages}`);
 
       /* Phase 1: Render */
+      let tPhase = performance.now();
       const page = await pdfDoc.getPage(i);
       const viewport = page.getViewport({ scale });
       const vw = Math.ceil(viewport.width);
@@ -256,18 +260,22 @@ export class ProcessingEngineV2 implements IProcessingEngine {
       }).promise;
 
       const srcImageData: ImageData = renderTarget.ctx.getImageData(0, 0, vw, vh);
+      const renderMs = performance.now() - tPhase;
       freeCanvas(renderTarget.canvas, renderTarget.isOffscreen);
       page.cleanup();
 
       if (localSignal.aborted) throw new DOMException('Aborted', 'AbortError');
 
       /* Phase 2: Analyze */
+      tPhase = performance.now();
       const profile = analyzeImageData(srcImageData, i - 1);
+      const analyzeMs = performance.now() - tPhase;
       profiles.push(profile);
       sumBrightness += profile.averageBrightness;
       if (profile.classification === 'DARK_SLIDE') darkCount++;
 
       /* Phase 3: Process (merge preset defaults with user overrides) */
+      tPhase = performance.now();
       const baseParams = ParameterGenerator.getPresetParameters(
         profile.classification === 'DARK_SLIDE' ? 'PW_DARK_SLIDE' : 'LIGHT_HANDWRITTEN',
       );
@@ -285,19 +293,24 @@ export class ProcessingEngineV2 implements IProcessingEngine {
       const optimizedImageData = createImageDataFromBuffer(
         procResult.buffer, procResult.width, procResult.height,
       );
+      const processMs = performance.now() - tPhase;
 
       if (localSignal.aborted) throw new DOMException('Aborted', 'AbortError');
 
       /* Phase 4: Thumbnail */
+      tPhase = performance.now();
       let thumbUrl = '';
       try {
         thumbUrl = await this.generateThumbnail(optimizedImageData);
         if (thumbUrl) this.activeThumbnailUrls.add(thumbUrl);
       } catch { /* non-fatal */ }
 
+      const thumbnailMs = performance.now() - tPhase;
+
       onPageOptimized?.(i - 1, thumbUrl, inkBefore, inkAfter);
 
       /* Phase 5: Persist (batched) — original re-rendered lazily for before/after (Phase-1) */
+      tPhase = performance.now();
       try {
         const optBlob = await memoryManager.imageDataToBlob(optimizedImageData, 0.88);
         idbBatch.push({ pdfId, pageIndex: i - 1, originalBlob: null, optimizedBlob: optBlob });
@@ -305,6 +318,14 @@ export class ProcessingEngineV2 implements IProcessingEngine {
       } catch (e) {
         console.warn(`[V2] Persist failed page ${i}:`, e);
       }
+      const persistMs = performance.now() - tPhase;
+
+      /* Phase-0 instrumentation: emit per-phase timing */
+      sumRenderMs += renderMs; sumAnalyzeMs += analyzeMs; sumProcessMs += processMs;
+      sumThumbMs += thumbnailMs; sumPersistMs += persistMs;
+      metricsBus.emit({ type: 'page:phases', timestamp: Date.now(), pageIndex: i - 1,
+        renderMs, analyzeMs, processMs, thumbnailMs, persistMs,
+        durationMs: renderMs + analyzeMs + processMs + thumbnailMs + persistMs });
 
       pageMeta.push({
         pageIndex: i - 1,
@@ -360,6 +381,11 @@ export class ProcessingEngineV2 implements IProcessingEngine {
     }));
 
     const totalMs = Math.round(performance.now() - t0);
+    /* Phase-0: emit document-level phase summary */
+    metricsBus.emit({ type: 'doc:phases', timestamp: Date.now(), durationMs: totalMs,
+      totalPages, pagesPerSecond: Number((totalPages / (totalMs / 1000)).toFixed(2)),
+      renderMs: sumRenderMs, analyzeMs: sumAnalyzeMs, processMs: sumProcessMs,
+      thumbnailMs: sumThumbMs, persistMs: sumPersistMs });
     return {
       processedPages,
       docProfile: docProfile as any,
