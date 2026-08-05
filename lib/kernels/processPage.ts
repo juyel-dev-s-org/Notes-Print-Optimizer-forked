@@ -89,7 +89,11 @@ export function processPage(
       ks,
       params.sharpenAmount / 100,
     );
-    return { buffer: out.buffer, width: dw, height: dh };
+    /* process_page returns an owned Vec<u8>; copy into a fresh ArrayBuffer so the
+       result is decoupled from WASM linear memory and typed as ArrayBuffer. */
+    const outBuffer = new ArrayBuffer(out.byteLength);
+    new Uint8Array(outBuffer).set(out);
+    return { buffer: outBuffer, width: dw, height: dh };
   }
 
   /* Fast path: no processing, just crop copy */
