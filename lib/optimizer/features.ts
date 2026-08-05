@@ -5,7 +5,7 @@ export interface FeatureDefinition { readonly key: string; readonly description:
 
 const FEATURE_DEFINITIONS: readonly FeatureDefinition[] = [
   { key: 'engine.v2.pipeline', description: 'Use the v2 plugin-based pipeline engine', defaultValue: true, category: 'engine', stable: true },
-  { key: 'engine.v2.wasm_kernels', description: 'Use WASM-compiled pixel kernels', defaultValue: true, category: 'engine', stable: true },
+  { key: 'engine.v2.wasm_kernels', description: 'Use WASM-compiled pixel kernels (experimental — OFF by default for stability)', defaultValue: false, category: 'engine', stable: false },
   { key: 'engine.v2.offscreen_canvas', description: 'Use OffscreenCanvas for rendering', defaultValue: true, category: 'engine', stable: true },
   { key: 'pipeline.retry_on_error', description: 'Automatically retry failed page processing', defaultValue: true, category: 'pipeline', stable: true },
   { key: 'pipeline.checkpoint_resume', description: 'Enable checkpoint-based resume', defaultValue: true, category: 'pipeline', stable: true },
