@@ -1,0 +1,39 @@
+name: WASM Build
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build-wasm:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install Rust (stable + wasm32 target)
+        run: |
+          curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --default-toolchain stable --profile minimal --target wasm32-unknown-unknown
+          echo "$HOME/.cargo/bin" >> "$GITHUB_PATH"
+
+      - name: Install wasm-pack
+        run: curl https://rustwasm.github.io/wasm-pack/installer/init.sh -sSf | sh
+
+      - name: Build WASM
+        run: |
+          cd wasm
+          wasm-pack build --target web --release --out-dir pkg
+
+      - name: Stage artifacts
+        run: |
+          mkdir -p wasm-dist
+          cp wasm/pkg/npo_wasm.js wasm-dist/npo_wasm.js
+          cp wasm/pkg/npo_wasm_bg.wasm wasm-dist/npo_wasm_bg.wasm
+          echo "---- wasm-dist ----"
+          ls -la wasm-dist/
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: wasm-dist
+          path: wasm-dist/
+          retention-days: 5
