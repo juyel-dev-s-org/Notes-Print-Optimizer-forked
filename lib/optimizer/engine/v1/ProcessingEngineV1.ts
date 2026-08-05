@@ -5,11 +5,11 @@ import { ParameterGenerator } from '../../parameterGenerator';
 import { memoryManager } from '../../memoryManager';
 import { pwOptimizerStorage } from '../../storage';
 import { getPdfjsLib } from '../../pdfjsLoader';
-import { canCreateImageBitmap } from '../../features';
+import { canCreateImageBitmap, featureFlags } from '../../features';
 import type { IImageProcessor } from '../../processor/IImageProcessor';
 import { metricsBus } from '../../../metrics/MetricsBus';
 import { ensureWasmKernels, isWasmLoaded, getKernels } from '../../../wasm/loader';
-import { setWasmKernelsHooks } from '../../../kernels/processPage';
+import { setWasmKernelsHooks, clearWasmKernelsHooks } from '../../../kernels/processPage';
 
 /** Batched IDB write queue — reduces per-page transactions (H-5). */
 interface PendingWrite {
@@ -179,11 +179,16 @@ export class ProcessingEngineV1 implements IProcessingEngine {
     const t0 = performance.now();
     const { pdfBuffer, pdfId, presetMode = 'AUTO_ADAPTIVE' } = input;
     const userRenderScale = options.renderScale ?? null;
-    /* Phase-2: load WASM kernels (JS fallback if unavailable) */
-    try {
-      await ensureWasmKernels();
-      if (isWasmLoaded()) setWasmKernelsHooks(getKernels());
-    } catch { /* wasm unavailable - JS path */ }
+    /* Phase-2: WASM kernels are experimental and OFF by default (feature flag
+       engine.v2.wasm_kernels). The pure-JS kernels are the stable, proven path.
+       Clear stale hooks so a previous run can't leak WASM into this document. */
+    clearWasmKernelsHooks();
+    if (featureFlags.isEnabled('engine.v2.wasm_kernels')) {
+      try {
+        await ensureWasmKernels();
+        if (isWasmLoaded()) setWasmKernelsHooks(getKernels());
+      } catch { /* wasm unavailable - JS path */ }
+    }
 
     const pdfjsLib = await getPdfjsLib();
     const pdfDoc = await pdfjsLib.getDocument({ data: new Uint8Array(pdfBuffer) }).promise;
@@ -237,7 +242,16 @@ export class ProcessingEngineV1 implements IProcessingEngine {
       if (input.customParams) Object.assign(params, input.customParams);
 
       t = performance.now();
-      const pageRes = await this.processPage(srcImageData, i - 1, params, profile);
+      /* Robustness: one page failing must never abort the whole document.
+         Fall back to the original render if processing throws. */
+      let pageRes: EnginePageProcessResult;
+      try {
+        pageRes = await this.processPage(srcImageData, i - 1, params, profile);
+      } catch (procErr) {
+        console.warn(`[V1] processPage failed on page ${i}, using original render:`, procErr);
+        pageRes = { pageIndex: i - 1, optimizedImageData: srcImageData,
+          inkCoverageBeforePct: 0, inkCoverageAfterPct: 0, processingTimeMs: 0 };
+      }
       const processMs = performance.now() - t;
 
       /* Thumbnail via shared canvas + blob URL (M-4) */
