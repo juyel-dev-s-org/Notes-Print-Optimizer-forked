@@ -4,17 +4,31 @@ import { jsKernels } from './jsFallback';
 let wasmModule: IWasmKernels | null = null;
 let initPromise: Promise<IWasmKernels> | null = null;
 
+function basePath(): string {
+  return process.env.NEXT_PUBLIC_BASE_PATH || '';
+}
+
 async function loadWasm(): Promise<IWasmKernels | null> {
   try {
-    const wasmUrl = Array.of('../../wasm/pkg/npo_wasm.js')[0];
-    const wasm = await import(wasmUrl);
-    try {
-      await wasm.default();
-    } catch {
-      const resp = await fetch('/wasm/npo_wasm_bg.wasm');
-      const mod = await WebAssembly.compile(await resp.arrayBuffer());
-      wasm.initSync({ module_or_path: mod });
+    // The wasm-pack glue (npo_wasm.js) is served from public/wasm/.
+    // `webpackIgnore` keeps this as a native runtime import (not bundled),
+    // so the generated glue can be committed and served as a static asset.
+    const glueUrl = `${basePath()}/wasm/npo_wasm.js`;
+    const wasm = await import(/* webpackIgnore: true */ glueUrl);
+
+    // Initialise the module. The default export fetches npo_wasm_bg.wasm
+    // relative to the glue file (same public/wasm/ directory).
+    if (typeof wasm.default === 'function') {
+      try {
+        await wasm.default();
+      } catch {
+        // Fallback: compile the binary ourselves and hand it to initSync.
+        const resp = await fetch(`${basePath()}/wasm/npo_wasm_bg.wasm`);
+        const mod = await WebAssembly.compile(await resp.arrayBuffer());
+        wasm.initSync({ module_or_path: mod });
+      }
     }
+
     const exports = wasm as {
       rgb_to_hsv_batch: (rgba: Uint8Array, pixel_count: number) => Float32Array;
       classify_colors: (hsv: Float32Array, pixel_count: number) => Uint8Array;
