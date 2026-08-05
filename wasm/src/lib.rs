@@ -6,6 +6,7 @@ mod noise;
 mod mask_ops;
 mod sharpen;
 mod ink;
+mod process;
 
 use wasm_bindgen::prelude::*;
 
@@ -47,4 +48,17 @@ pub fn unsharp_mask(data: &mut [u8], width: u32, height: u32, amt: f64) {
 #[wasm_bindgen]
 pub fn ink_coverage(data: &[u8], pixel_count: u32, threshold: u8) -> f64 {
     ink::ink_coverage(data, pixel_count as usize, threshold)
+}
+
+#[wasm_bindgen]
+pub fn process_page(
+    rgba: &[u8],
+    width: u32,
+    height: u32,
+    invert_mode_smart: bool,
+    is_dark: bool,
+    dilation_ks: u32,
+    sharpen_amount: f64,
+) -> Vec<u8> {
+    process::process_page(rgba, width, height, invert_mode_smart, is_dark, dilation_ks, sharpen_amount)
 }
