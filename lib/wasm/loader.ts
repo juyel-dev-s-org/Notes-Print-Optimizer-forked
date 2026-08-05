@@ -38,6 +38,7 @@ async function loadWasm(): Promise<IWasmKernels | null> {
       dilate_mask: (mask: Uint8Array, width: number, height: number, ks: number) => void;
       unsharp_mask: (data: Uint8Array, width: number, height: number, amt: number) => void;
       ink_coverage: (data: Uint8Array, pixel_count: number, threshold: number) => number;
+      process_page: (rgba: Uint8Array, width: number, height: number, invert_mode_smart: boolean, is_dark: boolean, dilation_ks: number, sharpen_amount: number) => Uint8Array;
     };
     return {
       rgbToHsvBatch(rgba: Uint8ClampedArray, pixelCount: number) {
@@ -63,6 +64,9 @@ async function loadWasm(): Promise<IWasmKernels | null> {
       },
       inkCoverage(data: Uint8ClampedArray, pixelCount: number, threshold: number) {
         return exports.ink_coverage(new Uint8Array(data.buffer, data.byteOffset, data.byteLength), pixelCount, threshold);
+      },
+      processPage(rgba: Uint8Array, width: number, height: number, invertModeSmart: boolean, isDark: boolean, dilationKs: number, sharpenAmount: number) {
+        return exports.process_page(rgba, width, height, invertModeSmart, isDark, dilationKs, sharpenAmount);
       },
     };
   } catch (e) {
