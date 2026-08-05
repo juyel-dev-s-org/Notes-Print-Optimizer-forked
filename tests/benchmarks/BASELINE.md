@@ -47,6 +47,27 @@ is **~85% of per-page CPU**. This is the single biggest target for parallelisati
 - Capture the full render-vs-process split via `?bench=1` on a real device.
 - If `process` stays dominant, Phase 1 (worker-pool parallelism) and Phase 2 (WASM) are justified.
 
+### Engine comparison (20 pages, charging / best-performance, after lazy-original)
+
+V2 (sequential) gives the true per-phase cost; V1 (parallel, 4 concurrent)
+numbers are inflated by contention. Both measured via `?bench=1&engine=...`.
+
+| Phase | V1 (parallel) | V2 (sequential) |
+|---|---|---|
+| render | 153.5ms | 27.4ms |
+| analyze | 1.4ms | 1.5ms |
+| process | 147.1ms | 157.9ms |
+| thumb | 292.0ms | 25.1ms |
+| persist | 248.7ms | 33.3ms |
+| **pages/sec** | **4.63** | 3.76 |
+
+- V1 wins on desktop (parallelism); V2 is memory-safe / sequential.
+- V2's clean breakdown shows `process` (pixel kernel) is the true bottleneck
+  (~64% of sequential per-page cost).
+- Power state dominates: same code gave 4.6 pps (charging) vs 1.5 pps
+  (battery saver). Always benchmark on AC / best-performance.
+- Next target: move `process` kernels to WASM.
+
 ---
 
 ## Pipeline Benchmarks
