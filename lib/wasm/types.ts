@@ -7,4 +7,18 @@ export interface IWasmKernels {
   dilateMask(mask: Uint8Array, w: number, h: number, ks: number): void;
   unsharpMask(data: Uint8ClampedArray, w: number, h: number, amt: number): void;
   inkCoverage(data: Uint8ClampedArray, pixelCount: number, threshold: number): number;
+  /**
+   * Monolithic end-to-end page pipeline (WASM-only optimisation).
+   * Optional: the JS fallback processes step-by-step via lib/kernels instead,
+   * so callers must feature-detect with `typeof kernels.processPage === 'function'`.
+   */
+  processPage?(
+    rgba: Uint8Array,
+    width: number,
+    height: number,
+    invertModeSmart: boolean,
+    isDark: boolean,
+    dilationKs: number,
+    sharpenAmount: number
+  ): Uint8Array;
 }
