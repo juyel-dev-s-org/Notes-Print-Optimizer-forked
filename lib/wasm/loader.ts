@@ -40,7 +40,7 @@ async function loadWasm(): Promise<IWasmKernels | null> {
       ink_coverage: (data: Uint8Array, pixel_count: number, threshold: number) => number;
       process_page: (rgba: Uint8Array, width: number, height: number, invert_mode_smart: boolean, is_dark: boolean, dilation_ks: number, sharpen_amount: number) => Uint8Array;
     };
-    return {
+    const kernels: IWasmKernels = {
       rgbToHsvBatch(rgba: Uint8ClampedArray, pixelCount: number) {
         return exports.rgb_to_hsv_batch(new Uint8Array(rgba.buffer, rgba.byteOffset, rgba.byteLength), pixelCount);
       },
@@ -65,10 +65,16 @@ async function loadWasm(): Promise<IWasmKernels | null> {
       inkCoverage(data: Uint8ClampedArray, pixelCount: number, threshold: number) {
         return exports.ink_coverage(new Uint8Array(data.buffer, data.byteOffset, data.byteLength), pixelCount, threshold);
       },
-      processPage(rgba: Uint8Array, width: number, height: number, invertModeSmart: boolean, isDark: boolean, dilationKs: number, sharpenAmount: number) {
-        return exports.process_page(rgba, width, height, invertModeSmart, isDark, dilationKs, sharpenAmount);
-      },
     };
+    // Only expose the monolithic processPage when the binary actually exports
+    // `process_page`. Older builds lack it; callers feature-detect via
+    // `typeof kernels.processPage === 'function'` and fall back to the
+    // per-kernel WASM/JS path, so this must not be defined unconditionally.
+    if (typeof exports.process_page === 'function') {
+      kernels.processPage = (rgba, width, height, invertModeSmart, isDark, dilationKs, sharpenAmount) =>
+        exports.process_page(rgba, width, height, invertModeSmart, isDark, dilationKs, sharpenAmount);
+    }
+    return kernels;
   } catch (e) {
     console.warn('[WASM] Failed to load wasm module, using JS fallback:', e);
     return null;
