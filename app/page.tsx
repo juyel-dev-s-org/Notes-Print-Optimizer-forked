@@ -16,7 +16,7 @@ export default function HomePage() {
       const swPath = `${basePath}/sw.js`;
       window.addEventListener('load', () => {
         navigator.serviceWorker
-          .register(swPath, { scope: `${basePath}/` })
+          .register(swPath, { scope: `${basePath}/`, updateViaCache: 'none' })
           .then((reg) => {
             console.log('[SW] Registered with scope:', reg.scope);
             reg.addEventListener('updatefound', () => {

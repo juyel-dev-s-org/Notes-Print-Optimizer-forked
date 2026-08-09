@@ -86,6 +86,17 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" className="h-full bg-slate-950 text-slate-100 antialiased">
+      <head>
+        <meta
+          httpEquiv="Content-Security-Policy"
+          content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' blob: data:; font-src 'self' data:; media-src 'self' blob:; worker-src 'self' blob:; connect-src 'self' https://script.google.com; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'"
+        />
+        <meta httpEquiv="X-Content-Type-Options" content="nosniff" />
+        <meta
+          httpEquiv="Referrer-Policy"
+          content="strict-origin-when-cross-origin"
+        />
+      </head>
       <body
         className="min-h-full flex flex-col font-sans bg-slate-950 text-slate-100 selection:bg-indigo-500 selection:text-white"
         suppressHydrationWarning

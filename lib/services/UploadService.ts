@@ -6,12 +6,36 @@ export interface UploadedItem {
   arrayBuffer: ArrayBuffer;
 }
 
+export const MAX_FILE_SIZE_MB = 100;
+export const MAX_TOTAL_SIZE_MB = 500;
+
+/**
+ * Sniffs the leading bytes of a File for the PDF magic marker (%PDF-).
+ * The PDF spec allows up to 1024 bytes of leading garbage, so scan the
+ * first kilobyte rather than only the first five bytes.
+ */
+export async function isLikelyPdfFile(file: File): Promise<boolean> {
+  const head = new Uint8Array(await file.slice(0, 1024).arrayBuffer());
+  for (let i = 0; i + 4 < head.length; i++) {
+    if (
+      head[i] === 0x25 && head[i + 1] === 0x50 &&
+      head[i + 2] === 0x44 && head[i + 3] === 0x46 && head[i + 4] === 0x2d
+    ) {
+      return true;
+    }
+  }
+  return false;
+}
+
 export class UploadService {
   static async readFiles(files: File[]): Promise<UploadedItem[]> {
     let counter = 0;
     const items: UploadedItem[] = [];
     for (const file of files) {
       counter++;
+      if (file.size > MAX_FILE_SIZE_MB * 1024 * 1024) {
+        throw new Error(`"${file.name}" exceeds the ${MAX_FILE_SIZE_MB} MB per-file limit.`);
+      }
       const buffer = await file.arrayBuffer();
       items.push({
         id: `file-${counter}-${file.name.replace(/[^a-zA-Z0-9]/g, '')}`,

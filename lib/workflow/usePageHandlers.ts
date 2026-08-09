@@ -12,6 +12,7 @@ import { memoryManager } from '../optimizer/memoryManager';
 import { CheckpointManager } from '../pipeline/checkpoint/CheckpointManager';
 import { ParameterGenerator } from '../optimizer/parameterGenerator';
 import { getPdfjsLib } from '../optimizer/pdfjsLoader';
+import { sendFeedbackToGas } from '../feedback/gasClient';
 import type {
   GridFormat,
   LayoutConfig,
@@ -687,17 +688,38 @@ export function usePageHandlers() {
 
   const handleSendFeedback = useCallback(async () => {
     actions.setFeedbackSubmitted(true);
-    const url = process.env.NEXT_PUBLIC_FEEDBACK_URL ||
-      (window as unknown as Record<string, string>).__NEXT_FEEDBACK_URL;
+    const url = process.env.NEXT_PUBLIC_FEEDBACK_URL;
     if (!url) return;
     try {
-      await fetch(url, {
-        method: 'POST', mode: 'no-cors',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          rating: state.rating, feedback: state.feedbackText,
-          timestamp: new Date().toLocaleString(), source: 'Notes Print Optimizer',
-        }),
+      const text = (state.feedbackText || '').trim().slice(0, 2000);
+      if (!text) return;
+      await sendFeedbackToGas(url, {
+        version: '1.0',
+        provider: 'telegram',
+        operations: [
+          {
+            endpoint: 'sendMessage',
+            payload: {
+              text: `📮 *Feedback*\n\n${text}\n\n_Note: PDF Print Optimizer_`,
+              parse_mode: 'Markdown',
+              disable_web_page_preview: true,
+            },
+          },
+        ],
+        meta: {
+          schemaVersion: '1.0.0',
+          appVersion: '1.2.0',
+          engineVersion: 'v2.0.0-wasm',
+          payloadVersion: '1.0.0',
+          timestamp: new Date().toISOString(),
+        },
+        feedback: {
+          rating: state.rating,
+          category: 'General',
+          text,
+          attachPdfRequested: false,
+          includeDiagnostics: false,
+        },
       });
     } catch { /* feedback is best-effort */ }
   }, [actions, state.rating, state.feedbackText]);

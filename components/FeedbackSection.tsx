@@ -60,7 +60,7 @@ export const FeedbackSection: React.FC<FeedbackSectionProps> = ({
   analysisTimeMs,
   optimizationTimeMs,
   layoutTimeMs,
-  endpointUrl = 'https://script.google.com/macros/s/AKfycbyYBvhRphdbvTAEI-hktpUWcpYyFjdsOjSHhHwuQyt0K310uqIX3ManTNfQ1Kx7UEtw/exec',
+  endpointUrl,
 }) => {
   // Form State
   const [rating, setRating] = useState<number>(5);
@@ -68,7 +68,7 @@ export const FeedbackSection: React.FC<FeedbackSectionProps> = ({
   const [category, setCategory] = useState<FeedbackCategory>('General');
   const [feedbackText, setFeedbackText] = useState<string>('');
   const [attachPdf, setAttachPdf] = useState<boolean>(false);
-  const [includeDiagnostics, setIncludeDiagnostics] = useState<boolean>(true);
+  const [includeDiagnostics, setIncludeDiagnostics] = useState<boolean>(false);
 
   // Status State
   const [isSending, setIsSending] = useState<boolean>(false);
@@ -149,6 +149,10 @@ export const FeedbackSection: React.FC<FeedbackSectionProps> = ({
       );
 
       const targetUrl = process.env.NEXT_PUBLIC_FEEDBACK_URL || endpointUrl;
+      if (!targetUrl) {
+        setErrorMessage('Feedback is not configured on this deployment.');
+        return;
+      }
       const result = await sendFeedbackToGas(targetUrl, payload);
 
       if (result.success) {
