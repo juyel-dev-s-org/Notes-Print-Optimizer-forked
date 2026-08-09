@@ -52,7 +52,7 @@ pub fn ink_coverage(data: &[u8], pixel_count: u32, threshold: u8) -> f64 {
 
 #[wasm_bindgen]
 pub fn process_page(
-    rgba: &[u8],
+    rgba: Vec<u8>,
     width: u32,
     height: u32,
     invert_mode_smart: bool,

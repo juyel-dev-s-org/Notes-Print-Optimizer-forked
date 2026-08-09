@@ -67,7 +67,6 @@ export function processPage(
   const cb = Math.floor(sh * (params.bannerCropBottomPct / 100));
   const dw = sw, dh = Math.max(10, sh - ct - cb);
   const totalPixels = dw * dh;
-  const dst = new Uint8ClampedArray(totalPixels * 4);
 
   const convertColors = params.invertMode === 'smart';
   const isDark = profile.classification === 'DARK_SLIDE' || profile.darkBackgroundRatio > 0.4;
@@ -90,11 +89,10 @@ export function processPage(
         ks,
         params.sharpenAmount / 100,
       );
-      /* process_page returns an owned Vec<u8>; copy into a fresh ArrayBuffer so the
-         result is decoupled from WASM linear memory and typed as ArrayBuffer. */
-      const outBuffer = new ArrayBuffer(out.byteLength);
-      new Uint8Array(outBuffer).set(out);
-      return { buffer: outBuffer, width: dw, height: dh };
+      /* The wasm-bindgen glue already returns a JS-owned, detached ArrayBuffer
+         (via subarray().slice()) — no second copy needed. Returning out.buffer
+         directly saves one full-buffer memcpy per page (~4.8 MB at 2400x1600). */
+      return { buffer: out.buffer as ArrayBuffer, width: dw, height: dh };
     } catch {
       /* WASM process_page trapped/failed at runtime; fall through to the
          per-kernel WASM/JS path below instead of crashing the page. */
@@ -102,6 +100,7 @@ export function processPage(
   }
 
   /* Fast path: no processing, just crop copy */
+  const dst = new Uint8ClampedArray(totalPixels * 4);
   if (!shouldProcess) {
     const srcRowBytes = sw * 4;
     const dstRowBytes = dw * 4;

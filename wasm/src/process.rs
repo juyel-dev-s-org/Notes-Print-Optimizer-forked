@@ -20,7 +20,7 @@ use crate::{hsv, classify, decorative, noise, mask_ops, sharpen};
 ///
 /// Returns the output B/W RGBA buffer (same dimensions).
 pub fn process_page(
-    rgba: &[u8],
+    mut rgba: Vec<u8>,
     width: u32,
     height: u32,
     invert_mode_smart: bool,
@@ -33,14 +33,14 @@ pub fn process_page(
     let tp = dw * dh;
     let expected = tp * 4;
 
-    // Defensive copy with size normalization
-    let mut data: Vec<u8> = if rgba.len() >= expected {
-        rgba[..expected].to_vec()
-    } else {
-        let mut v = rgba.to_vec();
-        v.resize(expected, 0);
-        v
-    };
+    // The Vec buffer is the wasm-allocated region that passArray8ToWasm0
+    // already copied the input into (C1). Resize in place to normalize —
+    // truncates when too long, zero-pads when too short. No extra copy
+    // (the old .to_vec() defensive copy was the redundant C2).
+    if rgba.len() != expected {
+        rgba.resize(expected, 0);
+    }
+    let mut data = rgba;
 
     let should_process = invert_mode_smart || is_dark;
 
