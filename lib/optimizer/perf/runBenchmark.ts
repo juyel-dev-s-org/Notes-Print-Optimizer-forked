@@ -54,7 +54,11 @@ async function buildBenchmarkPdf(pageCount: number, w = 1600, h = 900): Promise<
   ctx.fillStyle = '#7dd3fc';
   ctx.fillRect(60, 160, 240, 18);
   const dataUrl = canvas.toDataURL('image/jpeg', 0.85);
-  const imageBytes = await fetch(dataUrl).then((r) => r.arrayBuffer());
+  /* Decode base64 directly — fetch() on data: URLs is blocked in Chromium. */
+  const bin = atob(dataUrl.split(',')[1]);
+  const imageBytesArr = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) imageBytesArr[i] = bin.charCodeAt(i);
+  const imageBytes = imageBytesArr.buffer as ArrayBuffer;
   const pdfDoc = await PDFDocument.create();
   const img = await pdfDoc.embedJpg(imageBytes);
   for (let i = 0; i < pageCount; i++) {
@@ -126,6 +130,17 @@ export async function runFullBenchmark(
 export function installGlobalBenchmark(): void {
   if (typeof window === 'undefined') return;
   const w = window as unknown as Record<string, unknown>;
+
+  if (!w.__npoWorkerStats) {
+    w.__npoWorkerStats = async () => {
+      const { WorkerManager } = await import('../../workers/WorkerManager');
+      const wm = WorkerManager.getInstance();
+      return {
+        capabilities: wm.getCapabilities(),
+        pool: wm.getPool().getStats(),
+      };
+    };
+  }
 
   if (!w.__npoBenchmark) {
     w.__npoBenchmark = async (opts?: { pageCount?: number; engineVersion?: string }) => {

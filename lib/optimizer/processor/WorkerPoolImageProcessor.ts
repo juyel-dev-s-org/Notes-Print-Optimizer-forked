@@ -3,6 +3,7 @@ import type { IImageProcessor, ProcessorCapabilities } from './IImageProcessor';
 import type { WorkerProcessResult } from '../../workers/protocol';
 import { WorkerManager } from '../../workers/WorkerManager';
 import { MainThreadImageProcessor } from './MainThreadImageProcessor';
+import '../../workers/init';
 
 const wm = WorkerManager.getInstance();
 
@@ -27,12 +28,12 @@ export class WorkerPoolImageProcessor implements IImageProcessor {
     params: ProcessingParameters,
     profile: PageProfile
   ): Promise<WorkerProcessResult> {
-    if (wm.isWorkerSupported() && wm.getPool().getStats().poolSize > 0) {
+    if (wm.isWorkerSupported()) {
       try {
         const pool = wm.getPool();
         const result = await pool.submitPixelTask({
           pageIndex,
-          buffer: imageData.data.buffer.slice(0),
+          buffer: imageData.data.slice().buffer,
           width: imageData.width,
           height: imageData.height,
           params: {

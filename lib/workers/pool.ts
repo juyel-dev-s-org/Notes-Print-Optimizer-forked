@@ -94,13 +94,6 @@ export class WorkerPool {
         width: msg.width,
         height: msg.height,
       });
-    } else if (msg.type === 'PAGE_RENDERED') {
-      entry.resolve({
-        pageIndex: msg.pageIndex,
-        buffer: msg.buffer,
-        width: msg.width,
-        height: msg.height,
-      });
     }
 
     this.dispatchNext();
@@ -137,12 +130,17 @@ export class WorkerPool {
 
     while (this.taskQueue.length > 0) {
       const entry = this.taskQueue[0];
-      const worker = this.findIdleWorker(entry.type as unknown as WorkerType);
+      const worker = this.findIdleWorker(this.taskTypeToWorkerType(entry.type as TaskEntry['type']));
       if (!worker) break;
 
       this.taskQueue.shift();
       this.sendTask(worker, entry);
     }
+  }
+
+  /** Maps task types (PROCESS_PIXEL/COMPOSE_SHEET) to the worker types the factory understands (pixel/compose). */
+  private taskTypeToWorkerType(type: TaskEntry['type']): WorkerType {
+    return type === 'PROCESS_PIXEL' ? 'pixel' : 'compose';
   }
 
   private findIdleWorker(type: WorkerType): WorkerInfo | null {
@@ -161,11 +159,7 @@ export class WorkerPool {
     info.taskId = entry.taskId;
     this.pending.set(entry.taskId, entry);
 
-    const msg = entry.type === 'PROCESS_PIXEL'
-      ? { type: 'PROCESS_PIXEL' as const, task: entry as unknown as PixelTask }
-      : entry.type === 'COMPOSE_SHEET'
-      ? { type: 'COMPOSE_SHEET' as const, task: entry as unknown as ComposeTask }
-      : null;
+    const msg = this.buildMessage(entry);
 
     if (!msg) {
       entry.reject(new Error(`Unknown task type: ${entry.type}`));
@@ -183,6 +177,51 @@ export class WorkerPool {
     }
 
     info.worker.postMessage(msg, transferables);
+  }
+
+  /** Builds a structured-clone-safe message: the TaskEntry carries resolve/reject
+      closures and must never be postMessage'd to a worker. */
+  private buildMessage(entry: TaskEntry): WorkerRequest | null {
+    if (entry.type === 'PROCESS_PIXEL') {
+      const task = entry as TaskEntry & PixelTask;
+      return {
+        type: 'PROCESS_PIXEL' as const,
+        task: {
+          taskId: task.taskId,
+          pageIndex: task.pageIndex,
+          buffer: task.buffer,
+          width: task.width,
+          height: task.height,
+          params: task.params,
+          profile: task.profile,
+        } satisfies PixelTask,
+      };
+    }
+    if (entry.type === 'COMPOSE_SHEET') {
+      const task = entry as TaskEntry & ComposeTask;
+      return {
+        type: 'COMPOSE_SHEET' as const,
+        task: {
+          taskId: task.taskId,
+          sheetIndex: task.sheetIndex,
+          totalSheets: task.totalSheets,
+          pageBuffers: task.pageBuffers,
+          pageWidths: task.pageWidths,
+          pageHeights: task.pageHeights,
+          cols: task.cols,
+          rows: task.rows,
+          dims: task.dims,
+          marginTop: task.marginTop,
+          marginLeft: task.marginLeft,
+          marginRight: task.marginRight,
+          marginBottom: task.marginBottom,
+          marginInner: task.marginInner,
+          showSlideBorders: task.showSlideBorders,
+          showPageNumbers: task.showPageNumbers,
+        } satisfies ComposeTask,
+      };
+    }
+    return null;
   }
 
   private setupHealthCheck(): void {
@@ -252,10 +291,28 @@ export class WorkerPool {
     return this.submitTask<PixelTask>(task, 'PROCESS_PIXEL', timeout);
   }
 
+  /**
+   * Spawns a single idle worker of the given type ahead of time so the first
+   * task does not pay the spawn + lazy-init cost. No-op when the factory
+   * cannot create a worker (unregistered URL, unsupported environment).
+   */
+  prewarm(type: WorkerType): void {
+    if (this.destroyed) return;
+    if (this.countByType(type) === 0) {
+      this.spawnWorker(type);
+    }
+  }
+
   private scheduleTimeout(entry: TaskEntry): () => void {
     const timer = setTimeout(() => {
       const idx = this.taskQueue.indexOf(entry);
-      if (idx !== -1) this.taskQueue.splice(idx, 1);
+      if (idx !== -1) {
+        /* Queued task that could not be dispatched (no worker available) must reject,
+           otherwise its promise stays pending forever (submitPixelTask/submitComposeTask hang). */
+        this.taskQueue.splice(idx, 1);
+        entry.reject(new Error(`Task ${entry.type} timed out after ${entry.timeout}ms (no worker available)`));
+        return;
+      }
       if (this.pending.get(entry.taskId) === entry) {
         this.pending.delete(entry.taskId);
         entry.reject(new Error(`Task ${entry.type} timed out after ${entry.timeout}ms`));

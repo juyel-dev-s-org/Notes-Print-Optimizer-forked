@@ -3,7 +3,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { ZoomIn, ZoomOut, RotateCcw, Droplet, CheckCircle2 } from 'lucide-react';
 import { ProcessedPage } from '@/lib/optimizer/types';
-import { PdfExporter } from '@/lib/optimizer/pdfExporter';
 import { memoryManager } from '@/lib/optimizer/memoryManager';
 
 interface BeforeAfterSliderProps {
@@ -28,6 +27,7 @@ export const BeforeAfterSlider: React.FC<BeforeAfterSliderProps> = ({ page, merg
     const loadImages = async () => {
       setIsLoadingImages(true);
       try {
+        const { PdfExporter } = await import('@/lib/optimizer/pdfExporter');
         const optimizedImageData = await PdfExporter.loadOptimizedImageData(page);
         const originalImageData = await PdfExporter.loadOriginalImageData(page, mergedPdfBytes ?? null);
 

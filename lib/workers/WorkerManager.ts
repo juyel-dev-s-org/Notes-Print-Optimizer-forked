@@ -14,6 +14,7 @@ export class WorkerManager {
   private pool: WorkerPool | null = null;
   private useWorkers: boolean;
   private workerUrls = new Map<WorkerType, string>();
+  private factoryOverride: ((type: WorkerType) => Worker | null) | null = null;
 
   private constructor() {
     this.useWorkers = canUseWorkers();
@@ -30,15 +31,28 @@ export class WorkerManager {
     this.workerUrls.set(type, url);
   }
 
+  /** Registered by lib/workers/init with webpack-analyzable `new Worker(new URL(...))` factories. */
+  registerWorkerFactory(factory: (type: WorkerType) => Worker | null): void {
+    this.factoryOverride = factory;
+  }
+
   private workerFactory = (type: WorkerType): Worker | null => {
     if (!this.useWorkers) return null;
+
+    if (this.factoryOverride) {
+      try {
+        if (type === 'compose' && !canUseOffscreenCanvas()) return null;
+        return this.factoryOverride(type);
+      } catch {
+        return null;
+      }
+    }
 
     const url = this.workerUrls.get(type);
     if (!url) return null;
 
     try {
       if (type === 'compose' && !canUseOffscreenCanvas()) return null;
-      if (type === 'render' && !canUseOffscreenCanvas()) return null;
       return new Worker(url, { type: 'module' });
     } catch {
       return null;

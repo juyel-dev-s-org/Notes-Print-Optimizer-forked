@@ -6,6 +6,7 @@ import { WorkerManager } from '../workers/WorkerManager';
 import { getProcessingEngine, EngineVersion } from './engine';
 import { getPdfjsLib } from './pdfjsLoader';
 import { DocumentProfile, LayoutConfig, OptimizationMetrics, PresetMode, ProcessedPage } from './types';
+import '../workers/init';
 
 export class PdfExporter {
   /** @deprecated Use getPdfjsLib() from pdfjsLoader directly. Kept for backward compat. */
@@ -86,8 +87,7 @@ export class PdfExporter {
     const wm = WorkerManager.getInstance();
     if (wm.isWorkerSupported() && wm.isOffscreenCanvasSupported()) {
       const pool = wm.getPool();
-      if (pool.getStats().poolSize > 0) {
-        try {
+      try {
           const dims = LayoutEngine.getSheetDimensions(config.paperSize, config.orientation);
           const mmPx = dims.dpi / 25.4;
           const { cols, rows } = LayoutEngine.getGridDimensions(config.gridFormat);
@@ -108,7 +108,6 @@ export class PdfExporter {
         } catch {
           /* worker compose failed — fall through to main thread */
         }
-      }
     }
     const sheetCanvas = LayoutEngine.composeSheet(pageImageDatas, sheetIndex, totalSheets, config);
     const blob = await new Promise<Blob>((res) => sheetCanvas.toBlob((b) => res(b || new Blob()), 'image/jpeg', 0.85));
@@ -125,6 +124,8 @@ export class PdfExporter {
     const sheetPreviews: string[] = [];
     const pdfDoc = await PDFDocument.create();
 
+    const pool = WorkerManager.getInstance().getPool();
+    pool.prewarm('compose');
     let prefetchPromise: Promise<ImageData[]> | null = null;
 
     for (let si = 0; si < totalSheets; si++) {

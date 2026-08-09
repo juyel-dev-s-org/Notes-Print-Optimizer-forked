@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect, useSyncExternalStore } from 'react';
 import dynamic from 'next/dynamic';
 import { WorkflowUIProps } from './types';
 import { RotateCcw, X } from 'lucide-react';
@@ -21,8 +21,31 @@ const DesktopWorkflowUI = dynamic(() => import('./desktop/DesktopWorkflowUI').th
 
 type PlatformOverride = 'AUTO' | 'MOBILE' | 'TABLET' | 'DESKTOP';
 
+const MOBILE_QUERY = '(max-width: 639px)';
+const TABLET_QUERY = '(min-width: 640px) and (max-width: 1023px)';
+const DESKTOP_QUERY = '(min-width: 1024px)';
+
+function useMediaQuery(query: string): boolean {
+  return useSyncExternalStore(
+    (onChange) => {
+      if (typeof window === 'undefined' || typeof window.matchMedia !== 'function') return () => undefined;
+      const mql = window.matchMedia(query);
+      mql.addEventListener('change', onChange);
+      return () => mql.removeEventListener('change', onChange);
+    },
+    () => (typeof window !== 'undefined' && typeof window.matchMedia === 'function' ? window.matchMedia(query).matches : false),
+    () => false,
+  );
+}
+
 export const PlatformUIOrchestrator: React.FC<WorkflowUIProps> = (props) => {
   const [overrideMode, setOverrideMode] = useState<PlatformOverride>('AUTO');
+  const [mounted, setMounted] = useState(false);
+  const isMobile = useMediaQuery(MOBILE_QUERY);
+  const isTablet = useMediaQuery(TABLET_QUERY);
+  const isDesktop = useMediaQuery(DESKTOP_QUERY);
+
+  useEffect(() => setMounted(true), []);
 
   return (
     <div className="w-full max-w-full">
@@ -122,27 +145,21 @@ export const PlatformUIOrchestrator: React.FC<WorkflowUIProps> = (props) => {
         </div>
       )}
 
-      {/* Render view based on override or CSS responsive breakpoints */}
-      {overrideMode === 'MOBILE' && <MobileWorkflowUI {...props} />}
-      {overrideMode === 'TABLET' && <TabletWorkflowUI {...props} />}
-      {overrideMode === 'DESKTOP' && <DesktopWorkflowUI {...props} />}
+      {/* Render only the active view (matchMedia) so idle platform UIs stay unmounted */}
+      {mounted && overrideMode === 'MOBILE' && <MobileWorkflowUI {...props} />}
+      {mounted && overrideMode === 'TABLET' && <TabletWorkflowUI {...props} />}
+      {mounted && overrideMode === 'DESKTOP' && <DesktopWorkflowUI {...props} />}
 
-      {overrideMode === 'AUTO' && (
+      {mounted && overrideMode === 'AUTO' && (
         <>
           {/* Mobile Layout (<640px) */}
-          <div className="block sm:hidden">
-            <MobileWorkflowUI {...props} />
-          </div>
+          {isMobile && <MobileWorkflowUI {...props} />}
 
           {/* Tablet Layout (>=640px and <1024px) */}
-          <div className="hidden sm:block lg:hidden">
-            <TabletWorkflowUI {...props} />
-          </div>
+          {isTablet && <TabletWorkflowUI {...props} />}
 
           {/* Desktop/Laptop Layout (>=1024px) */}
-          <div className="hidden lg:block">
-            <DesktopWorkflowUI {...props} />
-          </div>
+          {isDesktop && <DesktopWorkflowUI {...props} />}
         </>
       )}
     </div>

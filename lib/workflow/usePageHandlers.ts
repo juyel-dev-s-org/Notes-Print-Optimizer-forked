@@ -113,6 +113,10 @@ export function usePageHandlers() {
    */
   const previewBlobUrlRef = useRef<string | null>(null);
 
+  /* Debounced phase-3 re-layout on exclude toggles (cancels stale compiles) */
+  const excludeLayoutTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const excludeLayoutArgsRef = useRef<{ config: LayoutConfig; excluded: Set<number> } | null>(null);
+
   useEffect(() => {
     pwOptimizerStorage.clearCache();
     pwOptimizerStorage.evictStaleEntries();
@@ -137,12 +141,16 @@ export function usePageHandlers() {
     return () => { window.removeEventListener('beforeunload', handleUnload); handleUnload(); };
   }, []);
 
-  /* Cleanup preview blob on unmount */
+  /* Cleanup preview blob + pending layout debounce on unmount */
   useEffect(() => {
     return () => {
       if (previewBlobUrlRef.current) {
         memoryManager.revokeBlobUrl(previewBlobUrlRef.current);
         previewBlobUrlRef.current = null;
+      }
+      if (excludeLayoutTimerRef.current) {
+        clearTimeout(excludeLayoutTimerRef.current);
+        excludeLayoutTimerRef.current = null;
       }
     };
   }, []);
@@ -669,7 +677,16 @@ export function usePageHandlers() {
     actions.setExcludedPages(next);
     if (state.currentPhase === 3 && processedPages.length > 0) {
       const activePages = LayoutService.getActivePages(processedPages, next);
-      if (activePages.length > 0) setTimeout(() => compilePhase3PrintLayout(layoutConfig, next), 0);
+      if (activePages.length > 0) {
+        /* Debounce rapid toggles into a single re-layout */
+        excludeLayoutArgsRef.current = { config: layoutConfig, excluded: next };
+        if (excludeLayoutTimerRef.current) clearTimeout(excludeLayoutTimerRef.current);
+        excludeLayoutTimerRef.current = setTimeout(() => {
+          excludeLayoutTimerRef.current = null;
+          const args = excludeLayoutArgsRef.current;
+          if (args) compilePhase3PrintLayout(args.config, args.excluded);
+        }, 400);
+      }
     }
   }, [excludedPages, state.currentPhase, processedPages, layoutConfig, compilePhase3PrintLayout, actions]);
 

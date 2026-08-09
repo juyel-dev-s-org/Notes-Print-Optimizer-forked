@@ -48,6 +48,9 @@ import { getPdfjsLib } from '../../pdfjsLoader';
 import { metricsBus } from '../../../metrics/MetricsBus';
 import { ensureWasmKernels, isWasmLoaded, getKernels } from '../../../wasm/loader';
 import { setWasmKernelsHooks } from '../../../kernels/processPage';
+import { WorkerPoolImageProcessor } from '../../processor/WorkerPoolImageProcessor';
+import { WorkerManager } from '../../../workers/WorkerManager';
+import type { WorkerProcessResult } from '../../../workers/protocol';
 
 /* ------------------------------------------------------------------ */
 /*  Helpers                                                            */
@@ -247,6 +250,86 @@ export class ProcessingEngineV2 implements IProcessingEngine {
         .catch(e => console.warn('[V2] IDB batch write failed:', e));
     };
 
+    /*
+     * Worker-pipelined processing: each page's process phase is submitted to
+     * the worker pool (main thread stays free to render/analyze the next page).
+     * Falls back to the main thread automatically when workers are unavailable.
+     */
+    const workerProcessor = new WorkerPoolImageProcessor();
+    const wm = WorkerManager.getInstance();
+    try { wm.getPool().prewarm('pixel'); } catch { /* non-fatal */ }
+
+    interface PendingProcess {
+      pageIndex: number;
+      profile: PageProfile;
+      renderMs: number;
+      analyzeMs: number;
+      resultPromise: Promise<WorkerProcessResult>;
+    }
+    let pending: PendingProcess | null = null;
+
+    const finalizePage = async (p: PendingProcess): Promise<void> => {
+      const tPhase = performance.now();
+      const result = await p.resultPromise;
+      const processMs = performance.now() - tPhase;
+
+      if (localSignal.aborted) throw new DOMException('Aborted', 'AbortError');
+
+      const { optimizedImageData, inkCoverageBeforePct: inkBefore, inkCoverageAfterPct: inkAfter } = result;
+
+      /* Phase 4: Thumbnail */
+      const thumbStart = performance.now();
+      let thumbUrl = '';
+      try {
+        thumbUrl = await this.generateThumbnail(optimizedImageData);
+        if (thumbUrl) this.activeThumbnailUrls.add(thumbUrl);
+      } catch { /* non-fatal */ }
+      const thumbnailMs = performance.now() - thumbStart;
+
+      onPageOptimized?.(p.pageIndex, thumbUrl, inkBefore, inkAfter);
+
+      /* Phase 5: Persist (batched) — original re-rendered lazily for before/after (Phase-1) */
+      const persistStart = performance.now();
+      try {
+        const optBlob = await memoryManager.imageDataToBlob(optimizedImageData, 0.88);
+        idbBatch.push({ pdfId, pageIndex: p.pageIndex, originalBlob: null, optimizedBlob: optBlob });
+        if (idbBatch.length >= IDB_BATCH_SIZE) flushIdb();
+      } catch (e) {
+        console.warn(`[V2] Persist failed page ${p.pageIndex + 1}:`, e);
+      }
+      const persistMs = performance.now() - persistStart;
+
+      /* Phase-0 instrumentation: emit per-phase timing */
+      sumRenderMs += p.renderMs; sumAnalyzeMs += p.analyzeMs; sumProcessMs += processMs;
+      sumThumbMs += thumbnailMs; sumPersistMs += persistMs;
+      metricsBus.emit({ type: 'page:phases', timestamp: Date.now(), pageIndex: p.pageIndex,
+        renderMs: p.renderMs, analyzeMs: p.analyzeMs, processMs, thumbnailMs, persistMs,
+        durationMs: p.renderMs + p.analyzeMs + processMs + thumbnailMs + persistMs });
+
+      pageMeta.push({
+        pageIndex: p.pageIndex,
+        thumbnailUrl: thumbUrl,
+        inkBefore,
+        inkAfter,
+        width: optimizedImageData.width,
+        height: optimizedImageData.height,
+        profile: p.profile,
+      });
+
+      onProgress?.(p.pageIndex + 1, totalPages, `[V2] Completed page ${p.pageIndex + 1}/${totalPages}`);
+
+      /* Cooperative yielding & memory pressure */
+      if ((p.pageIndex + 1) % yieldEveryNPages === 0 || isLowEnd) {
+        await yieldToUI();
+      }
+      if (memoryGuard.isCritical()) {
+        bufferPool.shrink(8);
+        await new Promise(r => setTimeout(r, 200));
+      } else if (memoryGuard.isUnderPressure()) {
+        bufferPool.shrink(16);
+      }
+    };
+
     for (let i = 1; i <= totalPages; i++) {
       if (localSignal.aborted) throw new DOMException('Aborted', 'AbortError');
 
@@ -282,81 +365,32 @@ export class ProcessingEngineV2 implements IProcessingEngine {
       sumBrightness += profile.averageBrightness;
       if (profile.classification === 'DARK_SLIDE') darkCount++;
 
+      /* Finalize the previous page (its process ran off-thread while this page rendered) */
+      if (pending) {
+        await finalizePage(pending);
+        pending = null;
+        if (localSignal.aborted) throw new DOMException('Aborted', 'AbortError');
+      }
+
       /* Phase 3: Process (merge preset defaults with user overrides) */
-      tPhase = performance.now();
       const baseParams = ParameterGenerator.getPresetParameters(
         profile.classification === 'DARK_SLIDE' ? 'PW_DARK_SLIDE' : 'LIGHT_HANDWRITTEN',
       );
       const params = input.customParams
         ? { ...baseParams, ...input.customParams }
         : baseParams;
-      const procResult = runProcessPage(
-        srcImageData.data, srcImageData.width, srcImageData.height, params, profile,
-      );
-
-      /* Zero-copy ink coverage on raw buffers */
-      const inkBefore = calculateInkCoverage(srcImageData.data);
-      const inkAfter = calculateInkCoverage(procResult.buffer);
-
-      const optimizedImageData = createImageDataFromBuffer(
-        procResult.buffer, procResult.width, procResult.height,
-      );
-      const processMs = performance.now() - tPhase;
-
-      if (localSignal.aborted) throw new DOMException('Aborted', 'AbortError');
-
-      /* Phase 4: Thumbnail */
-      tPhase = performance.now();
-      let thumbUrl = '';
-      try {
-        thumbUrl = await this.generateThumbnail(optimizedImageData);
-        if (thumbUrl) this.activeThumbnailUrls.add(thumbUrl);
-      } catch { /* non-fatal */ }
-
-      const thumbnailMs = performance.now() - tPhase;
-
-      onPageOptimized?.(i - 1, thumbUrl, inkBefore, inkAfter);
-
-      /* Phase 5: Persist (batched) — original re-rendered lazily for before/after (Phase-1) */
-      tPhase = performance.now();
-      try {
-        const optBlob = await memoryManager.imageDataToBlob(optimizedImageData, 0.88);
-        idbBatch.push({ pdfId, pageIndex: i - 1, originalBlob: null, optimizedBlob: optBlob });
-        if (idbBatch.length >= IDB_BATCH_SIZE) flushIdb();
-      } catch (e) {
-        console.warn(`[V2] Persist failed page ${i}:`, e);
-      }
-      const persistMs = performance.now() - tPhase;
-
-      /* Phase-0 instrumentation: emit per-phase timing */
-      sumRenderMs += renderMs; sumAnalyzeMs += analyzeMs; sumProcessMs += processMs;
-      sumThumbMs += thumbnailMs; sumPersistMs += persistMs;
-      metricsBus.emit({ type: 'page:phases', timestamp: Date.now(), pageIndex: i - 1,
-        renderMs, analyzeMs, processMs, thumbnailMs, persistMs,
-        durationMs: renderMs + analyzeMs + processMs + thumbnailMs + persistMs });
-
-      pageMeta.push({
+      pending = {
         pageIndex: i - 1,
-        thumbnailUrl: thumbUrl,
-        inkBefore,
-        inkAfter,
-        width: optimizedImageData.width,
-        height: optimizedImageData.height,
         profile,
-      });
+        renderMs,
+        analyzeMs,
+        resultPromise: workerProcessor.processPage(srcImageData, i - 1, params, profile),
+      };
+    }
 
-      onProgress?.(i, totalPages, `[V2] Completed page ${i}/${totalPages}`);
-
-      /* Cooperative yielding & memory pressure */
-      if (i % yieldEveryNPages === 0 || isLowEnd) {
-        await yieldToUI();
-      }
-      if (memoryGuard.isCritical()) {
-        bufferPool.shrink(8);
-        await new Promise(r => setTimeout(r, 200));
-      } else if (memoryGuard.isUnderPressure()) {
-        bufferPool.shrink(16);
-      }
+    if (pending) {
+      await finalizePage(pending);
+      if (localSignal.aborted) throw new DOMException('Aborted', 'AbortError');
     }
 
     flushIdb();
