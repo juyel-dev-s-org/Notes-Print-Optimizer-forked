@@ -41,8 +41,10 @@ jobs:
       - name: Unit Tests
         run: npm run test
 
+      # sharp is next's optional build-time dep (server image optimizer);
+      # static export never includes it, so exclude optional deps from audit.
       - name: Dependency Audit
-        run: npm audit --omit=dev --audit-level=high
+        run: npm audit --omit=dev --omit=optional --audit-level=high
 
       - name: Build
         run: npm run build
