@@ -35,7 +35,7 @@ jobs:
         uses: treosh/lighthouse-ci-action@v12
         with:
           urls: |
-            http://localhost:3000${{ github.event.repository.name }}/
+            http://localhost:3000/${{ github.event.repository.name }}/
           configPath: './lighthouserc.json'
           uploadArtifacts: true
           temporaryPublicStorage: true
@@ -67,7 +67,7 @@ jobs:
 
       - name: Check Performance Budgets
         run: |
-          npx lighthouse http://localhost:3000${{ github.event.repository.name }}/ \
+          npx lighthouse http://localhost:3000/${{ github.event.repository.name }}/ \
             --output=json \
             --output-path=./lighthouse-report.json \
             --chrome-flags="--headless --no-sandbox --disable-gpu" \
