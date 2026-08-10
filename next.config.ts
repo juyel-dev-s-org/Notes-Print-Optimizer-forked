@@ -1,8 +1,11 @@
 import type {NextConfig} from 'next';
+import bundleAnalyzer from '@next/bundle-analyzer';
 
 const isGitHubActions = process.env.GITHUB_ACTIONS === 'true' || process.env.GITHUB_ACTIONS === '1';
 const repoName = process.env.GITHUB_REPOSITORY ? process.env.GITHUB_REPOSITORY.split('/')[1] : '';
 const basePath = process.env.NEXT_PUBLIC_BASE_PATH || (isGitHubActions && repoName ? `/${repoName}` : '');
+
+const withBundleAnalyzer = bundleAnalyzer({ enabled: process.env.ANALYZE === 'true' });
 
 const nextConfig: NextConfig = {
   output: 'export',
@@ -20,4 +23,4 @@ const nextConfig: NextConfig = {
   transpilePackages: ['motion'],
 };
 
-export default nextConfig;
+export default withBundleAnalyzer(nextConfig);

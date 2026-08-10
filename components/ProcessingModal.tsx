@@ -3,7 +3,6 @@
 import React from 'react';
 import { ProcessingProgress } from '@/lib/optimizer/types';
 import { Loader2, ShieldCheck, XCircle } from 'lucide-react';
-import { motion, AnimatePresence } from 'motion/react';
 
 interface ProcessingModalProps {
   progress: ProcessingProgress | null;
@@ -20,14 +19,8 @@ export const ProcessingModal: React.FC<ProcessingModalProps> = ({ progress, phas
     : [];
 
   return (
-    <AnimatePresence>
-      <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-slate-950/80 p-0 sm:p-4 backdrop-blur-sm pb-safe">
-        <motion.div
-          initial={{ y: 50, opacity: 0 }}
-          animate={{ y: 0, opacity: 1 }}
-          exit={{ y: 50, opacity: 0 }}
-          className="relative flex w-full max-w-md flex-col rounded-t-3xl sm:rounded-2xl border border-slate-800 bg-slate-900 p-6 shadow-2xl text-white"
-        >
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-slate-950/80 p-0 sm:p-4 backdrop-blur-sm pb-safe animate-fade-in">
+      <div className="relative flex w-full max-w-md flex-col rounded-t-3xl sm:rounded-2xl border border-slate-800 bg-slate-900 p-6 shadow-2xl text-white animate-slide-up">
           <div className="flex items-center gap-3">
             <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-indigo-600/20 text-indigo-400 border border-indigo-500/30">
               <Loader2 className="h-6 w-6 animate-spin" />
@@ -53,11 +46,9 @@ export const ProcessingModal: React.FC<ProcessingModalProps> = ({ progress, phas
             </div>
 
             <div className="h-3 w-full overflow-hidden rounded-full bg-slate-800 border border-slate-700/50">
-              <motion.div
-                className="h-full rounded-full bg-gradient-to-r from-indigo-500 via-sky-400 to-emerald-400"
-                initial={{ width: '0%' }}
-                animate={{ width: `${Math.max(5, progress.percent)}%` }}
-                transition={{ duration: 0.2 }}
+              <div
+                className="h-full rounded-full bg-gradient-to-r from-indigo-500 via-sky-400 to-emerald-400 transition-[width] duration-200 ease-out"
+                style={{ width: `${Math.max(5, progress.percent)}%` }}
               />
             </div>
           </div>
@@ -98,8 +89,7 @@ export const ProcessingModal: React.FC<ProcessingModalProps> = ({ progress, phas
               )}
             </div>
           </div>
-        </motion.div>
-      </div>
-    </AnimatePresence>
+        </div>
+    </div>
   );
 };

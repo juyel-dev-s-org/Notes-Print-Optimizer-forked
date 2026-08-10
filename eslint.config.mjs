@@ -18,7 +18,7 @@ const eslintConfig = [
     },
   },
   {
-    ignores: ["node_modules/", ".next/", "out/", "wasm/target/", "wasm/pkg/", "next-env.d.ts", "public/vendor/", "public/wasm/"],
+    ignores: ["node_modules/", ".next/", "out/", "wasm/target/", "wasm/pkg/", "next-env.d.ts", "public/vendor/", "public/wasm/", "scripts/"],
   },
 ];
 

@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { lazy, Suspense, useState } from 'react';
 import {
   Menu,
   X,
@@ -10,11 +10,14 @@ import {
   RefreshCw,
 } from 'lucide-react';
 import { AppLogo } from './AppLogo';
-import { motion, AnimatePresence } from 'motion/react';
-import { SettingsDrawer } from './menu/SettingsDrawer';
 
 import type { WorkflowPhase } from '@/lib/workflow/types';
 export type { WorkflowPhase };
+
+/* SettingsDrawer is heavy (markdown renderer, menu registry, feedback modal,
+ * install/share card) but only renders when the menu opens — code-split it
+ * out of First Load and preload on hamburger hover/focus for instant open. */
+const LazySettingsDrawer = lazy(() => import('./menu/SettingsDrawer').then((m) => ({ default: m.SettingsDrawer })));
 
 interface HeaderProps {
   currentPhase: WorkflowPhase;
@@ -23,6 +26,16 @@ interface HeaderProps {
   onNavigatePhase?: (phase: WorkflowPhase) => void;
   isProcessing?: boolean;
 }
+
+interface SettingsDrawerProps {
+  onAppAction?: (name: string) => void;
+}
+
+const SettingsDrawer = ({ onAppAction }: SettingsDrawerProps) => (
+  <Suspense fallback={<div className="flex h-40 items-center justify-center"><div className="h-5 w-5 animate-spin rounded-full border-2 border-indigo-400 border-t-transparent" /></div>}>
+    <LazySettingsDrawer onAppAction={onAppAction} />
+  </Suspense>
+);
 
 export const Header: React.FC<HeaderProps> = ({
   currentPhase,
@@ -150,36 +163,24 @@ export const Header: React.FC<HeaderProps> = ({
 
         {/* Top Progress Line Indicator */}
         <div className="h-0.5 w-full bg-slate-800">
-          <motion.div
-            className="h-full bg-gradient-to-r from-indigo-500 via-sky-400 to-emerald-400"
-            initial={{ width: '25%' }}
-            animate={{ width: `${(currentPhase / 4) * 100}%` }}
-            transition={{ duration: 0.2, ease: 'easeInOut' }}
+          <div
+            className="h-full bg-gradient-to-r from-indigo-500 via-sky-400 to-emerald-400 transition-[width] duration-200 ease-in-out"
+            style={{ width: `${(currentPhase / 4) * 100}%` }}
           />
         </div>
       </header>
 
       {/* Mobile Drawer (Hamburger Side Sheet) */}
-      <AnimatePresence>
-        {isMenuOpen && (
-          <div className="fixed inset-0 z-50 flex">
-            {/* Backdrop */}
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              onClick={() => setIsMenuOpen(false)}
-              className="fixed inset-0 bg-slate-950/70 backdrop-blur-xs"
-            />
+      {isMenuOpen && (
+        <div className="fixed inset-0 z-50 flex">
+          {/* Backdrop */}
+          <div
+            onClick={() => setIsMenuOpen(false)}
+            className="fixed inset-0 bg-slate-950/70 backdrop-blur-xs animate-fade-in"
+          />
 
-            {/* Side Drawer Content */}
-            <motion.aside
-              initial={{ x: '-100%' }}
-              animate={{ x: 0 }}
-              exit={{ x: '-100%' }}
-              transition={{ type: 'spring', damping: 25, stiffness: 220 }}
-              className="relative flex w-80 max-w-[85vw] flex-col bg-slate-900 border-r border-slate-800 text-slate-100 shadow-2xl pt-safe pb-safe"
-            >
+          {/* Side Drawer Content */}
+          <aside className="relative flex w-80 max-w-[85vw] flex-col bg-slate-900 border-r border-slate-800 text-slate-100 shadow-2xl pt-safe pb-safe animate-slide-in-left">
               {/* Drawer Header */}
               <div className="flex items-center justify-between border-b border-slate-800 p-4">
                 <div className="flex items-center gap-2.5">
@@ -221,10 +222,9 @@ export const Header: React.FC<HeaderProps> = ({
                   myself.juyel.dev@gmail.com
                 </a>
               </div>
-            </motion.aside>
-          </div>
-        )}
-      </AnimatePresence>
+          </aside>
+        </div>
+      )}
     </>
   );
 };

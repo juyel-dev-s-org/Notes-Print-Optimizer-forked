@@ -42,3 +42,6 @@ samples/raw/*.pdf
 bun.lock
 yarn.lock
 pnpm-lock.yaml
+test-results/
+playwright-report/
+

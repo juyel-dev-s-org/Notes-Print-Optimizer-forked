@@ -69,9 +69,33 @@ html, body {
 }
 
 /* ------------------------------------------------------------------ */
+/* Animation keyframes (CSS replacements for motion/react)            */
+/* ------------------------------------------------------------------ */
+@keyframes fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+@keyframes slide-up {
+  from { opacity: 0; transform: translateY(50px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@keyframes slide-in-left {
+  from { transform: translateX(-100%); }
+  to { transform: translateX(0); }
+}
+.animate-fade-in {
+  animation: fade-in 0.2s ease-out both;
+}
+.animate-slide-up {
+  animation: slide-up 0.25s ease-out both;
+}
+.animate-slide-in-left {
+  animation: slide-in-left 0.3s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+/* ------------------------------------------------------------------ */
 /* Accessibility: visible keyboard focus + skip-to-content link       */
 /* ------------------------------------------------------------------ */
-
 /* Ensure keyboard users always see a clear focus ring (WCAG 2.4.7) */
 :focus-visible {
   outline: 2px solid #818cf8; /* indigo-400 */

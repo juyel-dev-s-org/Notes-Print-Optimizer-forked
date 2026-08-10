@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "next build",
+    "build": "next build && node scripts/postbuild-strip-devtools.js",
     "start": "next start",
     "lint": "eslint .",
     "clean": "next clean",
@@ -30,6 +30,7 @@
   "devDependencies": {
     "@eslint/eslintrc": "^3.3.1",
     "@napi-rs/canvas": "^0.1.52",
+    "@next/bundle-analyzer": "^15.5.23",
     "@playwright/test": "^1.62.0",
     "@tailwindcss/postcss": "4.1.11",
     "@tailwindcss/typography": "^0.5.19",
