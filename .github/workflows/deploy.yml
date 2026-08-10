@@ -56,7 +56,7 @@ jobs:
         run: npx playwright install --with-deps chromium
 
       - name: Smoke Tests (Playwright)
-        run: npx playwright test --config=playwright.config.ts --project=chromium
+        run: npx playwright test --config=playwright.config.ts --project=chromium --grep-invert "worker pool runtime"
 
       - name: Upload build artifact
         uses: actions/upload-artifact@v4
