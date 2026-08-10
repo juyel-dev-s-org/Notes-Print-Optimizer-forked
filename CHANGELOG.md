@@ -36,12 +36,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   from the merged PDF (full quality, no compression artifacts)
   - `persist` phase ~17% faster; V1 throughput ~4.6 pages/sec on desktop
     (20-page benchmark, charging / best-performance)
+- **First Load JS cut from ~420 kB to ~192 kB gzip** (below the 300 kB target):
+  - Postbuild script strips the Next.js `next-devtools` dev-overlay chunk
+    (~217 kB gzip) that Next 15.5.x wrongly bundles into production static
+    exports (`scripts/postbuild-strip-devtools.js`, runs after `next build`)
+  - Replaced `motion/react` in `Header` and `ProcessingModal` with equivalent
+    CSS transitions/keyframes so `framer-motion` (~44 kB gzip) leaves First
+    Load; `SettingsDrawer` stays lazy-loaded
+  - Added `@next/bundle-analyzer` (opt-in via `ANALYZE=true`) for future
+    bundle regressions
 
 ### Changed
 - Install prompt UI now lives **only inside the drawer** (nothing renders
   outside the hamburger menu); shared `useInstallPrompt` hook (lib/pwa)
 - Re-licensed from MIT to the Juyel Source License (JSL) v1.0
 - Updated feedback Google Apps Script endpoint to the new web app URL
+- `build` script now runs the postbuild devtools-strip step after `next build`
 
 ### Removed
 - `InstallBanner` (replaced by the adaptive `InstallShareCard`)
