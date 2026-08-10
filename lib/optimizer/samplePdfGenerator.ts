@@ -12,7 +12,11 @@ export class SamplePdfGenerator {
 
     for (const slide of slides) {
       const dataUrl = slide.canvas.toDataURL('image/jpeg', 0.85);
-      const imageBytes = await fetch(dataUrl).then((res) => res.arrayBuffer());
+      // Decode base64 directly — fetch() on data: URLs is blocked in Chromium
+      // (CSP connect-src + Fetch API restriction).
+      const bin = atob(dataUrl.split(',')[1]);
+      const imageBytes = new Uint8Array(bin.length);
+      for (let i = 0; i < bin.length; i++) imageBytes[i] = bin.charCodeAt(i);
       const embeddedImage = await pdfDoc.embedJpg(imageBytes);
 
       const page = pdfDoc.addPage([slide.canvas.width, slide.canvas.height]);
