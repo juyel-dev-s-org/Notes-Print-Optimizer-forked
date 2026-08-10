@@ -41,60 +41,73 @@ const ProcessingSettingsPanel = dynamic(() => import('@/components/ProcessingSet
   loading: () => <CardSkeleton />,
 });
 
-export const DesktopWorkflowUI: React.FC<WorkflowUIProps> = (props) => {
+export const DesktopWorkflowUI: React.FC<WorkflowUIProps> = ({ state, actions, handlers }) => {
   const {
     currentPhase,
-    setCurrentPhase,
     isProcessing,
     uploadedItems,
     mergedPdfBlob,
     mergedPdfBytes,
     mergedPageDataUrls,
     selectedEngineVersion,
-    setSelectedEngineVersion,
-    onFilesUpload,
-    onLoadSample,
-    onMoveItem,
-    onRemoveItem,
-    onReorderItem,
-    onSmartArrange,
-    onDownloadMerged,
-    onProceedToPhase2,
     processedPages,
     selectedPageIndex,
-    setSelectedPageIndex,
     excludedPages,
-    onToggleExcludePage,
-    onToggleExcludeAll,
-    onProceedToPhase3,
     masterParams,
-    onMasterParamsChange,
-    onReprocess,
     processingToggles,
-    onProcessingTogglesChange,
-    onPreviewReprocess,
     isPreviewProcessing,
-    onResetSettings,
     layoutConfig,
     layoutDirty,
-    onApplyLayout,
     finalSheetPreviews,
     finalMetrics,
     finalPrintPdfBlob,
-    onSelectLayoutFormat,
-    onToggleOrientation,
-    onToggleBorders,
-    onTogglePageNumbers,
-    onDownloadFinalPrintPdf,
-    onProceedToPhase4,
     rating,
-    setRating,
     feedbackText,
-    setFeedbackText,
     feedbackSubmitted,
-    onSendFeedback,
-    onResetWorkflow,
-  } = props;
+  } = state;
+
+  const {
+    setPhase: setCurrentPhase,
+    setEngineVersion: setSelectedEngineVersion,
+    setSelectedPageIndex,
+    setMasterParams: onMasterParamsChange,
+    setProcessingToggles: onProcessingTogglesChange,
+    setExcludedPages,
+    setRating,
+    setFeedbackText,
+  } = actions;
+
+  const {
+    handleFilesUpload: onFilesUpload,
+    handleLoadSamplePdf: onLoadSample,
+    handleMoveItem: onMoveItem,
+    handleRemoveItem: onRemoveItem,
+    handleReorderItem: onReorderItem,
+    handleSmartArrange: onSmartArrange,
+    handleDownloadMerged: onDownloadMerged,
+    handleProceedToPhase2: onProceedToPhase2,
+    handleToggleExcludePage: onToggleExcludePage,
+    handleDownloadOptimized1Up,
+    handleProceedToPhase3: onProceedToPhase3,
+    handleReprocess: onReprocess,
+    handlePreviewReprocess: onPreviewReprocess,
+    handleResetSettings: onResetSettings,
+    handleApplyLayout: onApplyLayout,
+    handleSelectLayoutFormat: onSelectLayoutFormat,
+    handleToggleOrientation: onToggleOrientation,
+    handleToggleBorders: onToggleBorders,
+    handleTogglePageNumbers: onTogglePageNumbers,
+    handleDownloadFinalPrintPdf: onDownloadFinalPrintPdf,
+    handleProceedToPhase4: onProceedToPhase4,
+    handleSendFeedback: onSendFeedback,
+    handleResetWorkflow: onResetWorkflow,
+  } = handlers;
+
+  const onToggleExcludeAll = (exclude: boolean) => {
+    const next = new Set<number>();
+    if (exclude) state.processedPages.forEach((_, idx) => next.add(idx));
+    setExcludedPages(next);
+  };
 
   return (
     <div className="flex flex-col gap-6 pb-12 w-full max-w-full">
@@ -374,8 +387,8 @@ export const DesktopWorkflowUI: React.FC<WorkflowUIProps> = (props) => {
 
             <MarginSettings
               layoutConfig={layoutConfig}
-              onUpdateOuterMargins={props.onUpdateOuterMargins}
-              onUpdateInnerMargin={props.onUpdateInnerMargin}
+              onUpdateOuterMargins={handlers.handleUpdateOuterMargins}
+              onUpdateInnerMargin={handlers.handleUpdateInnerMargin}
             />
           </div>
 
@@ -507,9 +520,9 @@ export const DesktopWorkflowUI: React.FC<WorkflowUIProps> = (props) => {
             finalMetrics={finalMetrics}
             layoutConfig={layoutConfig}
             finalPrintPdfBlob={finalPrintPdfBlob}
-            analysisTimeMs={props.analysisTimeMs}
-            optimizationTimeMs={props.optimizationTimeMs}
-            layoutTimeMs={props.layoutTimeMs}
+            analysisTimeMs={state.analysisTimeMs}
+            optimizationTimeMs={state.optimizationTimeMs}
+            layoutTimeMs={state.layoutTimeMs}
           />
 
           <button

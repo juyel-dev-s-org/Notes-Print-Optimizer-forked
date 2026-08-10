@@ -1,5 +1,3 @@
-import type { PageProfile } from '../optimizer/types';
-
 export type WorkerType = 'pixel' | 'compose' | 'render';
 
 export interface PixelTask {

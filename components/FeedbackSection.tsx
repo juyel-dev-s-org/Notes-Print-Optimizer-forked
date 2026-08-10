@@ -4,11 +4,8 @@ import React, { useState } from 'react';
 import {
   AlertCircle,
   Check,
-  ChevronDown,
-  ChevronUp,
   Code,
   Copy,
-  FileText,
   Info,
   Loader2,
   Paperclip,

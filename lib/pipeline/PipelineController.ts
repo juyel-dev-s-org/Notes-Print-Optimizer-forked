@@ -6,7 +6,7 @@ import { PipelineScheduler } from './PipelineScheduler';
 import { memoryGuard } from './MemoryGuard';
 import { CheckpointManager } from './checkpoint/CheckpointManager';
 import { computeScheduleProfile } from './types';
-import type { IPlugin, PluginContext } from './plugin/types';
+import type { PluginContext } from './plugin/types';
 import { Channels } from './plugin/channels';
 import type { DeviceProfile } from './types';
 import { MetricsBus } from '../metrics/MetricsBus';

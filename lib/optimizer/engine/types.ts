@@ -1,13 +1,12 @@
 import {
   DocumentProfile,
-  PageProfile,
   PresetMode,
   ProcessedPage,
   ProcessingParameters,
   OptimizationMetrics,
 } from '../types';
 
-export type EngineVersion = 'v1' | 'v2' | 'v3' | string;
+export type EngineVersion = 'v1' | 'v2' | 'v3';
 
 export interface EngineCapabilities {
   supportsWebWorkers: boolean;
@@ -32,14 +31,6 @@ export interface EngineProcessingOptions {
   signal?: AbortSignal;
 }
 
-interface EngineProgressInfo {
-  stage: 'ANALYZING' | 'OPTIMIZING' | 'COMPLETE' | 'ERROR';
-  currentPage: number;
-  totalPages: number;
-  action: string;
-  percent: number;
-}
-
 export type EngineProgressCallback = (current: number, total: number, action: string) => void;
 
 export type EnginePageOptimizedCallback = (pageIndex: number, thumbnailUrl: string, inkBeforePct: number, inkAfterPct: number) => void;
@@ -55,7 +46,7 @@ export interface EnginePageProcessResult {
 export interface EngineDocumentOutput {
   processedPages: ProcessedPage[];
   docProfile: DocumentProfile;
-  engineVersion: string;
+  engineVersion: EngineVersion;
   engineId: string;
   totalTimeMs: number;
   metrics?: Partial<OptimizationMetrics>;

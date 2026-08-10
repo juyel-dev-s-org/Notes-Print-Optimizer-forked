@@ -1,6 +1,5 @@
 import type { IWasmKernels } from './types';
 import { rgbToHsv } from '../kernels/hsv';
-import { getLuminance } from '../kernels/luminance';
 import { ensureCC, getCCLabels, getCCQueue } from '../kernels/connectedComponents';
 
 export const jsKernels: IWasmKernels = {

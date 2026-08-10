@@ -39,7 +39,7 @@ jobs:
         run: npm run lint
 
       - name: Type Check
-        run: npx tsc --noEmit
+        run: npm run typecheck
 
       - name: Unit Tests
         run: npm run test
@@ -51,6 +51,12 @@ jobs:
 
       - name: Build
         run: npm run build
+
+      - name: Install Playwright Browsers
+        run: npx playwright install --with-deps chromium
+
+      - name: Smoke Tests (Playwright)
+        run: npx playwright test --config=playwright.config.ts --project=chromium
 
       - name: Upload build artifact
         uses: actions/upload-artifact@v4

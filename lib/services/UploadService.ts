@@ -1,10 +1,8 @@
-export interface UploadedItem {
-  id: string;
-  file: File;
-  name: string;
-  sizeMB: string;
-  arrayBuffer: ArrayBuffer;
-}
+import { memoryManager } from '../optimizer/memoryManager';
+import type { UploadedPdfItem } from '../workflow/types';
+
+/** @deprecated Use UploadedPdfItem from workflow/types.ts */
+export type UploadedItem = UploadedPdfItem;
 
 export const MAX_FILE_SIZE_MB = 100;
 export const MAX_TOTAL_SIZE_MB = 500;
@@ -68,7 +66,7 @@ export class UploadService {
       const ctx = canvas.getContext('2d')!;
       await page.render({ canvasContext: ctx, viewport }).promise;
       const blob = await new Promise<Blob>(res => canvas.toBlob(b => res(b || new Blob()), 'image/jpeg', 0.6));
-      thumbnails.push(URL.createObjectURL(blob));
+      thumbnails.push(memoryManager.createTrackedBlobUrl(blob));
     }
     return { pdfBlob, pdfBytes, thumbnails };
   }

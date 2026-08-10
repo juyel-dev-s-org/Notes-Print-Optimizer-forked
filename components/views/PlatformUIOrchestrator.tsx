@@ -38,7 +38,7 @@ function useMediaQuery(query: string): boolean {
   );
 }
 
-export const PlatformUIOrchestrator: React.FC<WorkflowUIProps> = (props) => {
+export const PlatformUIOrchestrator: React.FC<WorkflowUIProps> = ({ state, actions, handlers, resume }) => {
   const [overrideMode, setOverrideMode] = useState<PlatformOverride>('AUTO');
   const [mounted, setMounted] = useState(false);
   const isMobile = useMediaQuery(MOBILE_QUERY);
@@ -46,6 +46,8 @@ export const PlatformUIOrchestrator: React.FC<WorkflowUIProps> = (props) => {
   const isDesktop = useMediaQuery(DESKTOP_QUERY);
 
   useEffect(() => setMounted(true), []);
+
+  const platformProps = { state, actions, handlers, resume };
 
   return (
     <div className="w-full max-w-full">
@@ -114,28 +116,28 @@ export const PlatformUIOrchestrator: React.FC<WorkflowUIProps> = (props) => {
       </div>
 
       {/* Resume Prompt Banner */}
-      {props.resumeInfo && props.currentPhase === 1 && (
+      {resume.resumeInfo && state.currentPhase === 1 && (
         <div className="mb-4 flex items-center justify-between gap-3 rounded-xl border border-amber-500/40 bg-amber-950/30 p-3 shadow-md">
           <div className="flex items-center gap-3 min-w-0">
             <RotateCcw className="h-5 w-5 shrink-0 text-amber-400" />
             <div className="min-w-0">
               <p className="text-xs font-bold text-amber-200">Resume where you left off?</p>
               <p className="text-[11px] text-amber-300/70 truncate">
-                {props.resumeInfo.completedCount} of {props.resumeInfo.totalPages} pages already processed.
+                {resume.resumeInfo.completedCount} of {resume.resumeInfo.totalPages} pages already processed.
               </p>
             </div>
           </div>
           <div className="flex items-center gap-2 shrink-0">
             <button
               type="button"
-              onClick={props.onResumeProcessing}
+              onClick={handlers.handleResumeProcessing}
               className="rounded-lg bg-amber-600 px-3 py-1.5 text-[10px] font-bold text-white hover:bg-amber-500 transition-colors"
             >
               Resume
             </button>
             <button
               type="button"
-              onClick={props.onDismissResume}
+              onClick={handlers.handleDismissResume}
               className="flex h-7 w-7 items-center justify-center rounded-lg text-amber-300/70 hover:bg-amber-950/60 hover:text-amber-200 transition-colors"
               title="Dismiss"
             >
@@ -146,20 +148,20 @@ export const PlatformUIOrchestrator: React.FC<WorkflowUIProps> = (props) => {
       )}
 
       {/* Render only the active view (matchMedia) so idle platform UIs stay unmounted */}
-      {mounted && overrideMode === 'MOBILE' && <MobileWorkflowUI {...props} />}
-      {mounted && overrideMode === 'TABLET' && <TabletWorkflowUI {...props} />}
-      {mounted && overrideMode === 'DESKTOP' && <DesktopWorkflowUI {...props} />}
+      {mounted && overrideMode === 'MOBILE' && <MobileWorkflowUI {...platformProps} />}
+      {mounted && overrideMode === 'TABLET' && <TabletWorkflowUI {...platformProps} />}
+      {mounted && overrideMode === 'DESKTOP' && <DesktopWorkflowUI {...platformProps} />}
 
       {mounted && overrideMode === 'AUTO' && (
         <>
           {/* Mobile Layout (<640px) */}
-          {isMobile && <MobileWorkflowUI {...props} />}
+          {isMobile && <MobileWorkflowUI {...platformProps} />}
 
           {/* Tablet Layout (>=640px and <1024px) */}
-          {isTablet && <TabletWorkflowUI {...props} />}
+          {isTablet && <TabletWorkflowUI {...platformProps} />}
 
           {/* Desktop/Laptop Layout (>=1024px) */}
-          {isDesktop && <DesktopWorkflowUI {...props} />}
+          {isDesktop && <DesktopWorkflowUI {...platformProps} />}
         </>
       )}
     </div>

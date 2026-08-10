@@ -313,7 +313,7 @@ export function usePageHandlers() {
       const service = new OptimizationService();
       const effectiveParams = buildEffectiveParams(masterParams, processingToggles);
       const { processedPages: pages, docProfile: dProf } = await service.processDocument(
-        mergedPdfBytes.slice().buffer as ArrayBuffer, pdfId, effectiveParams.preset,
+        mergedPdfBytes.buffer.slice(mergedPdfBytes.byteOffset, mergedPdfBytes.byteOffset + mergedPdfBytes.byteLength) as ArrayBuffer, pdfId, effectiveParams.preset,
         selectedEngineVersion,
         (curr, total, action) => {
           if (signal.aborted) throw new Error('CANCELLED');
@@ -547,7 +547,7 @@ export function usePageHandlers() {
       const service = new OptimizationService();
       const effectiveParams = buildEffectiveParams(masterParams, processingToggles);
       const { processedPages: pages, docProfile: dProf } = await service.processDocument(
-        mergedPdfBytes.slice().buffer as ArrayBuffer, pdfId, effectiveParams.preset,
+        mergedPdfBytes.buffer.slice(mergedPdfBytes.byteOffset, mergedPdfBytes.byteOffset + mergedPdfBytes.byteLength) as ArrayBuffer, pdfId, effectiveParams.preset,
         selectedEngineVersion,
         (curr, total, action) => {
           if (signal.aborted) throw new Error('CANCELLED');

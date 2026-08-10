@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { LayoutEngine } from '../../lib/optimizer/layoutEngine';
-import { GridFormat, Orientation, PaperSize } from '../../lib/optimizer/types';
+import { GridFormat } from '../../lib/optimizer/types';
 
 describe('LayoutEngine', () => {
   describe('getGridDimensions', () => {

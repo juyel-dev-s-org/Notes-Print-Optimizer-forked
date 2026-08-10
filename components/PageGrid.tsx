@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useRef, useState, useEffect } from 'react';
-import { Eye, Check, CheckSquare, Square, RotateCw } from 'lucide-react';
+import { Eye, CheckSquare, Square } from 'lucide-react';
 import { ProcessedPage } from '@/lib/optimizer/types';
 import { InfoTooltip } from '@/components/InfoTooltip';
 

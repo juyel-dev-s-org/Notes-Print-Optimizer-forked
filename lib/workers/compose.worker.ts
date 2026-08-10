@@ -1,5 +1,7 @@
 import type { WorkerRequest, WorkerResponse } from './protocol';
 
+const workerSelf = self as unknown as DedicatedWorkerGlobalScope;
+
 function generateComposeContent(
   ctx: OffscreenCanvasRenderingContext2D,
   dims: { widthPx: number; heightPx: number },
@@ -44,16 +46,16 @@ function generateComposeContent(
   }
 }
 
-self.onmessage = async (e: MessageEvent<WorkerRequest>) => {
+workerSelf.onmessage = async (e: MessageEvent<WorkerRequest>) => {
   const msg = e.data;
 
   if (msg.type === 'PING') {
-    (self as any).postMessage({ type: 'PONG' } satisfies WorkerResponse);
+    workerSelf.postMessage({ type: 'PONG' } satisfies WorkerResponse);
     return;
   }
 
   if (msg.type === 'TERMINATE') {
-    self.close();
+    workerSelf.close();
     return;
   }
 
@@ -80,9 +82,10 @@ self.onmessage = async (e: MessageEvent<WorkerRequest>) => {
         width: task.dims.widthPx,
         height: task.dims.heightPx,
       };
-      (self as any).postMessage(response, [buffer]);
-    } catch (err: any) {
-      (self as any).postMessage({ type: 'ERROR', taskId: task.taskId, error: err?.message ?? String(err) } satisfies WorkerResponse);
+      workerSelf.postMessage(response, [buffer]);
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : String(err);
+      workerSelf.postMessage({ type: 'ERROR', taskId: task.taskId, error: message } satisfies WorkerResponse);
     }
     return;
   }

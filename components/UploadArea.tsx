@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useRef, useState } from 'react';
-import { FileUp, Sparkles, ShieldCheck, FileText, Upload, HardDrive, AlertCircle } from 'lucide-react';
+import { FileUp, Sparkles, ShieldCheck, Upload, AlertCircle } from 'lucide-react';
 import { isLikelyPdfFile, MAX_FILE_SIZE_MB, MAX_TOTAL_SIZE_MB } from '@/lib/services/UploadService';
 
 interface UploadAreaProps {

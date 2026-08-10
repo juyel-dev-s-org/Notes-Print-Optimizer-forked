@@ -10,6 +10,7 @@ import { processPage, calculateInkCoverage, setWasmKernelsHooks } from '../kerne
 import { ensureWasmKernels } from '../wasm/loader';
 import type { WorkerRequest, WorkerResponse } from './protocol';
 
+const workerSelf = self as unknown as DedicatedWorkerGlobalScope;
 let initialized = false;
 
 async function ensureInit(): Promise<void> {
@@ -23,16 +24,16 @@ async function ensureInit(): Promise<void> {
   }
 }
 
-self.onmessage = async (e: MessageEvent<WorkerRequest>) => {
+workerSelf.onmessage = async (e: MessageEvent<WorkerRequest>) => {
   const msg = e.data;
 
   if (msg.type === 'PING') {
-    (self as any).postMessage({ type: 'PONG' } satisfies WorkerResponse);
+    workerSelf.postMessage({ type: 'PONG' } satisfies WorkerResponse);
     return;
   }
 
   if (msg.type === 'TERMINATE') {
-    self.close();
+    workerSelf.close();
     return;
   }
 
@@ -58,15 +59,16 @@ self.onmessage = async (e: MessageEvent<WorkerRequest>) => {
         inkAfter,
       };
       /* Transfer buffer ownership to main thread (zero-copy) */
-      (self as any).postMessage(response, [result.buffer]);
-    } catch (err: any) {
-      (self as any).postMessage({ type: 'ERROR', taskId: task.taskId, error: err?.message ?? String(err) } satisfies WorkerResponse);
+      workerSelf.postMessage(response, [result.buffer]);
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : String(err);
+      workerSelf.postMessage({ type: 'ERROR', taskId: task.taskId, error: message } satisfies WorkerResponse);
     }
     return;
   }
 
   if (msg.type === 'GET_BUFFER_STATS') {
-    (self as any).postMessage({
+    workerSelf.postMessage({
       type: 'BUFFER_STATS',
       bufferedCount: 0,
       maxBuffered: 0,

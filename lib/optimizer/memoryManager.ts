@@ -1,3 +1,5 @@
+import { detectDeviceProfile } from '../pipeline/types';
+
 /**
  * Memory Management & Device Utilities
  */
@@ -30,20 +32,7 @@ class MemoryManager {
   }
 
   public isMobileDevice(): boolean {
-    if (typeof window === 'undefined') return false;
-    
-    const nav = navigator as Navigator & { userAgentData?: { mobile?: boolean }; deviceMemory?: number };
-    if (nav.userAgentData?.mobile !== undefined) {
-      return nav.userAgentData.mobile;
-    }
-    
-    const ua = navigator.userAgent || '';
-    const isMobileUA = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(ua);
-    const isLowMemory = typeof nav.deviceMemory === 'number' && nav.deviceMemory <= 4;
-    const isSmallScreen = window.innerWidth <= 768;
-    const isTouchOnly = navigator.maxTouchPoints > 0 && !window.matchMedia('(pointer: fine)').matches;
-    
-    return isMobileUA || isLowMemory || (isSmallScreen && isTouchOnly);
+    return detectDeviceProfile().isMobile;
   }
 
   public getConcurrencyLimit(): number {
@@ -144,7 +133,7 @@ class MemoryManager {
   }
 
   public async yieldToUI(): Promise<void> {
-    const sched = (globalThis as any).scheduler;
+    const sched = typeof scheduler !== 'undefined' ? scheduler : undefined;
     if (sched && typeof sched.yield === 'function') return sched.yield();
     if (typeof MessageChannel !== 'undefined') {
       return new Promise<void>((resolve) => {

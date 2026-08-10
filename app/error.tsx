@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useEffect } from 'react';
 
 interface ErrorProps {
   error: Error;
@@ -8,6 +8,10 @@ interface ErrorProps {
 }
 
 export default function ErrorBoundary({ error, reset }: ErrorProps) {
+  useEffect(() => {
+    console.error('[ErrorBoundary]', error);
+  }, [error]);
+
   return (
     <div className="flex min-h-screen items-center justify-center bg-slate-950 p-4">
       <div className="max-w-md rounded-2xl border border-red-800/50 bg-red-950/30 p-8 text-center">

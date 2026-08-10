@@ -1,6 +1,6 @@
 import type { IPlugin, PluginManifest, PluginContext, PluginResult, PluginMetrics } from '../pipeline/plugin/types';
 import { Channels } from '../pipeline/plugin/channels';
-import { LayoutEngine, type SheetDimensions } from '../optimizer/layoutEngine';
+import { LayoutEngine } from '../optimizer/layoutEngine';
 import type { LayoutConfig } from '../optimizer/types';
 
 const manifest: PluginManifest = {

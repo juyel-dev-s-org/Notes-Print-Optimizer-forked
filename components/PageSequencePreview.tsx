@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useRef, useEffect } from 'react';
-import { FileText, Eye } from 'lucide-react';
+import { FileText } from 'lucide-react';
 
 interface PageSequencePreviewProps {
   pageUrls: string[];

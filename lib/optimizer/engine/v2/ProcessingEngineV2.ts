@@ -29,7 +29,7 @@ import type {
   EngineProgressCallback,
   EngineVersion,
 } from '../types';
-import type { PageProfile, ProcessedPage, LayoutConfig } from '../../types';
+import type { DocumentProfile, PageProfile, ProcessedPage, LayoutConfig } from '../../types';
 import { memoryManager } from '../../memoryManager';
 import { pwOptimizerStorage } from '../../storage';
 import { memoryGuard } from '../../../pipeline/MemoryGuard';
@@ -99,7 +99,7 @@ async function canvasToBlob(
 }
 
 async function yieldToUI(): Promise<void> {
-  const sched = (globalThis as any).scheduler;
+  const sched = typeof scheduler !== 'undefined' ? scheduler : undefined;
   if (sched?.yield) { await sched.yield(); return; }
   if (typeof MessageChannel !== 'undefined') {
     return new Promise(res => {
@@ -398,7 +398,7 @@ export class ProcessingEngineV2 implements IProcessingEngine {
     try { pdfDoc.destroy(); } catch { /* */ }
 
     const darkRatio = totalPages > 0 ? darkCount / totalPages : 0;
-    const docProfile = {
+    const docProfile: DocumentProfile = {
       totalPages,
       averageBrightness: totalPages > 0 ? Math.round(sumBrightness / totalPages) : 0,
       darkSlideRatio: Number(darkRatio.toFixed(2)),
@@ -414,7 +414,9 @@ export class ProcessingEngineV2 implements IProcessingEngine {
       pageIndex: m.pageIndex,
       thumbnailDataUrl: m.thumbnailUrl,
       profile: m.profile,
-      parameters: {} as any,
+      parameters: input.customParams
+        ? { ...ParameterGenerator.getPresetParameters(docProfile.recommendedPreset), ...input.customParams }
+        : ParameterGenerator.getPresetParameters(docProfile.recommendedPreset),
       inkCoverageBeforePct: m.inkBefore,
       inkCoverageAfterPct: m.inkAfter,
       width: m.width,
@@ -430,7 +432,7 @@ export class ProcessingEngineV2 implements IProcessingEngine {
       thumbnailMs: sumThumbMs, persistMs: sumPersistMs });
     return {
       processedPages,
-      docProfile: docProfile as any,
+      docProfile,
       engineVersion: this.version,
       engineId: this.id,
       totalTimeMs: totalMs,
@@ -457,12 +459,14 @@ export class ProcessingEngineV2 implements IProcessingEngine {
     const blob = await canvasToBlob(target.canvas, target.isOffscreen, 'image/jpeg', 0.55);
     freeCanvas(target.canvas, target.isOffscreen);
     if (!blob) return '';
-    return URL.createObjectURL(blob);
+    const url = memoryManager.createTrackedBlobUrl(blob);
+    this.activeThumbnailUrls.add(url);
+    return url;
   }
 
   private cleanupThumbnails(): void {
     for (const url of this.activeThumbnailUrls) {
-      try { URL.revokeObjectURL(url); } catch { /* */ }
+      memoryManager.revokeBlobUrl(url);
     }
     this.activeThumbnailUrls.clear();
   }
