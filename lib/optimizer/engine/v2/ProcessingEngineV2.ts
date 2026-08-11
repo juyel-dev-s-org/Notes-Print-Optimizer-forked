@@ -143,6 +143,8 @@ export class ProcessingEngineV2 implements IProcessingEngine {
   private activeThumbnailUrls: Set<string> = new Set();
   private disposed = false;
   private abortController: AbortController | null = null;
+  private thumbSrcCanvas: { canvas: OffscreenCanvas | HTMLCanvasElement; ctx: any; isOffscreen: boolean } | null = null;
+  private thumbTargetCanvas: { canvas: OffscreenCanvas | HTMLCanvasElement; ctx: any; isOffscreen: boolean } | null = null;
 
   constructor(_layoutConfig?: LayoutConfig) {
     const registry = new PluginRegistry();
@@ -447,17 +449,26 @@ export class ProcessingEngineV2 implements IProcessingEngine {
     const tw = Math.max(1, Math.round(imageData.width / 5));
     const th = Math.max(1, Math.round(imageData.height / 5));
 
-    const target = createCanvas2D(tw, th);
-    if (!target) return '';
-    const src = createCanvas2D(imageData.width, imageData.height);
-    if (!src) { freeCanvas(target.canvas, target.isOffscreen); return ''; }
+    if (!this.thumbSrcCanvas) {
+      this.thumbSrcCanvas = createCanvas2D(imageData.width, imageData.height);
+      this.thumbTargetCanvas = createCanvas2D(tw, th);
+    } else {
+      if (this.thumbSrcCanvas.canvas.width !== imageData.width || this.thumbSrcCanvas.canvas.height !== imageData.height) {
+        this.thumbSrcCanvas.canvas.width = imageData.width;
+        this.thumbSrcCanvas.canvas.height = imageData.height;
+      }
+      if (this.thumbTargetCanvas && (this.thumbTargetCanvas.canvas.width !== tw || this.thumbTargetCanvas.canvas.height !== th)) {
+        this.thumbTargetCanvas.canvas.width = tw;
+        this.thumbTargetCanvas.canvas.height = th;
+      }
+    }
 
-    src.ctx.putImageData(imageData, 0, 0);
-    target.ctx.drawImage(src.canvas as any, 0, 0, tw, th);
-    freeCanvas(src.canvas, src.isOffscreen);
+    if (!this.thumbSrcCanvas || !this.thumbTargetCanvas) return '';
 
-    const blob = await canvasToBlob(target.canvas, target.isOffscreen, 'image/jpeg', 0.55);
-    freeCanvas(target.canvas, target.isOffscreen);
+    this.thumbSrcCanvas.ctx.putImageData(imageData, 0, 0);
+    this.thumbTargetCanvas.ctx.drawImage(this.thumbSrcCanvas.canvas as any, 0, 0, tw, th);
+
+    const blob = await canvasToBlob(this.thumbTargetCanvas.canvas, this.thumbTargetCanvas.isOffscreen, 'image/jpeg', 0.55);
     if (!blob) return '';
     const url = memoryManager.createTrackedBlobUrl(blob);
     this.activeThumbnailUrls.add(url);
@@ -477,6 +488,10 @@ export class ProcessingEngineV2 implements IProcessingEngine {
     this.abortController?.abort();
     this.controller.abort();
     this.cleanupThumbnails();
+    if (this.thumbSrcCanvas) freeCanvas(this.thumbSrcCanvas.canvas, this.thumbSrcCanvas.isOffscreen);
+    if (this.thumbTargetCanvas) freeCanvas(this.thumbTargetCanvas.canvas, this.thumbTargetCanvas.isOffscreen);
+    this.thumbSrcCanvas = null;
+    this.thumbTargetCanvas = null;
     bufferPool.shrink(0);
   }
 }
