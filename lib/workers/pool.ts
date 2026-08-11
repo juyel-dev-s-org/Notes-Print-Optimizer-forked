@@ -163,6 +163,9 @@ export class WorkerPool {
 
     if (!msg) {
       entry.reject(new Error(`Unknown task type: ${entry.type}`));
+      this.pending.delete(entry.taskId);
+      info.busy = false;
+      info.taskId = null;
       return;
     }
 
@@ -176,7 +179,16 @@ export class WorkerPool {
       }
     }
 
-    info.worker.postMessage(msg, transferables);
+    try {
+      info.worker.postMessage(msg, transferables);
+    } catch (e) {
+      // postMessage can throw DataCloneError if buffer is detached (e.g., after a retry attempt)
+      entry.reject(e instanceof Error ? e : new Error('postMessage failed'));
+      this.pending.delete(entry.taskId);
+      info.busy = false;
+      info.taskId = null;
+      this.dispatchNext();
+    }
   }
 
   /** Builds a structured-clone-safe message: the TaskEntry carries resolve/reject
