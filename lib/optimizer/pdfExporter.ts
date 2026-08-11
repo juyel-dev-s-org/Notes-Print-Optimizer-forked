@@ -126,25 +126,21 @@ export class PdfExporter {
 
     const pool = WorkerManager.getInstance().getPool();
     pool.prewarm('compose');
-    let prefetchPromise: Promise<ImageData[]> | null = null;
 
     for (let si = 0; si < totalSheets; si++) {
       if (onProgress) onProgress(si + 1, totalSheets, `Building sheet ${si + 1}/${totalSheets}...`);
 
       const chunk = activePages.slice(si * totalPerSheet, Math.min(activePages.length, (si + 1) * totalPerSheet));
 
-      if (prefetchPromise === null) {
-        prefetchPromise = Promise.all(chunk.map(p => this.loadOptimizedImageData(p)));
-      }
-      const chunkImages = await prefetchPromise;
-
-      const nextSi = si + 1;
-      const nextChunk = nextSi < totalSheets
-        ? activePages.slice(nextSi * totalPerSheet, Math.min(activePages.length, (nextSi + 1) * totalPerSheet))
-        : [];
-      prefetchPromise = nextChunk.length > 0
-        ? Promise.all(nextChunk.map(p => this.loadOptimizedImageData(p)))
-        : null;
+      const chunkImages = await Promise.all(chunk.map(async (p) => {
+        try {
+          return await this.loadOptimizedImageData(p);
+        } catch (err) {
+          console.warn(`[export] Failed to load optimized page ${p.pageIndex + 1}, using blank:`, err);
+          const w = p.width ?? 612, h = p.height ?? 792;
+          return new ImageData(new Uint8ClampedArray(w * h * 4).fill(255), w, h);
+        }
+      }));
 
       const { jpegBuffer, width, height } = await this.composeSheetWithWorker(
         chunkImages, si, totalSheets, layoutConfig
@@ -152,12 +148,17 @@ export class PdfExporter {
 
       const tw = Math.min(500, Math.round(width / 3)), th = Math.min(750, Math.round(height / 3));
       const tc = document.createElement('canvas'); tc.width = tw; tc.height = th;
-      const bmp = await createImageBitmap(new Blob([jpegBuffer], { type: 'image/jpeg' }), { resizeWidth: tw, resizeHeight: th, resizeQuality: 'medium' });
-      tc.getContext('2d')!.drawImage(bmp, 0, 0);
-      bmp.close();
+      try {
+        const previewBlob = new Blob([jpegBuffer], { type: 'image/jpeg' });
+        const bmp = await createImageBitmap(previewBlob, { resizeWidth: tw, resizeHeight: th, resizeQuality: 'medium' });
+        const tCtx = tc.getContext('2d');
+        if (tCtx) { tCtx.drawImage(bmp, 0, 0); bmp.close(); }
+      } catch {
+        console.warn('[export] Preview generation failed for sheet', si + 1);
+      }
       const previewBlob = await new Promise<Blob>((res) => tc.toBlob((b) => res(b || new Blob()), 'image/jpeg', 0.6));
       memoryManager.disposeCanvas(tc);
-      sheetPreviews.push(memoryManager.createTrackedBlobUrl(previewBlob));
+      if (previewBlob.size > 0) sheetPreviews.push(memoryManager.createTrackedBlobUrl(previewBlob));
 
       const embedded = await pdfDoc.embedJpg(jpegBuffer);
       const pdfPage = pdfDoc.addPage([width, height]);

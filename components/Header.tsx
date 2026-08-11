@@ -180,7 +180,7 @@ export const Header: React.FC<HeaderProps> = ({
           />
 
           {/* Side Drawer Content */}
-          <aside className="relative flex w-80 max-w-[85vw] flex-col bg-slate-900 border-r border-slate-800 text-slate-100 shadow-2xl pt-safe pb-safe animate-slide-in-left">
+          <aside className="relative flex w-96 max-w-[90vw] flex-col bg-slate-900 border-r border-slate-800 text-slate-100 shadow-2xl pt-safe pb-safe animate-slide-in-left">
               {/* Drawer Header */}
               <div className="flex items-center justify-between border-b border-slate-800 p-4">
                 <div className="flex items-center gap-2.5">
@@ -201,7 +201,7 @@ export const Header: React.FC<HeaderProps> = ({
               </div>
 
               {/* Drawer Body: Settings & Information Center */}
-              <div className="flex-1 overflow-y-auto p-3">
+              <div className="flex-1 overflow-y-auto p-4">
                 <SettingsDrawer
                   onAppAction={(name) => {
                     if (name === 'goto-merge') {
