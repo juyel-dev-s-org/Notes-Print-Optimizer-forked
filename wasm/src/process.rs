@@ -1,3 +1,46 @@
+
+use std::cell::RefCell;
+
+struct CcBuffers {
+    labels: Vec<i32>,
+    queue: Vec<usize>,
+    min_x: Vec<i32>,
+    min_y: Vec<i32>,
+    max_x: Vec<i32>,
+    max_y: Vec<i32>,
+    area: Vec<i32>,
+}
+
+impl CcBuffers {
+    fn new(capacity: usize) -> Self {
+        Self {
+            labels: vec![0; capacity],
+            queue: vec![0; capacity],
+            min_x: vec![0; capacity],
+            min_y: vec![0; capacity],
+            max_x: vec![0; capacity],
+            max_y: vec![0; capacity],
+            area: vec![0; capacity],
+        }
+    }
+    
+    fn ensure_capacity(&mut self, capacity: usize) {
+        if self.labels.len() < capacity {
+            self.labels.resize(capacity, 0);
+            self.queue.resize(capacity, 0);
+            self.min_x.resize(capacity, 0);
+            self.min_y.resize(capacity, 0);
+            self.max_x.resize(capacity, 0);
+            self.max_y.resize(capacity, 0);
+            self.area.resize(capacity, 0);
+        }
+    }
+}
+
+thread_local! {
+    static CC_BUFFERS: RefCell<CcBuffers> = RefCell::new(CcBuffers::new(1024));
+}
+
 //! Monolithic pixel processing pipeline.
 //!
 //! Performs the entire processPage pipeline (HSV classify → decorative strip →
@@ -85,83 +128,91 @@ pub fn process_page(
     }
 
     // Combined Decorative Fill + Noise Removal (Single CC Pass)
-    let mut labels = vec![0i32; tp];
-    let mut queue = vec![0usize; tp];
-    let mut min_x = vec![dw as i32; tp];
-    let mut min_y = vec![dh as i32; tp];
-    let mut max_x = vec![-1i32; tp];
-    let mut max_y = vec![-1i32; tp];
-    let mut area = vec![0i32; tp];
-    
-    let mut next_label: i32 = 1;
-    for i in 0..tp {
-        if fm[i] == 1 && labels[i] == 0 {
-            let lb = next_label;
-            next_label += 1;
-            let mut head = 0usize;
-            let mut tail = 0usize;
-            queue[tail] = i;
-            tail += 1;
-            labels[i] = lb;
-            
-            let mut mnx = dw as i32;
-            let mut mny = dh as i32;
-            let mut mxx = -1i32;
-            let mut mxy = -1i32;
-            let mut ar = 0i32;
-            
-            while head < tail {
-                let cur = queue[head];
-                head += 1;
-                let cx = cur % dw;
-                let cy = cur / dw;
+    CC_BUFFERS.with(|buffers| {
+        let mut buffers = buffers.borrow_mut();
+        buffers.ensure_capacity(tp);
+        
+        let labels = &mut buffers.labels[..tp];
+        let queue = &mut buffers.queue[..tp];
+        let min_x = &mut buffers.min_x[..tp];
+        let min_y = &mut buffers.min_y[..tp];
+        let max_x = &mut buffers.max_x[..tp];
+        let max_y = &mut buffers.max_y[..tp];
+        let area = &mut buffers.area[..tp];
+        
+        for i in 0..tp { labels[i] = 0; }
+        for i in 0..tp { min_x[i] = dw as i32; min_y[i] = dh as i32; max_x[i] = -1i32; max_y[i] = -1i32; area[i] = 0; }
+        
+        let mut next_label: i32 = 1;
+        for i in 0..tp {
+            if fm[i] == 1 && labels[i] == 0 {
+                let lb = next_label;
+                next_label += 1;
+                let mut head = 0usize;
+                let mut tail = 0usize;
+                queue[tail] = i;
+                tail += 1;
+                labels[i] = lb;
                 
-                if (cx as i32) < mnx { mnx = cx as i32; }
-                if (cx as i32) > mxx { mxx = cx as i32; }
-                if (cy as i32) < mny { mny = cy as i32; }
-                if (cy as i32) > mxy { mxy = cy as i32; }
-                ar += 1;
+                let mut mnx = dw as i32;
+                let mut mny = dh as i32;
+                let mut mxx = -1i32;
+                let mut mxy = -1i32;
+                let mut ar = 0i32;
                 
-                if cy > 0 { let ni = cur - dw; if fm[ni] == 1 && labels[ni] == 0 { labels[ni] = lb; queue[tail] = ni; tail += 1; } }
-                if cy < dh - 1 { let ni = cur + dw; if fm[ni] == 1 && labels[ni] == 0 { labels[ni] = lb; queue[tail] = ni; tail += 1; } }
-                if cx > 0 { let ni = cur - 1; if fm[ni] == 1 && labels[ni] == 0 { labels[ni] = lb; queue[tail] = ni; tail += 1; } }
-                if cx < dw - 1 { let ni = cur + 1; if fm[ni] == 1 && labels[ni] == 0 { labels[ni] = lb; queue[tail] = ni; tail += 1; } }
+                while head < tail {
+                    let cur = queue[head];
+                    head += 1;
+                    let cx = cur % dw;
+                    let cy = cur / dw;
+                    
+                    if (cx as i32) < mnx { mnx = cx as i32; }
+                    if (cx as i32) > mxx { mxx = cx as i32; }
+                    if (cy as i32) < mny { mny = cy as i32; }
+                    if (cy as i32) > mxy { mxy = cy as i32; }
+                    ar += 1;
+                    
+                    if cy > 0 { let ni = cur - dw; if fm[ni] == 1 && labels[ni] == 0 { labels[ni] = lb; queue[tail] = ni; tail += 1; } }
+                    if cy < dh - 1 { let ni = cur + dw; if fm[ni] == 1 && labels[ni] == 0 { labels[ni] = lb; queue[tail] = ni; tail += 1; } }
+                    if cx > 0 { let ni = cur - 1; if fm[ni] == 1 && labels[ni] == 0 { labels[ni] = lb; queue[tail] = ni; tail += 1; } }
+                    if cx < dw - 1 { let ni = cur + 1; if fm[ni] == 1 && labels[ni] == 0 { labels[ni] = lb; queue[tail] = ni; tail += 1; } }
+                }
+                min_x[lb as usize] = mnx;
+                min_y[lb as usize] = mny;
+                max_x[lb as usize] = mxx;
+                max_y[lb as usize] = mxy;
+                area[lb as usize] = ar;
             }
-            min_x[lb as usize] = mnx;
-            min_y[lb as usize] = mny;
-            max_x[lb as usize] = mxx;
-            max_y[lb as usize] = mxy;
-            area[lb as usize] = ar;
         }
-    }
-    
-    let min_area = (tp / 600000).max(6) as i32;
-    for l in 1..next_label {
-        let idx = l as usize;
-        let ar = area[idx];
-        if ar < min_area {
-            continue; // Will be removed as noise implicitly since we only keep fm[i]=1 if labels[i] is valid? Wait, we need to remove them from fm!
+        
+        let min_area = (tp / 600000).max(6) as i32;
+        for l in 1..next_label {
+            let idx = l as usize;
+            let ar = area[idx];
+            if ar < min_area {
+                continue; 
+            }
+            let cw = (max_x[idx] - min_x[idx] + 1) as f64;
+            let ch = (max_y[idx] - min_y[idx] + 1) as f64;
+            let is_decorative = ar >= 200
+                && cw / ch.max(1.0) > 2.2
+                && cw / (dw as f64) > 0.20
+                && (min_y[idx] as f64) / (dh as f64) < 0.15
+                && (ar as f64) > cw * ch * 0.3;
+                
+            if ar < min_area || is_decorative {
+                min_x[idx] = -9999; 
+            }
         }
-        let cw = (max_x[idx] - min_x[idx] + 1) as f64;
-        let ch = (max_y[idx] - min_y[idx] + 1) as f64;
-        let is_decorative = ar >= 200
-            && cw / ch.max(1.0) > 2.2
-            && cw / (dw as f64) > 0.20
-            && (min_y[idx] as f64) / (dh as f64) < 0.15
-            && (ar as f64) > cw * ch * 0.3;
-            
-        if ar < min_area || is_decorative {
-            // mark for removal
-            min_x[idx] = -9999; // flag to drop
+        
+        for i in 0..tp {
+            let l = labels[i] as usize;
+            if l > 0 && l < next_label as usize && min_x[l] == -9999 {
+                fm[i] = 0;
+            }
         }
-    }
-    
-    for i in 0..tp {
-        let l = labels[i] as usize;
-        if l > 0 && min_x[l] == -9999 {
-            fm[i] = 0;
-        }
-    }
+    });
+
 
     // Composite: mask → B/W RGBA
     for p in 0..tp {
