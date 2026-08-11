@@ -56,37 +56,15 @@ pub fn process_page(
     let mut fm = vec![0u8; tp];
 
     if invert_mode_smart {
-        // HSV classify → 7 channel masks → decorative strip → OR into fm
+        // HSV classify -> OR all channels directly into fm (single pass CC later)
         let hsv_buf = hsv::rgb_to_hsv_batch(&data, tp);
         let channels = classify::classify_colors(&hsv_buf, tp);
-        for c in 0..7usize {
-            // Skip empty channels
-            let mut has_data = false;
-            let mut i = c;
-            while i < tp * 7 {
-                if channels[i] == 1 {
-                    has_data = true;
-                    break;
-                }
-                i += 7;
-            }
-            if !has_data {
-                continue;
-            }
-            // Extract channel mask
-            let mut cm = vec![0u8; tp];
-            for p in 0..tp {
-                if channels[p * 7 + c] == 1 {
-                    cm[p] = 1;
-                }
-            }
-            // Strip decorative fills (modifies cm in-place)
-            decorative::strip_decorative_fills(&mut cm, dw, dh);
-            // Merge into fm
-            for p in 0..tp {
-                if cm[p] == 1 {
-                    fm[p] = 1;
-                }
+        for p in 0..tp {
+            let base = p * 7;
+            if channels[base] == 1 || channels[base + 1] == 1 || channels[base + 2] == 1 ||
+               channels[base + 3] == 1 || channels[base + 4] == 1 || channels[base + 5] == 1 ||
+               channels[base + 6] == 1 {
+                fm[p] = 1;
             }
         }
     } else {
@@ -106,8 +84,84 @@ pub fn process_page(
         mask_ops::dilate_mask(&mut fm, dw, dh, dilation_ks as usize);
     }
 
-    // Noise removal
-    noise::remove_noise(&mut fm, dw, dh);
+    // Combined Decorative Fill + Noise Removal (Single CC Pass)
+    let mut labels = vec![0i32; tp];
+    let mut queue = vec![0usize; tp];
+    let mut min_x = vec![dw as i32; tp];
+    let mut min_y = vec![dh as i32; tp];
+    let mut max_x = vec![-1i32; tp];
+    let mut max_y = vec![-1i32; tp];
+    let mut area = vec![0i32; tp];
+    
+    let mut next_label: i32 = 1;
+    for i in 0..tp {
+        if fm[i] == 1 && labels[i] == 0 {
+            let lb = next_label;
+            next_label += 1;
+            let mut head = 0usize;
+            let mut tail = 0usize;
+            queue[tail] = i;
+            tail += 1;
+            labels[i] = lb;
+            
+            let mut mnx = dw as i32;
+            let mut mny = dh as i32;
+            let mut mxx = -1i32;
+            let mut mxy = -1i32;
+            let mut ar = 0i32;
+            
+            while head < tail {
+                let cur = queue[head];
+                head += 1;
+                let cx = cur % dw;
+                let cy = cur / dw;
+                
+                if (cx as i32) < mnx { mnx = cx as i32; }
+                if (cx as i32) > mxx { mxx = cx as i32; }
+                if (cy as i32) < mny { mny = cy as i32; }
+                if (cy as i32) > mxy { mxy = cy as i32; }
+                ar += 1;
+                
+                if cy > 0 { let ni = cur - dw; if fm[ni] == 1 && labels[ni] == 0 { labels[ni] = lb; queue[tail] = ni; tail += 1; } }
+                if cy < dh - 1 { let ni = cur + dw; if fm[ni] == 1 && labels[ni] == 0 { labels[ni] = lb; queue[tail] = ni; tail += 1; } }
+                if cx > 0 { let ni = cur - 1; if fm[ni] == 1 && labels[ni] == 0 { labels[ni] = lb; queue[tail] = ni; tail += 1; } }
+                if cx < dw - 1 { let ni = cur + 1; if fm[ni] == 1 && labels[ni] == 0 { labels[ni] = lb; queue[tail] = ni; tail += 1; } }
+            }
+            min_x[lb as usize] = mnx;
+            min_y[lb as usize] = mny;
+            max_x[lb as usize] = mxx;
+            max_y[lb as usize] = mxy;
+            area[lb as usize] = ar;
+        }
+    }
+    
+    let min_area = (tp / 600000).max(6) as i32;
+    for l in 1..next_label {
+        let idx = l as usize;
+        let ar = area[idx];
+        if ar < min_area {
+            continue; // Will be removed as noise implicitly since we only keep fm[i]=1 if labels[i] is valid? Wait, we need to remove them from fm!
+        }
+        let cw = (max_x[idx] - min_x[idx] + 1) as f64;
+        let ch = (max_y[idx] - min_y[idx] + 1) as f64;
+        let is_decorative = ar >= 200
+            && cw / ch.max(1.0) > 2.2
+            && cw / (dw as f64) > 0.20
+            && (min_y[idx] as f64) / (dh as f64) < 0.15
+            && (ar as f64) > cw * ch * 0.3;
+            
+        if ar < min_area || is_decorative {
+            // mark for removal
+            min_x[idx] = -9999; // flag to drop
+        }
+    }
+    
+    for i in 0..tp {
+        let l = labels[i] as usize;
+        if l > 0 && min_x[l] == -9999 {
+            fm[i] = 0;
+        }
+    }
 
     // Composite: mask → B/W RGBA
     for p in 0..tp {
