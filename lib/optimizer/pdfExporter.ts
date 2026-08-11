@@ -188,8 +188,7 @@ export class PdfExporter {
     for (let i = 0; i < processedPages.length; i++) {
       if (onProgress) onProgress(i + 1, processedPages.length);
       const optData = await this.loadOptimizedImageData(processedPages[i]);
-      const canvas = document.createElement('canvas');
-      canvas.width = optData.width; canvas.height = optData.height;
+      const canvas = memoryManager.acquireCanvas(optData.width, optData.height);
       const ctx = canvas.getContext('2d', { willReadFrequently: true });
       if (ctx) { ctx.putImageData(optData, 0, 0);
         const jpegBlob = await new Promise<Blob>((res) => canvas.toBlob((b) => res(b || new Blob()), 'image/jpeg', quality));
