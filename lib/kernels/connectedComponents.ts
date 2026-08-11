@@ -8,31 +8,46 @@
  */
 let ccLabels: Int32Array | null = null;
 let ccQueue: Int32Array | null = null;
+let ccMinX: Int32Array | null = null;
+let ccMinY: Int32Array | null = null;
+let ccMaxX: Int32Array | null = null;
+let ccMaxY: Int32Array | null = null;
+let ccArea: Int32Array | null = null;
 let ccCapacity = 0;
 
 export function ensureCC(size: number): void {
   if (ccCapacity < size) {
     ccLabels = new Int32Array(size);
     ccQueue = new Int32Array(size);
+    ccMinX = new Int32Array(size);
+    ccMinY = new Int32Array(size);
+    ccMaxX = new Int32Array(size);
+    ccMaxY = new Int32Array(size);
+    ccArea = new Int32Array(size);
     ccCapacity = size;
   } else {
     ccLabels!.fill(0, 0, size);
   }
 }
 
-export function getCCLabels(): Int32Array {
-  return ccLabels!;
-}
-
-export function getCCQueue(): Int32Array {
-  return ccQueue!;
-}
+export function getCCLabels(): Int32Array { return ccLabels!; }
+export function getCCQueue(): Int32Array { return ccQueue!; }
+export function getCCMinX(): Int32Array { return ccMinX!; }
+export function getCCMinY(): Int32Array { return ccMinY!; }
+export function getCCMaxX(): Int32Array { return ccMaxX!; }
+export function getCCMaxY(): Int32Array { return ccMaxY!; }
+export function getCCArea(): Int32Array { return ccArea!; }
 
 /** Shrink CC buffers if they exceed threshold (call under memory pressure). */
 export function shrinkCC(maxCapacity = 1048576): void {
   if (ccCapacity > maxCapacity) {
     ccLabels = new Int32Array(maxCapacity);
     ccQueue = new Int32Array(maxCapacity);
+    ccMinX = new Int32Array(maxCapacity);
+    ccMinY = new Int32Array(maxCapacity);
+    ccMaxX = new Int32Array(maxCapacity);
+    ccMaxY = new Int32Array(maxCapacity);
+    ccArea = new Int32Array(maxCapacity);
     ccCapacity = maxCapacity;
   }
 }
@@ -41,5 +56,10 @@ export function shrinkCC(maxCapacity = 1048576): void {
 export function releaseCC(): void {
   ccLabels = null;
   ccQueue = null;
+  ccMinX = null;
+  ccMinY = null;
+  ccMaxX = null;
+  ccMaxY = null;
+  ccArea = null;
   ccCapacity = 0;
 }
