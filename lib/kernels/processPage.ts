@@ -15,6 +15,7 @@ import { getLuminance } from './luminance';
 import { rgbToHsv, fastMinChannel } from './hsv';
 import { applyMaskDilation, setDilationHook } from './maskOps';
 import { applyUnsharpMask, setUnsharpHook } from './sharpen';
+import { ensureCC, getCCLabels, getCCQueue, getCCMinX, getCCMinY, getCCMaxX, getCCMaxY, getCCArea } from './connectedComponents';
 import type { IWasmKernels } from '../wasm/types';
 
 let wasmKernels: IWasmKernels | null = null;
@@ -58,21 +59,23 @@ function fastMaxChannel(r: number, g: number, b: number): number {
  */
 function removeDecorativeAndNoise(fm: Uint8Array, w: number, h: number): void {
   const totalPixels = w * h;
-  const labels = new Int32Array(totalPixels);
-  const queue = new Int32Array(totalPixels);
+  ensureCC(totalPixels);
+  const labels = getCCLabels();
+  const queue = getCCQueue();
+  const sMinX = getCCMinX();
+  const sMinY = getCCMinY();
+  const sMaxX = getCCMaxX();
+  const sMaxY = getCCMaxY();
+  const sArea = getCCArea();
+
   let cl = 1;
-  // Component stats arrays (index 0 unused)
-  const sMinX: number[] = [0];
-  const sMinY: number[] = [0];
-  const sMaxX: number[] = [0];
-  const sMaxY: number[] = [0];
-  const sArea: number[] = [0];
 
   for (let i = 0; i < totalPixels; i++) {
     if (fm[i] !== 1 || labels[i] !== 0) continue;
     const lb = cl++;
-    let mnx = w, mny = h, mxx = -1, mxy = -1, ar = 0, hd = 0, tl = 0;
-    queue[tl++] = i;
+    let mnx = w, mny = h, mxx = -1, mxy = -1, ar = 0;
+    queue[0] = i;
+    let hd = 0, tl = 1;
     labels[i] = lb;
     while (hd < tl) {
       const cu = queue[hd++];
@@ -83,33 +86,34 @@ function removeDecorativeAndNoise(fm: Uint8Array, w: number, h: number): void {
       if (cy < mny) mny = cy;
       if (cy > mxy) mxy = cy;
       ar++;
-      // 4-connected neighbors (faster than 8-connected, sufficient for this use)
+      // 4-connected neighbors
       if (cy > 0) { const ni = cu - w; if (fm[ni] === 1 && labels[ni] === 0) { labels[ni] = lb; queue[tl++] = ni; } }
       if (cy < h - 1) { const ni = cu + w; if (fm[ni] === 1 && labels[ni] === 0) { labels[ni] = lb; queue[tl++] = ni; } }
       if (cx > 0) { const ni = cu - 1; if (fm[ni] === 1 && labels[ni] === 0) { labels[ni] = lb; queue[tl++] = ni; } }
       if (cx < w - 1) { const ni = cu + 1; if (fm[ni] === 1 && labels[ni] === 0) { labels[ni] = lb; queue[tl++] = ni; } }
     }
-    sMinX.push(mnx);
-    sMinY.push(mny);
-    sMaxX.push(mxx);
-    sMaxY.push(mxy);
-    sArea.push(ar);
+    sMinX[lb] = mnx;
+    sMinY[lb] = mny;
+    sMaxX[lb] = mxx;
+    sMaxY[lb] = mxy;
+    sArea[lb] = ar;
   }
 
   if (cl <= 1) return; // No components found
 
-  // Build removal mask: component matches decorative-fill OR noise criteria
-  const drop = new Uint8Array(cl);
+  // We reuse sMinX as a temporary drop mask since we no longer need it.
+  // Wait, sMinX is Int32Array, we just write 1 or 0 to it.
+  const drop = sMinX; 
   const minArea = Math.max(6, (totalPixels / 600000) | 0);
   for (let lb = 1; lb < cl; lb++) {
     const area = sArea[lb];
-    // Noise: tiny isolated components
     if (area < minArea) { drop[lb] = 1; continue; }
-    // Decorative fill: wide, top-positioned, partially-filled rectangles
     const cw = sMaxX[lb] - sMinX[lb] + 1;
     const ch = sMaxY[lb] - sMinY[lb] + 1;
     if (area >= 200 && cw / Math.max(ch, 1) > 2.2 && cw / w > 0.20 && sMinY[lb] / h < 0.15 && area > cw * ch * 0.3) {
       drop[lb] = 1;
+    } else {
+      drop[lb] = 0;
     }
   }
 
