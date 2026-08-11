@@ -66,3 +66,11 @@ The audit identified and resolved **2 critical correctness/functionality failure
 ## Conclusion
 
 The application is fundamentally sound but was suffering from severe hidden bottlenecks (GC pressure from allocations) and broken persistence logic introduced in previous iterations. By pooling memory, reusing DOM elements, and correctly handling Web Worker detachment errors, the application now achieves true "super-fast" processing with 0-error behavior for large documents.
+
+
+### 6. 8-Pass Bottleneck in WASM Kernel (Performance)
+- **File**: `wasm/src/process.rs`, `wasm/src/connected.rs`
+- **Discovery**: The previous agent optimized the JS kernel to use a single Combined Connected-Components pass. However, the WASM kernel (`process_page`) was still calling `connected_components` **8 times per page** (7 times for `strip_decorative_fills` per color channel, 1 time for `remove_noise`). Each pass allocated ~5.7MB of vectors (`labels` and `queue`), totaling ~45MB of transient heap allocations per page *inside the WASM sandbox*.
+- **Impact**: The WASM kernel was actually significantly SLOWER than the optimized JS kernel for smart-invert mode due to massive WASM allocator overhead and redundant BFS traversals.
+- **Fix**: Rewrote `wasm/src/process.rs` to OR all 7 color channels into a single foreground mask (`fm`) immediately, and then perform a **single combined BFS pass** that simultaneously calculates stats and removes both decorative fills and noise. Added `connected_components_with_buffers` to `connected.rs` to allow pre-allocating buffers.
+- **Note**: The Rust source code has been updated and pushed. The `public/wasm/npo_wasm_bg.wasm` binary must be rebuilt via the `.github/workflows/wasm-build.yml` workflow or `wasm-pack build` to activate this optimization in the browser. The JS fallback is already active and fully optimized.
