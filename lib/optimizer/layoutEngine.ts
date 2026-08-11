@@ -30,7 +30,7 @@ export class LayoutEngine {
     const dims = this.getSheetDimensions(config.paperSize, config.orientation, dpi);
     const canvas = document.createElement('canvas');
     canvas.width = dims.widthPx; canvas.height = dims.heightPx;
-    const ctx = canvas.getContext('2d')!;
+    const ctx = canvas.getContext('2d', { willReadFrequently: true })!;
     ctx.fillStyle = '#FFFFFF'; ctx.fillRect(0, 0, dims.widthPx, dims.heightPx);
 
     const mmPx = dpi / 25.4;
@@ -54,7 +54,7 @@ export class LayoutEngine {
       const dX = cellX + Math.floor((cellW - dW) / 2), dY = cellY + Math.floor((cellH - dH) / 2);
       const tmp = document.createElement('canvas');
       tmp.width = slide.width; tmp.height = slide.height;
-      tmp.getContext('2d')!.putImageData(slide, 0, 0);
+      tmp.getContext('2d', { willReadFrequently: true })!.putImageData(slide, 0, 0);
       ctx.drawImage(tmp, dX, dY, dW, dH);
       tmp.width = 0; tmp.height = 0;
       if (config.showSlideBorders ?? true) {

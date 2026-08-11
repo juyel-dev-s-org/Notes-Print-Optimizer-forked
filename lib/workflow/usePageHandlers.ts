@@ -137,8 +137,8 @@ export function usePageHandlers() {
       });
     }
     const handleUnload = () => { pwOptimizerStorage.clearCache(); memoryManager.revokeAllBlobUrls(); };
-    window.addEventListener('beforeunload', handleUnload);
-    return () => { window.removeEventListener('beforeunload', handleUnload); handleUnload(); };
+    window.addEventListener('pagehide', handleUnload);
+    return () => { window.removeEventListener('pagehide', handleUnload); };
   }, []);
 
   /* Cleanup preview blob + pending layout debounce on unmount */
