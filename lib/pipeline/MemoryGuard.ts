@@ -6,8 +6,10 @@ export type PressureLevel = 'normal' | 'elevated' | 'critical';
 export interface MemoryLimits { maxHeapMB: number; evictThreshold: number; gcPressureThreshold: number; criticalThreshold: number; }
 export type EvictionCallback = (level: PressureLevel, currentMB: number) => void;
 
+interface NavigatorWithDeviceMemory extends Navigator { deviceMemory?: number }
+
 function detectLimits(): MemoryLimits {
-  const mem = typeof navigator !== 'undefined' ? (navigator as any).deviceMemory : undefined;
+  const mem = typeof navigator !== 'undefined' ? (navigator as NavigatorWithDeviceMemory).deviceMemory : undefined;
   const gb = typeof mem === 'number' ? mem : 4;
   if (gb <= 4) return { maxHeapMB: 512, evictThreshold: 0.70, gcPressureThreshold: 0.80, criticalThreshold: 0.92 };
   if (gb <= 8) return { maxHeapMB: 1024, evictThreshold: 0.75, gcPressureThreshold: 0.85, criticalThreshold: 0.93 };
@@ -26,7 +28,7 @@ export class MemoryGuard {
 
   constructor() { this.limits = detectLimits(); }
   onEviction(cb: EvictionCallback): () => void { this.evictionCallbacks.add(cb); return () => this.evictionCallbacks.delete(cb); }
-  private getUsedJSHeapMB(): number { try { const raw = (performance as any).memory?.usedJSHeapSize; if (typeof raw === 'number') return raw / MB; } catch { /* */ } return this.allocatedBytes / MB; }
+  private getUsedJSHeapMB(): number { try { const mem = (performance as unknown as { memory?: { usedJSHeapSize: number } }).memory; if (typeof mem?.usedJSHeapSize === 'number') return mem.usedJSHeapSize / MB; } catch { /* */ } return this.allocatedBytes / MB; }
   canAllocate(bytes: number): boolean { return (this.getUsedJSHeapMB() + bytes / MB) < this.limits.maxHeapMB * this.limits.evictThreshold; }
   trackAllocation(bytes: number): void { this.allocatedBytes += bytes; if (this.allocatedBytes > this.highWaterMark) this.highWaterMark = this.allocatedBytes; }
   trackRelease(bytes: number): void { this.allocatedBytes = Math.max(0, this.allocatedBytes - bytes); }

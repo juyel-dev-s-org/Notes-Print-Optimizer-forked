@@ -6,13 +6,16 @@ import { detectDeviceProfile } from '../pipeline/types';
 class MemoryManager {
   private activeBlobUrls: Set<string> = new Set();
   private canvasPool: HTMLCanvasElement[] = [];
-  private canvasPoolMax = 3;
+  private canvasPoolMax = 8;
+  private canvasPoolBytes = 0;
+  private canvasPoolMaxBytes = 32 * 1048576; // 32 MB pool budget
 
   public acquireCanvas(width: number, height: number): HTMLCanvasElement {
     for (let i = 0; i < this.canvasPool.length; i++) {
       const c = this.canvasPool[i];
       if (c.width >= width && c.height >= height) {
         this.canvasPool.splice(i, 1);
+        this.canvasPoolBytes -= c.width * c.height * 4;
         c.width = width; c.height = height;
         return c;
       }
@@ -24,8 +27,10 @@ class MemoryManager {
 
   public releaseCanvas(canvas: HTMLCanvasElement | null | undefined): void {
     if (!canvas) return;
-    if (this.canvasPool.length < this.canvasPoolMax) {
+    const memSize = canvas.width * canvas.height * 4;
+    if (this.canvasPool.length < this.canvasPoolMax && this.canvasPoolBytes + memSize <= this.canvasPoolMaxBytes) {
       this.canvasPool.push(canvas);
+      this.canvasPoolBytes += memSize;
     } else {
       canvas.width = 0; canvas.height = 0;
     }
@@ -77,7 +82,7 @@ class MemoryManager {
         URL.revokeObjectURL(url);
         resolve(img);
       };
-      img.onerror = (err) => {
+      img.onerror = () => {
         URL.revokeObjectURL(url);
         reject(new Error('Failed to load image from blob'));
       };

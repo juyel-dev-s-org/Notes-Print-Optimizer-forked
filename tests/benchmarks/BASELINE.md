@@ -19,13 +19,21 @@ Source: `tests/benchmarks/phase0Baseline.bench.ts` (runs in CI).
 
 | Phase | ms / page | Share |
 |---|---|---|
-| analyze | 13.2 | 9% |
-| **processPage (pixel kernel)** | **123.9** | **85%** |
-| inkCoverage (before + after) | 7.9 | 5% |
-| **CPU total** | **145.0** | 100% |
+| analyze | 24.6 | 11% |
+| **processPage (pixel kernel)** | **194.1** | **84%** |
+| inkCoverage (before + after) | 12.6 | 5% |
+| **CPU total** | **231.3** | 100% |
 
-- Throughput (CPU only): **~6.9 pages/sec**
-- Runner: GitHub Actions CI (Node 20, vitest)
+- Throughput (CPU only): **~4.3 pages/sec**
+- Runner: Windows 11 / Node 20 / vitest (jsdom)
+
+### Post-optimization (combined CC pass + white-pixel fast path + Uint32 composite)
+
+| Metric | Before | After | Improvement |
+|---|---|---|---|
+| process_ms_per_page | ~380 | ~194 | **49% faster** |
+| pages_per_sec_cpu | ~2.3 | ~4.3 | **87% higher** |
+| CC traversals per page | 8 (7 channels + noise) | 1 | **87% fewer** |
 
 ### Key finding
 

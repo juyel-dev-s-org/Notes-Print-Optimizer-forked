@@ -34,16 +34,22 @@ export function applyUnsharpMask(data: Uint8ClampedArray, w: number, h: number, 
 
     for (let x = 1; x < w - 1; x++) {
       const idx = x * 4;
-      for (let c = 0; c < 3; c++) {
-        const ctr = currRow[idx + c];
-        const lap = 4 * ctr
-          - prevRow[idx + c]
-          - data[nro + idx + c]
-          - currRow[idx - 4 + c]
-          - currRow[idx + 4 + c];
-        const en = ctr + amt * lap;
-        data[ro + idx + c] = en < 0 ? 0 : en > 255 ? 255 : (en + 0.5) | 0;
-      }
+      // Unrolled channel loop (R, G, B) - alpha skipped
+      // Red
+      const ctrR = currRow[idx];
+      const lapR = 4 * ctrR - prevRow[idx] - data[nro + idx] - currRow[idx - 4] - currRow[idx + 4];
+      const enR = ctrR + amt * lapR;
+      data[ro + idx] = enR < 0 ? 0 : enR > 255 ? 255 : (enR + 0.5) | 0;
+      // Green
+      const ctrG = currRow[idx + 1];
+      const lapG = 4 * ctrG - prevRow[idx + 1] - data[nro + idx + 1] - currRow[idx - 3] - currRow[idx + 5];
+      const enG = ctrG + amt * lapG;
+      data[ro + idx + 1] = enG < 0 ? 0 : enG > 255 ? 255 : (enG + 0.5) | 0;
+      // Blue
+      const ctrB = currRow[idx + 2];
+      const lapB = 4 * ctrB - prevRow[idx + 2] - data[nro + idx + 2] - currRow[idx - 2] - currRow[idx + 6];
+      const enB = ctrB + amt * lapB;
+      data[ro + idx + 2] = enB < 0 ? 0 : enB > 255 ? 255 : (enB + 0.5) | 0;
     }
 
     // Roll buffers
