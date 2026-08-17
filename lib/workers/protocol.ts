@@ -31,6 +31,9 @@ export interface ComposeTask {
   marginRight: number;
   marginBottom: number;
   marginInner: number;
+  footerHeight: number;
+  footerFontSize: number;
+  footerBaseline: number;
   showSlideBorders: boolean;
   showPageNumbers: boolean;
 }

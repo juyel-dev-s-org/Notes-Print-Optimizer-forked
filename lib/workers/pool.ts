@@ -36,6 +36,7 @@ export class WorkerPool {
   }
 
   private spawnWorker(type: WorkerType): WorkerInfo | null {
+    if (this.destroyed) return null;
     /* Enforce pool size limit per worker type */
     if (this.countByType(type) >= MAX_WORKERS_PER_TYPE) return null;
 
@@ -114,12 +115,9 @@ export class WorkerPool {
       }
     }
 
-    info.healthy = false;
-    const idx = this.workers.indexOf(info);
-    if (idx !== -1) {
-      try { info.worker.terminate(); } catch (error) { console.warn('[WorkerPool] Non-fatal error:', error); }
-      this.workers.splice(idx, 1);
-    }
+    this.retireWorker(info);
+
+    if (this.destroyed) return;
 
     const replacement = this.spawnWorker(info.type);
     if (replacement) {
@@ -230,6 +228,9 @@ export class WorkerPool {
           marginRight: task.marginRight,
           marginBottom: task.marginBottom,
           marginInner: task.marginInner,
+          footerHeight: task.footerHeight,
+          footerFontSize: task.footerFontSize,
+          footerBaseline: task.footerBaseline,
           showSlideBorders: task.showSlideBorders,
           showPageNumbers: task.showPageNumbers,
         } satisfies ComposeTask,
@@ -247,17 +248,12 @@ export class WorkerPool {
 
         /* Reclaim idle workers after timeout (frees memory) */
         if (now - info.lastPong > IDLE_RECLAIM_MS && this.countByType(info.type) > 1) {
-          try { info.worker.terminate(); } catch (error) { console.warn('[WorkerPool] Non-fatal error:', error); }
-          const idx = this.workers.indexOf(info);
-          if (idx !== -1) this.workers.splice(idx, 1);
+          this.retireWorker(info);
           continue;
         }
 
         if (now - info.lastPong > HEALTH_CHECK_INTERVAL_MS + PING_TIMEOUT_MS) {
-          info.healthy = false;
-          try { info.worker.terminate(); } catch (error) { console.warn('[WorkerPool] Non-fatal error:', error); }
-          const idx = this.workers.indexOf(info);
-          if (idx !== -1) this.workers.splice(idx, 1);
+          this.retireWorker(info);
           this.spawnWorker(info.type);
         } else {
           try { info.worker.postMessage({ type: 'PING' }); } catch (error) { console.warn('[WorkerPool] Non-fatal error:', error); }
@@ -333,7 +329,13 @@ export class WorkerPool {
       }
       if (this.pending.get(entry.taskId) === entry) {
         this.pending.delete(entry.taskId);
+        const worker = this.workers.find((info) => info.taskId === entry.taskId);
+        if (worker) {
+          this.retireWorker(worker);
+          this.spawnWorker(worker.type);
+        }
         entry.reject(new Error(`Task ${entry.type} timed out after ${entry.timeout}ms`));
+        this.dispatchNext();
       }
     }, entry.timeout);
   }
@@ -371,10 +373,6 @@ export class WorkerPool {
       clearInterval(this.healthTimer);
       this.healthTimer = null;
     }
-    for (const info of this.workers) {
-      try { info.worker.postMessage({ type: 'TERMINATE' }); info.worker.terminate(); } catch (error) { console.warn('[WorkerPool] Non-fatal error:', error); }
-    }
-    this.workers = [];
     for (const entry of this.taskQueue) {
       this.clearTaskTimeout(entry);
       entry.reject(new Error('Pool destroyed'));
@@ -385,5 +383,25 @@ export class WorkerPool {
       entry.reject(new Error('Pool destroyed'));
     }
     this.pending.clear();
+    for (const info of [...this.workers]) {
+      this.retireWorker(info, true);
+    }
+  }
+
+  /** Remove a worker without allowing stale callbacks to revive the pool. */
+  private retireWorker(info: WorkerInfo, sendTerminate = false): void {
+    info.healthy = false;
+    info.busy = false;
+    info.taskId = null;
+    info.worker.onmessage = null;
+    info.worker.onerror = null;
+    const idx = this.workers.indexOf(info);
+    if (idx !== -1) this.workers.splice(idx, 1);
+    try {
+      if (sendTerminate) info.worker.postMessage({ type: 'TERMINATE' });
+      info.worker.terminate();
+    } catch (error) {
+      console.warn('[WorkerPool] Non-fatal error:', error);
+    }
   }
 }

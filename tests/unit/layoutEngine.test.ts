@@ -54,4 +54,34 @@ describe('LayoutEngine', () => {
       expect(dims.heightPx).toBe(1650); // 11.0 * 150
     });
   });
+
+  describe('getSheetCompositionGeometry', () => {
+    const config = {
+      paperSize: 'A4' as const,
+      orientation: 'PORTRAIT' as const,
+      gridFormat: '2x2' as const,
+      marginMm: 2,
+      spacingMm: 1,
+      outerMarginMm: { top: 2, right: 2, bottom: 2, left: 2 },
+      innerMarginMm: 1,
+      headerTitle: '',
+      showSlideBorders: true,
+      showPageNumbers: true,
+    };
+
+    it('uses print-quality dimensions for both composition paths', () => {
+      const geometry = LayoutEngine.getSheetCompositionGeometry(config);
+      expect(geometry.dims.dpi).toBe(300);
+      expect(geometry.dims.widthPx).toBe(2481);
+      expect(geometry.dims.heightPx).toBe(3507);
+    });
+
+    it('reserves footer space and provides the shared page-number label', () => {
+      const withFooter = LayoutEngine.getSheetCompositionGeometry(config);
+      const withoutFooter = LayoutEngine.getSheetCompositionGeometry({ ...config, showPageNumbers: false });
+      expect(withFooter.footerHeight).toBeGreaterThan(0);
+      expect(withFooter.cellHeight).toBeLessThan(withoutFooter.cellHeight);
+      expect(LayoutEngine.getSheetFooterText(1, 3)).toBe('Sheet 2 of 3  •  PW Notes Print Optimizer');
+    });
+  });
 });

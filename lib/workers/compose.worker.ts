@@ -1,10 +1,13 @@
 import type { WorkerRequest, WorkerResponse } from './protocol';
+import { LayoutEngine } from '../optimizer/layoutEngine';
 
 const workerSelf = self as unknown as DedicatedWorkerGlobalScope;
 
 function generateComposeContent(
   ctx: OffscreenCanvasRenderingContext2D,
   dims: { widthPx: number; heightPx: number },
+  sheetIndex: number,
+  totalSheets: number,
   pageBuffers: ArrayBuffer[],
   pageWidths: number[],
   pageHeights: number[],
@@ -15,19 +18,17 @@ function generateComposeContent(
   marginRight: number,
   marginBottom: number,
   marginInner: number,
+  footerHeight: number,
+  footerFontSize: number,
+  footerBaseline: number,
   showSlideBorders: boolean,
   showPageNumbers: boolean,
-  sheetIndex: number,
-  totalSheets: number,
 ) {
   ctx.fillStyle = '#FFFFFF';
   ctx.fillRect(0, 0, dims.widthPx, dims.heightPx);
 
-  const footerH = showPageNumbers ? Math.max(20, Math.round(marginBottom * 1.5)) : 0;
-  const availW = dims.widthPx - marginLeft - marginRight - (cols - 1) * marginInner;
-  const availH = dims.heightPx - marginTop - marginBottom - (rows - 1) * marginInner - footerH;
-  const cellW = Math.max(10, Math.floor(availW / cols));
-  const cellH = Math.max(10, Math.floor(availH / rows));
+  const cellW = Math.max(10, Math.floor((dims.widthPx - marginLeft - marginRight - (cols - 1) * marginInner) / cols));
+  const cellH = Math.max(10, Math.floor((dims.heightPx - marginTop - marginBottom - (rows - 1) * marginInner - footerHeight) / rows));
 
   let tmpCanvas: OffscreenCanvas | null = null;
   let tCtx: OffscreenCanvasRenderingContext2D | null = null;
@@ -59,14 +60,10 @@ function generateComposeContent(
 
   if (showPageNumbers) {
     ctx.fillStyle = '#64748B';
-    ctx.font = `500 ${Math.max(14, Math.round(dims.widthPx * 0.012))}px system-ui, -apple-system, sans-serif`;
+    ctx.font = `500 ${footerFontSize}px system-ui, -apple-system, sans-serif`;
     ctx.textAlign = 'center';
     ctx.textBaseline = 'bottom';
-    ctx.fillText(
-      `Sheet ${sheetIndex + 1} of ${totalSheets}  \u2022  PW Notes Print Optimizer`,
-      dims.widthPx / 2,
-      dims.heightPx - Math.max(10, Math.round(marginBottom * 0.4)),
-    );
+    ctx.fillText(LayoutEngine.getSheetFooterText(sheetIndex, totalSheets), dims.widthPx / 2, footerBaseline);
   }
 }
 
@@ -90,10 +87,10 @@ workerSelf.onmessage = async (e: MessageEvent<WorkerRequest>) => {
       const ctx = canvas.getContext('2d')!;
 
       generateComposeContent(
-        ctx, task.dims, task.pageBuffers, task.pageWidths, task.pageHeights,
+        ctx, task.dims, task.sheetIndex, task.totalSheets, task.pageBuffers, task.pageWidths, task.pageHeights,
         task.cols, task.rows, task.marginTop, task.marginLeft, task.marginRight,
-        task.marginBottom, task.marginInner, task.showSlideBorders, task.showPageNumbers,
-        task.sheetIndex, task.totalSheets,
+        task.marginBottom, task.marginInner, task.footerHeight, task.footerFontSize,
+        task.footerBaseline, task.showSlideBorders, task.showPageNumbers,
       );
 
       const blob = await canvas.convertToBlob({ type: 'image/jpeg', quality: 0.85 });

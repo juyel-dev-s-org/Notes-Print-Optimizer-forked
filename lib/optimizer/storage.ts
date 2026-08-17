@@ -47,19 +47,21 @@ class PWOptimizerStorage {
 
   public async storePage(pdfId: string, pageIndex: number, originalBlob: Blob | null, optimizedBlob: Blob): Promise<void> {
     try {
+      const id = `${pdfId}_page_${pageIndex}`;
       const sizeBytes = (originalBlob?.size ?? 0) + optimizedBlob.size;
-      await this.evictIfNeeded(sizeBytes);
+      const [oldSize] = await this.getSizesByKey([id]);
+      const sizeDelta = sizeBytes - (oldSize ?? 0);
+      if (sizeDelta > 0) await this.evictIfNeeded(sizeDelta);
       const db = await this.getDB();
       const tx = db.transaction(STORE_NAME, 'readwrite');
       const store = tx.objectStore(STORE_NAME);
-      const id = `${pdfId}_page_${pageIndex}`;
       const record: CachedPageRecord = {
         id, pdfId, pageIndex,
         originalBlob: originalBlob ?? undefined, optimizedBlob, timestamp: Date.now(), cacheVersion: CACHE_VERSION, sizeBytes,
       };
       store.put(record);
       return new Promise((resolve, reject) => {
-        tx.oncomplete = () => { this.accrueSize(record); resolve(); };
+        tx.oncomplete = () => { this.adjustCachedSize(sizeDelta); resolve(); };
         tx.onerror = () => reject(tx.error);
       });
     } catch (e) { console.warn('IDB write failed', e); }
@@ -69,18 +71,22 @@ class PWOptimizerStorage {
     if (pages.length === 0) return;
     try {
       const now = Date.now();
-      const records: CachedPageRecord[] = [];
+      const recordsById = new Map<string, CachedPageRecord>();
       for (const p of pages) {
-        records.push({
+        const record: CachedPageRecord = {
           id: `${p.pdfId}_page_${p.pageIndex}`, pdfId: p.pdfId, pageIndex: p.pageIndex,
           originalBlob: p.originalBlob ?? undefined, optimizedBlob: p.optimizedBlob, timestamp: now,
           cacheVersion: CACHE_VERSION, sizeBytes: (p.originalBlob?.size ?? 0) + p.optimizedBlob.size,
-        } as CachedPageRecord);
+        };
+        // IndexedDB's final put wins. Mirror that rule before calculating the cache delta.
+        recordsById.set(record.id, record);
       }
+      const records = Array.from(recordsById.values());
       /* Delta-aware eviction (separate tx, fully awaited — no await may occur
          between opening the write tx and queueing its requests, or the tx
          auto-commits and puts fail with TransactionInactiveError). */
       const oldSizes = await this.getSizesByKey(records.map(r => r.id));
+      const sizeDelta = records.reduce((s, r, i) => s + r.sizeBytes - (oldSizes[i] ?? 0), 0);
       const neededBytes = records.reduce((s, r, i) => s + Math.max(0, r.sizeBytes - (oldSizes[i] ?? 0)), 0);
       if (neededBytes > 0) await this.evictIfNeeded(neededBytes);
 
@@ -90,7 +96,7 @@ class PWOptimizerStorage {
       for (const r of records) store.put(r);
       return new Promise((resolve, reject) => {
         tx.oncomplete = () => {
-          records.forEach(r => this.accrueSize(r));
+          this.adjustCachedSize(sizeDelta);
           resolve();
         };
         tx.onerror = () => reject(tx.error);
@@ -127,12 +133,12 @@ class PWOptimizerStorage {
   }
 
   /** Maintains the in-memory total; falls back to a full recount when stale. */
-  private accrueSize(record: CachedPageRecord): void {
+  private adjustCachedSize(sizeDelta: number): void {
     if (this.cachedSizeBytes === null) {
       void this.getCacheSize().catch(() => undefined);
       return;
     }
-    this.cachedSizeBytes += record.sizeBytes;
+    this.cachedSizeBytes = Math.max(0, this.cachedSizeBytes + sizeDelta);
   }
 
   public async getPage(pdfId: string, pageIndex: number): Promise<{ originalBlob?: Blob; optimizedBlob: Blob } | null> {
