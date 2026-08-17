@@ -101,12 +101,20 @@ export const UploadArea: React.FC<UploadAreaProps> = ({
         onDragLeave={handleDragLeave}
         onDrop={handleDrop}
         onClick={() => fileInputRef.current?.click()}
-        className={`group relative flex min-h-[240px] lg:min-h-[300px] cursor-pointer flex-col items-center justify-center rounded-2xl lg:rounded-[20px] border-2 border-dashed p-6 lg:p-10 text-center transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400 ${
+        className={`group relative flex min-h-[240px] lg:min-h-[300px] cursor-pointer flex-col items-center justify-center overflow-hidden rounded-2xl lg:rounded-[20px] border-2 border-dashed p-6 lg:p-10 text-center transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400 ${
           isDragging
-            ? 'border-indigo-500 bg-indigo-950/40 scale-[1.01]'
-            : 'border-slate-700 bg-slate-900/90 hover:border-indigo-500 hover:bg-slate-800/80 shadow-lg lg:shadow-xl lg:hover:shadow-indigo-500/10'
+            ? 'border-indigo-400 bg-indigo-950/40 scale-[1.01] border-solid'
+            : 'border-slate-700 bg-slate-900/90 hover:border-indigo-500/70 hover:bg-slate-800/80 shadow-lg lg:shadow-xl lg:hover:shadow-indigo-500/10'
         }`}
       >
+        {/* Soft corner glow behind the icon */}
+        <div
+          aria-hidden="true"
+          className={`pointer-events-none absolute left-1/2 top-6 h-40 w-40 -translate-x-1/2 rounded-full bg-indigo-500/10 blur-3xl transition-opacity duration-300 ${
+            isDragging ? 'opacity-100' : 'opacity-60 group-hover:opacity-90'
+          }`}
+        />
+
         <input
           ref={fileInputRef}
           type="file"
@@ -117,11 +125,11 @@ export const UploadArea: React.FC<UploadAreaProps> = ({
           className="hidden"
         />
 
-        <div className="flex h-16 w-16 lg:h-20 lg:w-20 items-center justify-center rounded-2xl bg-indigo-600/20 text-indigo-400 border border-indigo-500/30 group-hover:scale-110 group-hover:bg-indigo-600 group-hover:text-white transition-all shadow-md">
+        <div className="relative flex h-16 w-16 lg:h-20 lg:w-20 items-center justify-center rounded-2xl bg-gradient-to-br from-indigo-500/25 to-sky-500/15 text-indigo-400 border border-indigo-500/40 group-hover:scale-110 group-hover:from-indigo-500 group-hover:to-sky-500 group-hover:text-white transition-all duration-200 shadow-lg shadow-indigo-500/10 group-hover:shadow-indigo-500/30">
           <FileUp className="h-8 w-8 lg:h-10 lg:w-10" />
         </div>
 
-        <div className="mt-4 lg:mt-6 flex flex-col items-center gap-1.5">
+        <div className="relative mt-4 lg:mt-6 flex flex-col items-center gap-1.5">
           <h2 className="text-base font-bold text-white sm:text-lg lg:text-2xl">
             Upload Class Note PDFs
           </h2>

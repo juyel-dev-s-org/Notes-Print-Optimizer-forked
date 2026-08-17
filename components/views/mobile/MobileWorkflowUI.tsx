@@ -4,6 +4,8 @@ import React from 'react';
 import dynamic from 'next/dynamic';
 import { WorkflowUIProps } from '../types';
 import { UploadArea } from '@/components/UploadArea';
+import { LandingHero } from '@/components/LandingHero';
+import { FeatureStrip } from '@/components/FeatureStrip';
 import { FileSequencePanel } from '@/components/FileSequencePanel';
 import { BeforeAfterSlider } from '@/components/BeforeAfterSlider';
 import { PageGrid } from '@/components/PageGrid';
@@ -120,11 +122,15 @@ export const MobileWorkflowUI: React.FC<WorkflowUIProps> = ({ state, actions, ha
       {currentPhase === 1 && (
         <PhaseErrorBoundary phaseName="Upload & Merge">
         <div className="flex flex-col gap-4 animate-in fade-in duration-200">
+          <LandingHero />
+
           <UploadArea
             onFilesUpload={onFilesUpload}
             onLoadSample={onLoadSample}
             isProcessing={isProcessing}
           />
+
+          {uploadedItems.length === 0 && !isProcessing && <FeatureStrip />}
 
           {uploadedItems.length > 0 && (
             <div className="flex flex-col gap-3 rounded-2xl border border-slate-800 bg-slate-900/90 p-3.5 shadow-lg">
