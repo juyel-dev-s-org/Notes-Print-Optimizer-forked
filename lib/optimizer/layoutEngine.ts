@@ -1,4 +1,5 @@
 import { GridFormat, LayoutConfig, Orientation, PaperSize } from './types';
+import { memoryManager } from './memoryManager';
 
 export interface SheetDimensions { widthPx: number; heightPx: number; dpi: number; }
 
@@ -45,6 +46,9 @@ export class LayoutEngine {
     const cellW = Math.max(10, Math.floor(availW / cols));
     const cellH = Math.max(10, Math.floor(availH / rows));
 
+    let tmpCanvas: HTMLCanvasElement | null = null;
+    let tmpCtx: CanvasRenderingContext2D | null = null;
+
     for (let i = 0; i < slideImages.length; i++) {
       const slide = slideImages[i];
       const col = i % cols, row = Math.floor(i / cols);
@@ -52,16 +56,26 @@ export class LayoutEngine {
       const scale = Math.min(cellW / slide.width, cellH / slide.height);
       const dW = Math.floor(slide.width * scale), dH = Math.floor(slide.height * scale);
       const dX = cellX + Math.floor((cellW - dW) / 2), dY = cellY + Math.floor((cellH - dH) / 2);
-      const tmp = document.createElement('canvas');
-      tmp.width = slide.width; tmp.height = slide.height;
-      tmp.getContext('2d', { willReadFrequently: true })!.putImageData(slide, 0, 0);
-      ctx.drawImage(tmp, dX, dY, dW, dH);
-      tmp.width = 0; tmp.height = 0;
+
+      if (!tmpCanvas || tmpCanvas.width !== slide.width || tmpCanvas.height !== slide.height) {
+        if (tmpCanvas) memoryManager.disposeCanvas(tmpCanvas);
+        tmpCanvas = memoryManager.acquireCanvas(slide.width, slide.height);
+        tmpCtx = tmpCanvas.getContext('2d', { willReadFrequently: true });
+      }
+      if (tmpCtx) {
+        tmpCtx.putImageData(slide, 0, 0);
+        ctx.drawImage(tmpCanvas, dX, dY, dW, dH);
+      }
+
       if (config.showSlideBorders ?? true) {
         ctx.strokeStyle = '#D2D2D2';
         ctx.lineWidth = Math.max(1, Math.round(dpi / 150));
         ctx.strokeRect(cellX - 1, cellY - 1, cellW + 2, cellH + 2);
       }
+    }
+
+    if (tmpCanvas) {
+      memoryManager.disposeCanvas(tmpCanvas);
     }
 
     if (config.showPageNumbers) {

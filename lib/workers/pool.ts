@@ -73,6 +73,7 @@ export class WorkerPool {
     if (msg.type === 'ERROR') {
       if (entry.retriesLeft > 0) {
         entry.retriesLeft--;
+        this.scheduleTimeout(entry);
         this.taskQueue.unshift(entry);
         this.dispatchNext();
         return;
@@ -106,6 +107,7 @@ export class WorkerPool {
       this.pending.delete(taskId);
       if (entry.retriesLeft > 0) {
         entry.retriesLeft--;
+        this.scheduleTimeout(entry);
         this.taskQueue.unshift(entry);
       } else {
         entry.reject(new Error('Worker crashed'));
@@ -282,10 +284,12 @@ export class WorkerPool {
         ...task,
       } as TaskEntry & T;
 
-      const clear = this.scheduleTimeout(entry);
-      entry.reject = (reason: Error) => { clear(); reject(reason); };
-      entry.resolve = (val: any) => { clear(); resolve(val); };
+      const rawReject = reject;
+      const rawResolve = resolve;
+      entry.reject = (reason: Error) => { this.clearTaskTimeout(entry); rawReject(reason); };
+      entry.resolve = (val: any) => { this.clearTaskTimeout(entry); rawResolve(val); };
 
+      this.scheduleTimeout(entry);
       this.taskQueue.push(entry);
       this.setupHealthCheck();
       this.dispatchNext();
@@ -315,8 +319,10 @@ export class WorkerPool {
     }
   }
 
-  private scheduleTimeout(entry: TaskEntry): () => void {
-    const timer = setTimeout(() => {
+  private scheduleTimeout(entry: TaskEntry): void {
+    this.clearTaskTimeout(entry);
+    entry.timerId = setTimeout(() => {
+      entry.timerId = null;
       const idx = this.taskQueue.indexOf(entry);
       if (idx !== -1) {
         /* Queued task that could not be dispatched (no worker available) must reject,
@@ -330,7 +336,13 @@ export class WorkerPool {
         entry.reject(new Error(`Task ${entry.type} timed out after ${entry.timeout}ms`));
       }
     }, entry.timeout);
-    return () => clearTimeout(timer);
+  }
+
+  private clearTaskTimeout(entry: TaskEntry): void {
+    if (entry.timerId) {
+      clearTimeout(entry.timerId);
+      entry.timerId = null;
+    }
   }
 
   submitComposeTask(task: Omit<ComposeTask, 'taskId'>, timeout = DEFAULT_TIMEOUT_MS): Promise<{
@@ -363,8 +375,13 @@ export class WorkerPool {
       try { info.worker.postMessage({ type: 'TERMINATE' }); info.worker.terminate(); } catch (error) { console.warn('[WorkerPool] Non-fatal error:', error); }
     }
     this.workers = [];
+    for (const entry of this.taskQueue) {
+      this.clearTaskTimeout(entry);
+      entry.reject(new Error('Pool destroyed'));
+    }
     this.taskQueue = [];
     for (const entry of this.pending.values()) {
+      this.clearTaskTimeout(entry);
       entry.reject(new Error('Pool destroyed'));
     }
     this.pending.clear();

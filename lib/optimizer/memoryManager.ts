@@ -11,28 +11,58 @@ class MemoryManager {
   private canvasPoolMaxBytes = 32 * 1048576; // 32 MB pool budget
 
   public acquireCanvas(width: number, height: number): HTMLCanvasElement {
+    if (typeof document === 'undefined') {
+      return { width, height } as unknown as HTMLCanvasElement;
+    }
+    // 1. Try exact match first (zero reallocation)
     for (let i = 0; i < this.canvasPool.length; i++) {
       const c = this.canvasPool[i];
-      if (c.width >= width && c.height >= height) {
+      if (c.width === width && c.height === height) {
         this.canvasPool.splice(i, 1);
         this.canvasPoolBytes -= c.width * c.height * 4;
-        c.width = width; c.height = height;
         return c;
       }
     }
+    // 2. Try best-fit match (closest larger size)
+    let bestIdx = -1;
+    let minExcess = Infinity;
+    for (let i = 0; i < this.canvasPool.length; i++) {
+      const c = this.canvasPool[i];
+      if (c.width >= width && c.height >= height) {
+        const excess = (c.width * c.height) - (width * height);
+        if (excess < minExcess) {
+          minExcess = excess;
+          bestIdx = i;
+        }
+      }
+    }
+    if (bestIdx !== -1) {
+      const c = this.canvasPool.splice(bestIdx, 1)[0];
+      this.canvasPoolBytes -= c.width * c.height * 4;
+      c.width = width;
+      c.height = height;
+      return c;
+    }
+
     const canvas = document.createElement('canvas');
-    canvas.width = width; canvas.height = height;
+    canvas.width = width;
+    canvas.height = height;
     return canvas;
   }
 
   public releaseCanvas(canvas: HTMLCanvasElement | null | undefined): void {
-    if (!canvas) return;
+    if (!canvas || typeof document === 'undefined') return;
     const memSize = canvas.width * canvas.height * 4;
-    if (this.canvasPool.length < this.canvasPoolMax && this.canvasPoolBytes + memSize <= this.canvasPoolMaxBytes) {
+    if (memSize > 0 && this.canvasPool.length < this.canvasPoolMax && this.canvasPoolBytes + memSize <= this.canvasPoolMaxBytes) {
+      try {
+        const ctx = canvas.getContext('2d');
+        if (ctx) ctx.clearRect(0, 0, canvas.width, canvas.height);
+      } catch { /* noop */ }
       this.canvasPool.push(canvas);
       this.canvasPoolBytes += memSize;
     } else {
-      canvas.width = 0; canvas.height = 0;
+      canvas.width = 0;
+      canvas.height = 0;
     }
   }
 

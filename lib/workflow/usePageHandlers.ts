@@ -112,6 +112,7 @@ export function usePageHandlers() {
    * revoked before a new one is created (prevents orphaned blob leaks).
    */
   const previewBlobUrlRef = useRef<string | null>(null);
+  const previewPdfDocRef = useRef<{ bytes: Uint8Array; doc: any } | null>(null);
 
   /* Debounced phase-3 re-layout on exclude toggles (cancels stale compiles) */
   const excludeLayoutTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -136,7 +137,14 @@ export function usePageHandlers() {
         }
       });
     }
-    const handleUnload = () => { pwOptimizerStorage.clearCache(); memoryManager.revokeAllBlobUrls(); };
+    const handleUnload = () => {
+      pwOptimizerStorage.clearCache();
+      memoryManager.revokeAllBlobUrls();
+      if (previewPdfDocRef.current?.doc) {
+        try { previewPdfDocRef.current.doc.destroy(); } catch { /* noop */ }
+        previewPdfDocRef.current = null;
+      }
+    };
     window.addEventListener('pagehide', handleUnload);
     return () => { window.removeEventListener('pagehide', handleUnload); };
   }, []);
@@ -147,6 +155,10 @@ export function usePageHandlers() {
       if (previewBlobUrlRef.current) {
         memoryManager.revokeBlobUrl(previewBlobUrlRef.current);
         previewBlobUrlRef.current = null;
+      }
+      if (previewPdfDocRef.current?.doc) {
+        try { previewPdfDocRef.current.doc.destroy(); } catch { /* noop */ }
+        previewPdfDocRef.current = null;
       }
       if (excludeLayoutTimerRef.current) {
         clearTimeout(excludeLayoutTimerRef.current);
@@ -192,6 +204,10 @@ export function usePageHandlers() {
     if (previewBlobUrlRef.current) {
       memoryManager.revokeBlobUrl(previewBlobUrlRef.current);
       previewBlobUrlRef.current = null;
+    }
+    if (previewPdfDocRef.current?.doc) {
+      try { previewPdfDocRef.current.doc.destroy(); } catch { /* noop */ }
+      previewPdfDocRef.current = null;
     }
     setProgressiveThumbnails(new Map());
     actions.resetWorkflow();
@@ -385,16 +401,23 @@ export function usePageHandlers() {
     let originalImageData: ImageData | null = null;
     let optimizedImageData: ImageData | null = null;
     let thumbCanvas: HTMLCanvasElement | null = null;
-    let pdfDoc: any = null;
 
     try {
       const effectiveParams = buildEffectiveParams(masterParams, processingToggles);
       const { getProcessingEngine } = await import('../optimizer/engine');
       const engine = getProcessingEngine(selectedEngineVersion);
 
-      // 1. Render ONLY the selected page from the source PDF
-      const pdfjsLib = await getPdfjsLib();
-      pdfDoc = await pdfjsLib.getDocument({ data: mergedPdfBytes.slice() }).promise;
+      // 1. Render ONLY the selected page from the cached or loaded PDF
+      let pdfDoc = previewPdfDocRef.current?.bytes === mergedPdfBytes ? previewPdfDocRef.current.doc : null;
+      if (!pdfDoc) {
+        if (previewPdfDocRef.current?.doc) {
+          try { previewPdfDocRef.current.doc.destroy(); } catch { /* noop */ }
+          previewPdfDocRef.current = null;
+        }
+        const pdfjsLib = await getPdfjsLib();
+        pdfDoc = await pdfjsLib.getDocument({ data: mergedPdfBytes }).promise;
+        previewPdfDocRef.current = { bytes: mergedPdfBytes, doc: pdfDoc };
+      }
       const pdfPage = await pdfDoc.getPage(pageIndex + 1);
 
       const viewport = pdfPage.getViewport({ scale: 1.0 });
@@ -504,9 +527,6 @@ export function usePageHandlers() {
       if (thumbCanvas) memoryManager.releaseCanvas(thumbCanvas);
       originalImageData = null;
       optimizedImageData = null;
-      if (pdfDoc) {
-        try { pdfDoc.destroy(); } catch { /* noop */ }
-      }
       previewInFlightRef.current = false;
       actions.setPreviewProcessing(false);
     }

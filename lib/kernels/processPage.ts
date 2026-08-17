@@ -9,13 +9,13 @@
  *  - Fast V-check avoids full HSV conversion for dark pixel rejection
  *  - Combined CC pass: decorative fill + noise removal in single traversal
  *  - Uint32Array bulk composite: 4x fewer write operations
- *  - Stack-allocated BFS queue eliminates per-call allocation
+ *  - Module-level pooled BFS buffers eliminate per-call heap allocation
  */
 import { getLuminance } from './luminance';
 import { rgbToHsv, fastMinChannel } from './hsv';
 import { applyMaskDilation, setDilationHook } from './maskOps';
 import { applyUnsharpMask, setUnsharpHook } from './sharpen';
-import { ensureCC, getCCLabels, getCCQueue, getCCMinX, getCCMinY, getCCMaxX, getCCMaxY, getCCArea } from './connectedComponents';
+import { ensureCC, getCCLabels, getCCQueue, getCCMinX, getCCMinY, getCCMaxX, getCCMaxY, getCCArea, getCCDrop } from './connectedComponents';
 import type { IWasmKernels } from '../wasm/types';
 
 let wasmKernels: IWasmKernels | null = null;
@@ -67,6 +67,7 @@ function removeDecorativeAndNoise(fm: Uint8Array, w: number, h: number): void {
   const sMaxX = getCCMaxX();
   const sMaxY = getCCMaxY();
   const sArea = getCCArea();
+  const drop = getCCDrop();
 
   let cl = 1;
 
@@ -101,9 +102,6 @@ function removeDecorativeAndNoise(fm: Uint8Array, w: number, h: number): void {
 
   if (cl <= 1) return; // No components found
 
-  // We reuse sMinX as a temporary drop mask since we no longer need it.
-  // Wait, sMinX is Int32Array, we just write 1 or 0 to it.
-  const drop = sMinX; 
   const minArea = Math.max(6, (totalPixels / 600000) | 0);
   for (let lb = 1; lb < cl; lb++) {
     const area = sArea[lb];

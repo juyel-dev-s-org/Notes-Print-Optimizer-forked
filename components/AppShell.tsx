@@ -1,15 +1,17 @@
 'use client';
 
-import { useEffect, useMemo } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Header } from '@/components/Header';
 import { ProcessingModal } from '@/components/ProcessingModal';
 import { PlatformUIOrchestrator } from '@/components/views/PlatformUIOrchestrator';
 import { usePageHandlers } from '@/lib/workflow/usePageHandlers';
 import { useMonitor } from '@/lib/monitoring/useMonitor';
 import type { WorkflowState, WorkflowActions, WorkflowHandlers, ResumeSession } from '@/components/views/types';
+import { RefreshCw, X } from 'lucide-react';
 
 export default function AppShell() {
   useMonitor();
+  const [swUpdateAvailable, setSwUpdateAvailable] = useState(false);
 
   useEffect(() => {
     if ('serviceWorker' in navigator) {
@@ -19,13 +21,12 @@ export default function AppShell() {
         navigator.serviceWorker
           .register(swPath, { scope: `${basePath}/`, updateViaCache: 'none' })
           .then((reg) => {
-            console.log('[SW] Registered with scope:', reg.scope);
             reg.addEventListener('updatefound', () => {
               const nw = reg.installing;
               if (nw) {
                 nw.addEventListener('statechange', () => {
-                  if (nw.state === 'activated') {
-                    console.log('[SW] New version activated');
+                  if (nw.state === 'installed' && navigator.serviceWorker.controller) {
+                    setSwUpdateAvailable(true);
                   }
                 });
               }
@@ -152,9 +153,39 @@ export default function AppShell() {
         isProcessing={state.isProcessing}
       />
       <ProcessingModal progress={state.progress} onCancel={handleCancelProcessing} progressiveThumbnails={progressiveThumbnails} />
+      {swUpdateAvailable && (
+        <div className="bg-indigo-950/90 border-b border-indigo-700 text-indigo-200 text-xs py-2 px-4 flex items-center justify-between font-medium shadow-md">
+          <div className="flex items-center gap-2">
+            <RefreshCw className="w-3.5 h-3.5 text-indigo-400 animate-spin" />
+            <span>A new version of Notes Print Optimizer is available.</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => window.location.reload()}
+              className="bg-indigo-600 hover:bg-indigo-500 text-white px-2.5 py-1 rounded text-xs font-semibold transition"
+            >
+              Update Now
+            </button>
+            <button
+              onClick={() => setSwUpdateAvailable(false)}
+              className="p-1 hover:text-white text-indigo-300 transition"
+              aria-label="Dismiss update alert"
+            >
+              <X className="w-3.5 h-3.5" />
+            </button>
+          </div>
+        </div>
+      )}
       {state.errorMessage && (
-        <div className="bg-red-950/90 border-b border-red-800 text-red-200 text-xs py-2.5 px-4 text-center font-medium shadow-md">
-          {state.errorMessage}
+        <div className="bg-red-950/90 border-b border-red-800 text-red-200 text-xs py-2.5 px-4 flex items-center justify-between font-medium shadow-md">
+          <div className="flex-1 text-center">{state.errorMessage}</div>
+          <button
+            onClick={() => actions.setError(null)}
+            className="p-1 hover:text-white text-red-300 transition"
+            aria-label="Dismiss error"
+          >
+            <X className="w-4 h-4" />
+          </button>
         </div>
       )}
       <main id="main-content" className="mx-auto w-full max-w-5xl lg:max-w-6xl flex-1 px-3 py-4 sm:px-6 sm:py-6 pb-28 md:pb-8">

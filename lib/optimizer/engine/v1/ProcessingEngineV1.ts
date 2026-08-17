@@ -123,9 +123,9 @@ export class ProcessingEngineV1 implements IProcessingEngine {
         const bmp = await createImageBitmap(imageData, {
           resizeWidth: tw, resizeHeight: th, resizeQuality: 'medium',
         });
-        const canvas = document.createElement('canvas');
-        canvas.width = tw; canvas.height = th;
-        canvas.getContext('2d')!.drawImage(bmp, 0, 0);
+        const canvas = memoryManager.acquireCanvas(tw, th);
+        const ctx = canvas.getContext('2d');
+        if (ctx) ctx.drawImage(bmp, 0, 0);
         bmp.close();
         const url = await encodeCanvasJpeg(canvas, 0.6);
         memoryManager.disposeCanvas(canvas);
@@ -134,12 +134,11 @@ export class ProcessingEngineV1 implements IProcessingEngine {
       } catch { /* fall through to fallback */ }
     }
 
-    const canvas = document.createElement('canvas');
-    canvas.width = tw; canvas.height = th;
+    const canvas = memoryManager.acquireCanvas(tw, th);
     const ctx = canvas.getContext('2d', { willReadFrequently: true })!;
-    const tmp = document.createElement('canvas');
-    tmp.width = imageData.width; tmp.height = imageData.height;
-    tmp.getContext('2d')!.putImageData(imageData, 0, 0);
+    const tmp = memoryManager.acquireCanvas(imageData.width, imageData.height);
+    const tmpCtx = tmp.getContext('2d', { willReadFrequently: true })!;
+    tmpCtx.putImageData(imageData, 0, 0);
     ctx.drawImage(tmp, 0, 0, tw, th);
     memoryManager.disposeCanvas(tmp);
     const url = await encodeCanvasJpeg(canvas, 0.6);
@@ -216,8 +215,9 @@ export class ProcessingEngineV1 implements IProcessingEngine {
       const page = await pdfDoc.getPage(i);
       const pageScale = userRenderScale !== null ? userRenderScale : this.computeAdaptiveScale(page);
       const viewport = page.getViewport({ scale: pageScale });
-      const canvas = document.createElement('canvas');
-      canvas.width = viewport.width; canvas.height = viewport.height;
+      const vw = Math.ceil(viewport.width);
+      const vh = Math.ceil(viewport.height);
+      const canvas = memoryManager.acquireCanvas(vw, vh);
       const ctx = canvas.getContext('2d', { willReadFrequently: true })!;
 
       /* Phase-0 instrumentation */

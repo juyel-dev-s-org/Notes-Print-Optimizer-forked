@@ -60,14 +60,14 @@ export class PdfExporter {
 
   private static async renderOriginalFromPdf(mergedPdfBytes: Uint8Array, pageIndex: number): Promise<ImageData> {
     const pdfjsLib = await getPdfjsLib();
-    const pdfDoc = await pdfjsLib.getDocument({ data: mergedPdfBytes.slice() }).promise;
+    const pdfDoc = await pdfjsLib.getDocument({ data: mergedPdfBytes }).promise;
     try {
       const pdfPage = await pdfDoc.getPage(pageIndex + 1);
       const scale = Math.min(3.0, 200 / 72); /* ~200 DPI cap for inspection */
       const viewport = pdfPage.getViewport({ scale });
-      const canvas = document.createElement('canvas');
-      canvas.width = Math.floor(viewport.width);
-      canvas.height = Math.floor(viewport.height);
+      const vw = Math.floor(viewport.width);
+      const vh = Math.floor(viewport.height);
+      const canvas = memoryManager.acquireCanvas(vw, vh);
       const ctx = canvas.getContext('2d', { willReadFrequently: true })!;
       await pdfPage.render({ canvasContext: ctx, viewport }).promise;
       const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
@@ -147,7 +147,7 @@ export class PdfExporter {
       );
 
       const tw = Math.min(500, Math.round(width / 3)), th = Math.min(750, Math.round(height / 3));
-      const tc = document.createElement('canvas'); tc.width = tw; tc.height = th;
+      const tc = memoryManager.acquireCanvas(tw, th);
       try {
         const previewBlob = new Blob([jpegBuffer], { type: 'image/jpeg' });
         const bmp = await createImageBitmap(previewBlob, { resizeWidth: tw, resizeHeight: th, resizeQuality: 'medium' });
@@ -190,11 +190,15 @@ export class PdfExporter {
       const optData = await this.loadOptimizedImageData(processedPages[i]);
       const canvas = memoryManager.acquireCanvas(optData.width, optData.height);
       const ctx = canvas.getContext('2d', { willReadFrequently: true });
-      if (ctx) { ctx.putImageData(optData, 0, 0);
-        const jpegBlob = await new Promise<Blob>((res) => canvas.toBlob((b) => res(b || new Blob()), 'image/jpeg', quality));
-        const embedded = await pdfDoc.embedJpg(await jpegBlob.arrayBuffer());
-        const pdfPage = pdfDoc.addPage([canvas.width, canvas.height]);
-        pdfPage.drawImage(embedded, { x: 0, y: 0, width: canvas.width, height: canvas.height }); }
+      if (ctx) {
+        ctx.putImageData(optData, 0, 0);
+        const jpegBlob = await new Promise<Blob | null>((res) => canvas.toBlob((b) => res(b), 'image/jpeg', quality));
+        if (jpegBlob && jpegBlob.size > 0) {
+          const embedded = await pdfDoc.embedJpg(await jpegBlob.arrayBuffer());
+          const pdfPage = pdfDoc.addPage([canvas.width, canvas.height]);
+          pdfPage.drawImage(embedded, { x: 0, y: 0, width: canvas.width, height: canvas.height });
+        }
+      }
       memoryManager.disposeCanvas(canvas);
       await memoryManager.yieldToUI();
     }

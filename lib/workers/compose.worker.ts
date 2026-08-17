@@ -17,12 +17,20 @@ function generateComposeContent(
   marginInner: number,
   showSlideBorders: boolean,
   showPageNumbers: boolean,
+  sheetIndex: number,
+  totalSheets: number,
 ) {
   ctx.fillStyle = '#FFFFFF';
   ctx.fillRect(0, 0, dims.widthPx, dims.heightPx);
 
-  const cellW = Math.max(10, Math.floor((dims.widthPx - marginLeft - marginRight - (cols - 1) * marginInner) / cols));
-  const cellH = Math.max(10, Math.floor((dims.heightPx - marginTop - marginBottom - (rows - 1) * marginInner) / rows));
+  const footerH = showPageNumbers ? Math.max(20, Math.round(marginBottom * 1.5)) : 0;
+  const availW = dims.widthPx - marginLeft - marginRight - (cols - 1) * marginInner;
+  const availH = dims.heightPx - marginTop - marginBottom - (rows - 1) * marginInner - footerH;
+  const cellW = Math.max(10, Math.floor(availW / cols));
+  const cellH = Math.max(10, Math.floor(availH / rows));
+
+  let tmpCanvas: OffscreenCanvas | null = null;
+  let tCtx: OffscreenCanvasRenderingContext2D | null = null;
 
   for (let i = 0; i < pageBuffers.length; i++) {
     const col = i % cols, row = Math.floor(i / cols);
@@ -33,16 +41,32 @@ function generateComposeContent(
     const dX = cellX + Math.floor((cellW - dW) / 2), dY = cellY + Math.floor((cellH - dH) / 2);
 
     const imageData = new ImageData(new Uint8ClampedArray(pageBuffers[i]), pageWidths[i], pageHeights[i]);
-    const tmp = new OffscreenCanvas(pageWidths[i], pageHeights[i]);
-    const tCtx = tmp.getContext('2d')!;
-    tCtx.putImageData(imageData, 0, 0);
-    ctx.drawImage(tmp, dX, dY, dW, dH);
+    if (!tmpCanvas || tmpCanvas.width !== pageWidths[i] || tmpCanvas.height !== pageHeights[i]) {
+      tmpCanvas = new OffscreenCanvas(pageWidths[i], pageHeights[i]);
+      tCtx = tmpCanvas.getContext('2d');
+    }
+    if (tCtx) {
+      tCtx.putImageData(imageData, 0, 0);
+      ctx.drawImage(tmpCanvas, dX, dY, dW, dH);
+    }
 
     if (showSlideBorders) {
       ctx.strokeStyle = '#CCCCCC';
       ctx.lineWidth = 1;
       ctx.strokeRect(cellX, cellY, cellW, cellH);
     }
+  }
+
+  if (showPageNumbers) {
+    ctx.fillStyle = '#64748B';
+    ctx.font = `500 ${Math.max(14, Math.round(dims.widthPx * 0.012))}px system-ui, -apple-system, sans-serif`;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'bottom';
+    ctx.fillText(
+      `Sheet ${sheetIndex + 1} of ${totalSheets}  \u2022  PW Notes Print Optimizer`,
+      dims.widthPx / 2,
+      dims.heightPx - Math.max(10, Math.round(marginBottom * 0.4)),
+    );
   }
 }
 
@@ -69,6 +93,7 @@ workerSelf.onmessage = async (e: MessageEvent<WorkerRequest>) => {
         ctx, task.dims, task.pageBuffers, task.pageWidths, task.pageHeights,
         task.cols, task.rows, task.marginTop, task.marginLeft, task.marginRight,
         task.marginBottom, task.marginInner, task.showSlideBorders, task.showPageNumbers,
+        task.sheetIndex, task.totalSheets,
       );
 
       const blob = await canvas.convertToBlob({ type: 'image/jpeg', quality: 0.85 });

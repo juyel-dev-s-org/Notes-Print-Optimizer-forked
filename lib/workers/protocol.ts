@@ -58,6 +58,7 @@ export interface TaskEntry<T = any> {
   startTime: number;
   timeout: number;
   retriesLeft: number;
+  timerId?: ReturnType<typeof setTimeout> | null;
 }
 
 export interface WorkerInfo {
