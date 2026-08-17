@@ -88,19 +88,15 @@ export class PdfExporter {
     if (wm.isWorkerSupported() && wm.isOffscreenCanvasSupported()) {
       const pool = wm.getPool();
       try {
-          const dims = LayoutEngine.getSheetDimensions(config.paperSize, config.orientation);
-          const mmPx = dims.dpi / 25.4;
-          const { cols, rows } = LayoutEngine.getGridDimensions(config.gridFormat);
+          const geometry = LayoutEngine.getSheetCompositionGeometry(config);
           const pageBuffers = pageImageDatas.map(d => d.data.buffer.slice(0));
           const result = await pool.submitComposeTask({
             sheetIndex, totalSheets,
             pageBuffers, pageWidths: pageImageDatas.map(d => d.width), pageHeights: pageImageDatas.map(d => d.height),
-            dims: { widthPx: dims.widthPx, heightPx: dims.heightPx }, cols, rows,
-            marginTop: Math.round((config.outerMarginMm?.top ?? config.marginMm ?? 2) * mmPx),
-            marginLeft: Math.round((config.outerMarginMm?.left ?? config.marginMm ?? 5) * mmPx),
-            marginRight: Math.round((config.outerMarginMm?.right ?? config.marginMm ?? 3) * mmPx),
-            marginBottom: Math.round((config.outerMarginMm?.bottom ?? config.marginMm ?? 2) * mmPx),
-            marginInner: Math.round((config.innerMarginMm ?? config.spacingMm ?? 1) * mmPx),
+            dims: { widthPx: geometry.dims.widthPx, heightPx: geometry.dims.heightPx }, cols: geometry.cols, rows: geometry.rows,
+            marginTop: geometry.marginTop, marginLeft: geometry.marginLeft, marginRight: geometry.marginRight,
+            marginBottom: geometry.marginBottom, marginInner: geometry.marginInner,
+            footerHeight: geometry.footerHeight, footerFontSize: geometry.footerFontSize, footerBaseline: geometry.footerBaseline,
             showSlideBorders: config.showSlideBorders ?? true,
             showPageNumbers: config.showPageNumbers ?? false,
           });
@@ -110,9 +106,13 @@ export class PdfExporter {
         }
     }
     const sheetCanvas = LayoutEngine.composeSheet(pageImageDatas, sheetIndex, totalSheets, config);
+    const width = sheetCanvas.width;
+    const height = sheetCanvas.height;
     const blob = await new Promise<Blob>((res) => sheetCanvas.toBlob((b) => res(b || new Blob()), 'image/jpeg', 0.85));
+    sheetCanvas.width = 0;
+    sheetCanvas.height = 0;
     const jpegBuffer = await blob.arrayBuffer();
-    return { jpegBuffer, width: sheetCanvas.width, height: sheetCanvas.height };
+    return { jpegBuffer, width, height };
   }
 
   public static async compileSheetsAndExportPdf(activePages: ProcessedPage[], layoutConfig: LayoutConfig,
@@ -147,7 +147,7 @@ export class PdfExporter {
       );
 
       const tw = Math.min(500, Math.round(width / 3)), th = Math.min(750, Math.round(height / 3));
-      const tc = document.createElement('canvas'); tc.width = tw; tc.height = th;
+      const tc = memoryManager.acquireCanvas(tw, th);
       try {
         const previewBlob = new Blob([jpegBuffer], { type: 'image/jpeg' });
         const bmp = await createImageBitmap(previewBlob, { resizeWidth: tw, resizeHeight: th, resizeQuality: 'medium' });
