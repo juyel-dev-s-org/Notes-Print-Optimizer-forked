@@ -1,4 +1,7 @@
 pub fn unsharp_mask(data: &mut [u8], width: usize, height: usize, amt: f64) {
+    if height < 3 || width < 3 {
+        return;
+    }
     let cp = data.to_vec();
     for y in 1..(height - 1) {
         let ro = y * width * 4;
@@ -22,6 +25,26 @@ pub fn unsharp_mask(data: &mut [u8], width: usize, height: usize, amt: f64) {
                     (en + 0.5) as u8
                 };
             }
+        }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn unsharp_outputs_are_in_range() {
+        let w = 64;
+        let h = 64;
+        let n = w * h * 4;
+        let mut data = vec![0u8; n];
+        for i in 0..n {
+            data[i] = ((i * 7 + i / 3) % 256) as u8;
+        }
+        unsharp_mask(&mut data, w, h, 2.0);
+        for &v in &data {
+            assert!(v <= 255);
         }
     }
 }

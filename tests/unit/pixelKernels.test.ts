@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { analyzeImageData } from '../../lib/optimizer/analysis';
 import { processPage, createImageDataFromBuffer, calculateInkCoverage } from '../../lib/kernels';
+import { applyUnsharpMask } from '../../lib/kernels/sharpen';
 import { ProcessingParameters } from '../../lib/optimizer/types';
 
 function createSyntheticImageData(width: number, height: number, type: 'dark' | 'light' | 'diagram'): ImageData {
@@ -101,6 +102,40 @@ describe('ImageProcessingKernels', () => {
 
       expect(processed.width).toBe(50);
       expect(processed.height).toBe(50);
+    });
+  });
+
+  describe('applyUnsharpMask', () => {
+    it('matches a full-copy mathematical reference (rolling-buffer correctness)', () => {
+      const w = 37;
+      const h = 23;
+      const n = w * h * 4;
+      const src = new Uint8ClampedArray(n);
+      for (let i = 0; i < n; i++) src[i] = ((i * 7 + (i / 3) | 0) % 256);
+
+      /* Full-copy reference: sharpens from an unmodified snapshot (correct). */
+      const reference = (data: Uint8ClampedArray): void => {
+        const cp = new Uint8ClampedArray(data);
+        const amt = 0.7;
+        for (let y = 1; y < h - 1; y++) {
+          const ro = y * w * 4, pro = (y - 1) * w * 4, nro = (y + 1) * w * 4;
+          for (let x = 1; x < w - 1; x++) {
+            const idx = ro + x * 4;
+            for (let c = 0; c < 3; c++) {
+              const ctr = cp[idx + c];
+              const lap = 4 * ctr - cp[pro + x * 4 + c] - cp[nro + x * 4 + c] - cp[idx - 4 + c] - cp[idx + 4 + c];
+              const en = ctr + amt * lap;
+              data[idx + c] = en < 0 ? 0 : en > 255 ? 255 : (en + 0.5) | 0;
+            }
+          }
+        }
+      };
+
+      const a = new Uint8ClampedArray(src);
+      const b = new Uint8ClampedArray(src);
+      reference(a);
+      applyUnsharpMask(b, w, h, 0.7);
+      expect(b).toEqual(a);
     });
   });
 });

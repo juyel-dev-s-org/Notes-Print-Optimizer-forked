@@ -41,13 +41,13 @@ thread_local! {
     static CC_BUFFERS: RefCell<CcBuffers> = RefCell::new(CcBuffers::new(1024));
 }
 
-//! Monolithic pixel processing pipeline.
-//!
-//! Performs the entire processPage pipeline (HSV classify → decorative strip →
-//! dilate → noise removal → B/W composite → unsharp sharpen) in a single call,
-//! keeping all intermediate buffers in WASM linear memory. This avoids the
-//! many JS↔WASM round-trip copies that previously made per-kernel WASM calls
-//! slower than pure JS.
+// Monolithic pixel processing pipeline.
+//
+// Performs the entire processPage pipeline (HSV classify → decorative strip →
+// dilate → noise removal → B/W composite → unsharp sharpen) in a single call,
+// keeping all intermediate buffers in WASM linear memory. This avoids the
+// many JS↔WASM round-trip copies that previously made per-kernel WASM calls
+// slower than pure JS.
 
 use crate::{hsv, classify, decorative, noise, mask_ops, sharpen};
 
@@ -129,9 +129,10 @@ pub fn process_page(
 
     // Combined Decorative Fill + Noise Removal (Single CC Pass)
     CC_BUFFERS.with(|buffers| {
-        let mut buffers = buffers.borrow_mut();
-        buffers.ensure_capacity(tp);
-        
+        let mut guard = buffers.borrow_mut();
+        guard.ensure_capacity(tp);
+        let buffers: &mut CcBuffers = &mut guard;
+
         let labels = &mut buffers.labels[..tp];
         let queue = &mut buffers.queue[..tp];
         let min_x = &mut buffers.min_x[..tp];

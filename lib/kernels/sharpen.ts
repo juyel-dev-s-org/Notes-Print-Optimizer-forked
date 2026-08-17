@@ -20,44 +20,42 @@ export function applyUnsharpMask(data: Uint8ClampedArray, w: number, h: number, 
 
   const rowBytes = w * 4;
 
-  // Rolling buffer: keep original values of prev row and current row
-  // since we modify data in-place. Only 2*rowBytes allocation vs full image.
-  const prevRow = new Uint8ClampedArray(rowBytes);
-  const currRow = new Uint8ClampedArray(rowBytes);
+  // Rolling 3-row window: keeps prev/current/next rows in small buffers so we
+  // never need a full-image copy. The previous implementation only held 2 rows
+  // and loaded row y+2 into the "current" slot (off-by-one), sharpening each
+  // row against the wrong centre/neighbours.
+  let r0 = new Uint8ClampedArray(rowBytes);
+  let r1 = new Uint8ClampedArray(rowBytes);
+  let r2 = new Uint8ClampedArray(rowBytes);
 
-  prevRow.set(data.subarray(0, rowBytes));
-  currRow.set(data.subarray(rowBytes, rowBytes * 2));
+  r0.set(data.subarray(0, rowBytes));
+  r1.set(data.subarray(rowBytes, rowBytes * 2));
 
   for (let y = 1; y < h - 1; y++) {
-    const ro = y * rowBytes;
     const nro = (y + 1) * rowBytes;
+    r2.set(data.subarray(nro, nro + rowBytes));
+    const ro = y * rowBytes;
 
     for (let x = 1; x < w - 1; x++) {
       const idx = x * 4;
-      // Unrolled channel loop (R, G, B) - alpha skipped
       // Red
-      const ctrR = currRow[idx];
-      const lapR = 4 * ctrR - prevRow[idx] - data[nro + idx] - currRow[idx - 4] - currRow[idx + 4];
+      const ctrR = r1[idx];
+      const lapR = 4 * ctrR - r0[idx] - r2[idx] - r1[idx - 4] - r1[idx + 4];
       const enR = ctrR + amt * lapR;
       data[ro + idx] = enR < 0 ? 0 : enR > 255 ? 255 : (enR + 0.5) | 0;
       // Green
-      const ctrG = currRow[idx + 1];
-      const lapG = 4 * ctrG - prevRow[idx + 1] - data[nro + idx + 1] - currRow[idx - 3] - currRow[idx + 5];
+      const ctrG = r1[idx + 1];
+      const lapG = 4 * ctrG - r0[idx + 1] - r2[idx + 1] - r1[idx - 3] - r1[idx + 5];
       const enG = ctrG + amt * lapG;
       data[ro + idx + 1] = enG < 0 ? 0 : enG > 255 ? 255 : (enG + 0.5) | 0;
       // Blue
-      const ctrB = currRow[idx + 2];
-      const lapB = 4 * ctrB - prevRow[idx + 2] - data[nro + idx + 2] - currRow[idx - 2] - currRow[idx + 6];
+      const ctrB = r1[idx + 2];
+      const lapB = 4 * ctrB - r0[idx + 2] - r2[idx + 2] - r1[idx - 2] - r1[idx + 6];
       const enB = ctrB + amt * lapB;
       data[ro + idx + 2] = enB < 0 ? 0 : enB > 255 ? 255 : (enB + 0.5) | 0;
     }
 
-    // Roll buffers
-    prevRow.set(currRow);
-    if (y + 2 < h) {
-      currRow.set(data.subarray(nro + rowBytes, nro + rowBytes * 2));
-    } else {
-      currRow.set(data.subarray(nro, nro + rowBytes));
-    }
+    // Rotate: r0 <- r1 <- r2 <- (next row loaded at top of loop)
+    const tmp = r0; r0 = r1; r1 = r2; r2 = tmp;
   }
 }
