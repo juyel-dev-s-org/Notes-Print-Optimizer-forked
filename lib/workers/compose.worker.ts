@@ -1,10 +1,13 @@
 import type { WorkerRequest, WorkerResponse } from './protocol';
+import { LayoutEngine } from '../optimizer/layoutEngine';
 
 const workerSelf = self as unknown as DedicatedWorkerGlobalScope;
 
 function generateComposeContent(
   ctx: OffscreenCanvasRenderingContext2D,
   dims: { widthPx: number; heightPx: number },
+  sheetIndex: number,
+  totalSheets: number,
   pageBuffers: ArrayBuffer[],
   pageWidths: number[],
   pageHeights: number[],
@@ -15,6 +18,9 @@ function generateComposeContent(
   marginRight: number,
   marginBottom: number,
   marginInner: number,
+  footerHeight: number,
+  footerFontSize: number,
+  footerBaseline: number,
   showSlideBorders: boolean,
   showPageNumbers: boolean,
 ) {
@@ -22,7 +28,9 @@ function generateComposeContent(
   ctx.fillRect(0, 0, dims.widthPx, dims.heightPx);
 
   const cellW = Math.max(10, Math.floor((dims.widthPx - marginLeft - marginRight - (cols - 1) * marginInner) / cols));
-  const cellH = Math.max(10, Math.floor((dims.heightPx - marginTop - marginBottom - (rows - 1) * marginInner) / rows));
+  const cellH = Math.max(10, Math.floor((dims.heightPx - marginTop - marginBottom - (rows - 1) * marginInner - footerHeight) / rows));
+  const tmp = new OffscreenCanvas(1, 1);
+  const tmpCtx = tmp.getContext('2d')!;
 
   for (let i = 0; i < pageBuffers.length; i++) {
     const col = i % cols, row = Math.floor(i / cols);
@@ -33,9 +41,9 @@ function generateComposeContent(
     const dX = cellX + Math.floor((cellW - dW) / 2), dY = cellY + Math.floor((cellH - dH) / 2);
 
     const imageData = new ImageData(new Uint8ClampedArray(pageBuffers[i]), pageWidths[i], pageHeights[i]);
-    const tmp = new OffscreenCanvas(pageWidths[i], pageHeights[i]);
-    const tCtx = tmp.getContext('2d')!;
-    tCtx.putImageData(imageData, 0, 0);
+    tmp.width = pageWidths[i];
+    tmp.height = pageHeights[i];
+    tmpCtx.putImageData(imageData, 0, 0);
     ctx.drawImage(tmp, dX, dY, dW, dH);
 
     if (showSlideBorders) {
@@ -43,6 +51,14 @@ function generateComposeContent(
       ctx.lineWidth = 1;
       ctx.strokeRect(cellX, cellY, cellW, cellH);
     }
+  }
+
+  if (showPageNumbers) {
+    ctx.fillStyle = '#64748B';
+    ctx.font = `500 ${footerFontSize}px system-ui, -apple-system, sans-serif`;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'bottom';
+    ctx.fillText(LayoutEngine.getSheetFooterText(sheetIndex, totalSheets), dims.widthPx / 2, footerBaseline);
   }
 }
 
@@ -66,9 +82,10 @@ workerSelf.onmessage = async (e: MessageEvent<WorkerRequest>) => {
       const ctx = canvas.getContext('2d')!;
 
       generateComposeContent(
-        ctx, task.dims, task.pageBuffers, task.pageWidths, task.pageHeights,
+        ctx, task.dims, task.sheetIndex, task.totalSheets, task.pageBuffers, task.pageWidths, task.pageHeights,
         task.cols, task.rows, task.marginTop, task.marginLeft, task.marginRight,
-        task.marginBottom, task.marginInner, task.showSlideBorders, task.showPageNumbers,
+        task.marginBottom, task.marginInner, task.footerHeight, task.footerFontSize,
+        task.footerBaseline, task.showSlideBorders, task.showPageNumbers,
       );
 
       const blob = await canvas.convertToBlob({ type: 'image/jpeg', quality: 0.85 });
