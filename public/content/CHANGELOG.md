@@ -42,6 +42,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Re-licensed from MIT to the Juyel Source License (JSL) v1.0
   (LICENSE, package.json, README, CONTRIBUTING)
 - Updated feedback Google Apps Script endpoint to the new web app URL
+- Worker pool hardening: `retireWorker` + timeout-based respawn for hung
+  workers, with `clearTaskTimeout` cleanup on every completion/cancel path
+- Layout engine: shared sheet-composition geometry reused by worker and
+  exporter; `memoryManager` canvas pool reused for compose tasks
+
+### Performance
+- Cached original PDF document in `PdfExporter` so the Before/After slider
+  re-renders originals without re-parsing the whole PDF each time
+
+### Fixed
+- Before/After slider showed a blurry/thumbnail fallback for the "before"
+  side after the first render: pdf.js transfers `data.buffer` to its worker,
+  detaching the shared merged-PDF bytes. Bytes are now `slice()`d before
+  being handed to pdf.js so later renders stay intact
 
 ### Removed
 - Old workflow-navigator drawer content (install banner, phase shortcuts,

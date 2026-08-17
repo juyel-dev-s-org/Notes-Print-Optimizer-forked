@@ -9,6 +9,12 @@ A quick look at the latest improvements.
 - **One-click Smart Arrange.** A badge shows how many series were found; tap to arrange.
 - **Drag & drop.** Reorder files by hand any time - arrow buttons remain as a touch/keyboard fallback.
 
+## More Reliable & Faster Processing
+
+- **Worker pool hardening.** Hung workers are retired and respawned automatically with a timeout, so a stuck page no longer stalls the whole job.
+- **Canvas reuse.** The compositor reuses canvases from a managed pool instead of allocating new ones per page - less memory pressure on large files.
+- **Sharper Before/After previews.** The "before" slide is now rendered at full quality from the merged PDF, and that PDF is cached in memory so flipping pages in the preview feels instant.
+
 ## Settings & Information Center
 
 - The menu is now a clean **Settings & Information Center**.

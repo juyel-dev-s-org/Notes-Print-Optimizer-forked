@@ -36,6 +36,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   from the merged PDF (full quality, no compression artifacts)
   - `persist` phase ~17% faster; V1 throughput ~4.6 pages/sec on desktop
     (20-page benchmark, charging / best-performance)
+- **Cached original PDF document**: the parsed PDF.js document is cached in
+  `PdfExporter` (keyed by the source bytes reference), so subsequent
+  original-page renders for the Before/After slider skip re-parsing the whole
+  PDF; the copy handed to pdf.js is `slice()`d so the shared merged bytes are
+  never detached
 - **First Load JS cut from ~420 kB to ~192 kB gzip** (below the 300 kB target):
   - Postbuild script strips the Next.js `next-devtools` dev-overlay chunk
     (~217 kB gzip) that Next 15.5.x wrongly bundles into production static
@@ -52,6 +57,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Re-licensed from MIT to the Juyel Source License (JSL) v1.0
 - Updated feedback Google Apps Script endpoint to the new web app URL
 - `build` script now runs the postbuild devtools-strip step after `next build`
+- **Worker pool hardening**: `retireWorker` + timeout-based respawn for hung
+  workers, with `clearTaskTimeout` cleanup on every completion/cancel path
+- **Layout engine**: shared sheet-composition geometry
+  (`getSheetCompositionGeometry` / `getSheetFooterText`) reused by both the
+  worker and the exporter; `memoryManager` canvas pool reused for compose
+  tasks
+- **Memory manager**: pooled canvas acquire/release (avoids per-page DOM
+  canvas allocations) with `revokeAllBlobUrls` cleanup on unload
+
+### Fixed
+- **Before/After slider showed a blurry/thumbnail fallback for the "before"
+  side**: `getDocument` transfers `data.buffer` to the pdf.js worker,
+  detaching the shared merged-PDF bytes on first use. `mergedPdfBytes` is now
+  `slice()`d before being handed to pdf.js so later renders stay intact
 
 ### Removed
 - `InstallBanner` (replaced by the adaptive `InstallShareCard`)
