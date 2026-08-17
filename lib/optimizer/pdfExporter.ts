@@ -5,8 +5,16 @@ import { pwOptimizerStorage } from './storage';
 import { WorkerManager } from '../workers/WorkerManager';
 import { getProcessingEngine, EngineVersion } from './engine';
 import { getPdfjsLib } from './pdfjsLoader';
+import type { PDFDocumentProxy } from 'pdfjs-dist';
 import { DocumentProfile, LayoutConfig, OptimizationMetrics, PresetMode, ProcessedPage } from './types';
 import '../workers/init';
+
+/**
+ * Cached PDF.js document keyed by the source bytes reference, so the original
+ * page can be re-rendered across previews/adjustments without re-parsing the
+ * whole PDF each time. Destroyed when bytes change or on unload.
+ */
+let cachedOriginalPdfDoc: { bytes: Uint8Array; doc: PDFDocumentProxy } | null = null;
 
 export class PdfExporter {
   /** @deprecated Use getPdfjsLib() from pdfjsLoader directly. Kept for backward compat. */
@@ -60,22 +68,31 @@ export class PdfExporter {
 
   private static async renderOriginalFromPdf(mergedPdfBytes: Uint8Array, pageIndex: number): Promise<ImageData> {
     const pdfjsLib = await getPdfjsLib();
-    const pdfDoc = await pdfjsLib.getDocument({ data: mergedPdfBytes }).promise;
-    try {
-      const pdfPage = await pdfDoc.getPage(pageIndex + 1);
-      const scale = Math.min(3.0, 200 / 72); /* ~200 DPI cap for inspection */
-      const viewport = pdfPage.getViewport({ scale });
-      const vw = Math.floor(viewport.width);
-      const vh = Math.floor(viewport.height);
-      const canvas = memoryManager.acquireCanvas(vw, vh);
-      const ctx = canvas.getContext('2d', { willReadFrequently: true })!;
-      await pdfPage.render({ canvasContext: ctx, viewport }).promise;
-      const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-      memoryManager.disposeCanvas(canvas);
-      return imageData;
-    } finally {
-      try { pdfDoc.destroy(); } catch { /* noop */ }
+    let pdfDoc = cachedOriginalPdfDoc?.bytes === mergedPdfBytes ? cachedOriginalPdfDoc.doc : null;
+    if (!pdfDoc) {
+      PdfExporter.disposeCachedOriginalPdf();
+      pdfDoc = await pdfjsLib.getDocument({ data: mergedPdfBytes.slice() }).promise;
+      cachedOriginalPdfDoc = { bytes: mergedPdfBytes, doc: pdfDoc };
     }
+    const pdfPage = await pdfDoc.getPage(pageIndex + 1);
+    const scale = Math.min(3.0, 200 / 72); /* ~200 DPI cap for inspection */
+    const viewport = pdfPage.getViewport({ scale });
+    const vw = Math.floor(viewport.width);
+    const vh = Math.floor(viewport.height);
+    const canvas = memoryManager.acquireCanvas(vw, vh);
+    const ctx = canvas.getContext('2d', { willReadFrequently: true })!;
+    await pdfPage.render({ canvasContext: ctx, viewport }).promise;
+    const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+    memoryManager.disposeCanvas(canvas);
+    return imageData;
+  }
+
+  /** Destroys the cached PDF.js document so a newer source can take its place. */
+  public static disposeCachedOriginalPdf(): void {
+    if (cachedOriginalPdfDoc?.doc) {
+      try { cachedOriginalPdfDoc.doc.destroy(); } catch { /* noop */ }
+    }
+    cachedOriginalPdfDoc = null;
   }
 
   private static async composeSheetWithWorker(

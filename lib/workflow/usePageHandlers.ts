@@ -415,7 +415,7 @@ export function usePageHandlers() {
           previewPdfDocRef.current = null;
         }
         const pdfjsLib = await getPdfjsLib();
-        pdfDoc = await pdfjsLib.getDocument({ data: mergedPdfBytes }).promise;
+        pdfDoc = await pdfjsLib.getDocument({ data: mergedPdfBytes.slice() }).promise;
         previewPdfDocRef.current = { bytes: mergedPdfBytes, doc: pdfDoc };
       }
       const pdfPage = await pdfDoc.getPage(pageIndex + 1);
