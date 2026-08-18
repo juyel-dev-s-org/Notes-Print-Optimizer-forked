@@ -276,7 +276,7 @@ export const DesktopWorkflowUI: React.FC<WorkflowUIProps> = ({ state, actions, h
         ) : (
           <EmptyPhaseState
             title="No pages to optimize yet"
-            message="Upload and process your PDF first â€” then you can fine-tune ink savings here."
+            message="Upload and process your PDF first ÃƒÂ¢Ã¢â€šÂ¬â€ then you can fine-tune ink savings here."
             onBack={() => setCurrentPhase(1)}
             backLabel="Back to Upload"
           />
@@ -356,11 +356,11 @@ export const DesktopWorkflowUI: React.FC<WorkflowUIProps> = ({ state, actions, h
         <div className="mt-4 flex items-center gap-3">
           <button
             onClick={onApplyLayout}
-            disabled={!layoutDirty || isProcessing}
+            disabled={!layoutDirty || isProcessing || isPreviewProcessing}
             className={`flex-1 flex items-center justify-center gap-2 rounded-xl px-5 py-3 text-sm font-bold transition-all ${
               layoutDirty && !isProcessing
                 ? 'bg-primary-strong text-white hover:bg-primary shadow-lg shadow-primary-faint/30 active:scale-[0.98]'
-                : 'bg-surface-2 text-ink-faint cursor-not-allowed border border-elevated'
+                : 'bg-surface-2 text-ink-muted cursor-not-allowed border border-elevated'
             }`}
           >
             {isProcessing ? (
@@ -381,7 +381,7 @@ export const DesktopWorkflowUI: React.FC<WorkflowUIProps> = ({ state, actions, h
             )}
           </button>
           {layoutDirty && !isProcessing && (
-            <span className="text-[10px] text-warning font-medium">â— Unsaved changes</span>
+            <span className="text-[10px] text-warning font-medium">ÃƒÂ¢â€”Ã‚Â Unsaved changes</span>
           )}
         </div>
 
@@ -507,7 +507,7 @@ export const DesktopWorkflowUI: React.FC<WorkflowUIProps> = ({ state, actions, h
         ) : (
           <EmptyPhaseState
             title="Nothing here yet"
-            message="Generate your print-ready PDF first â€” your summary and feedback form will appear here."
+            message="Generate your print-ready PDF first ÃƒÂ¢Ã¢â€šÂ¬â€ your summary and feedback form will appear here."
             onBack={() => setCurrentPhase(3)}
             backLabel="Back to Layout"
           />

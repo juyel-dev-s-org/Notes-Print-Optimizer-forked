@@ -24,6 +24,7 @@ import { FeedbackCategory, FeedbackUserInput, PdfStats, ProcessingSettings } fro
 import { buildFeedbackPayload } from '@/lib/feedback/payloadBuilder';
 import { sendFeedbackToGas } from '@/lib/feedback/gasClient';
 import { GOOGLE_APPS_SCRIPT_CODE } from '@/lib/feedback/gasScriptTemplate';
+import { useDialogFocus } from '@/lib/ui/useDialogFocus';
 
 interface FeedbackSectionProps {
   currentPhase: number;
@@ -83,12 +84,21 @@ export const FeedbackSection: React.FC<FeedbackSectionProps> = ({
   const [payloadPreview, setPayloadPreview] = useState<string>('');
   const [telegramPreview, setTelegramPreview] = useState<string>('');
   const [copiedGas, setCopiedGas] = useState<boolean>(false);
+  const copiedGasTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const devModalRef = useRef<HTMLDivElement>(null);
   const devModalCloseRef = useRef<HTMLButtonElement>(null);
+  const devModalTriggerRef = useRef<HTMLButtonElement>(null);
+
+  useDialogFocus({
+    open: showDeveloperModal,
+    containerRef: devModalRef,
+    initialFocusRef: devModalCloseRef,
+    restoreFocusRef: devModalTriggerRef,
+  });
 
   // Focus the close button when the dev modal opens; close on Escape.
   useEffect(() => {
     if (!showDeveloperModal) return;
-    devModalCloseRef.current?.focus();
     const onKey = (e: KeyboardEvent) => {
       if (e.key === 'Escape') setShowDeveloperModal(false);
     };
@@ -223,8 +233,14 @@ export const FeedbackSection: React.FC<FeedbackSectionProps> = ({
   const handleCopyGasCode = () => {
     navigator.clipboard.writeText(GOOGLE_APPS_SCRIPT_CODE);
     setCopiedGas(true);
-    setTimeout(() => setCopiedGas(false), 2500);
+    if (copiedGasTimerRef.current) clearTimeout(copiedGasTimerRef.current);
+    copiedGasTimerRef.current = setTimeout(() => setCopiedGas(false), 2500);
   };
+
+  // Clear the "Copied!" reset timer if the section unmounts.
+  useEffect(() => () => {
+    if (copiedGasTimerRef.current) clearTimeout(copiedGasTimerRef.current);
+  }, []);
 
   return (
     <div className="flex flex-col gap-4 rounded-2xl border border-surface-2 bg-surface/90 p-5 shadow-2xl w-full text-left">
@@ -243,19 +259,20 @@ export const FeedbackSection: React.FC<FeedbackSectionProps> = ({
       {!isSubmitted ? (
         <form onSubmit={handleSubmit} className="flex flex-col gap-4">
           {/* Star Rating Bar */}
-          <div className="flex flex-col gap-1.5">
-            <label className="text-xs font-semibold text-ink-muted">Overall Rating</label>
-            <div className="flex items-center gap-3">
+<div className="flex flex-col gap-1.5">
+            <span id="rating-label" className="text-xs font-semibold text-ink-muted">Overall Rating</span>
+            <div role="radiogroup" aria-labelledby="rating-label" className="flex items-center gap-3">
               <div className="flex items-center gap-1">
                 {[1, 2, 3, 4, 5].map((star) => (
                   <button
                     key={star}
                     type="button"
+                    role="radio"
+                    aria-checked={rating === star}
                     onMouseEnter={() => setHoverRating(star)}
                     onMouseLeave={() => setHoverRating(0)}
                     onClick={() => setRating(star)}
                     aria-label={`Rate ${star} out of 5 stars`}
-                    aria-pressed={rating === star}
                     className="p-1.5 -m-1.5 text-warning transition-transform hover:scale-110 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-warning/70 rounded-md"
                   >
                     <Star
@@ -268,46 +285,48 @@ export const FeedbackSection: React.FC<FeedbackSectionProps> = ({
                   </button>
                 ))}
               </div>
-              <span className="text-xs font-bold text-warning bg-amber-950/50 border border-amber-500/30 px-2.5 py-1 rounded-md">
+              <span className="text-xs font-bold text-warning bg-warning-faint/50 border border-warning-strong/30 px-2.5 py-1 rounded-md">
                 {ratingLabels[hoverRating || rating]}
               </span>
             </div>
           </div>
 
           {/* Feedback Category Pills */}
-          <div className="flex flex-col gap-1.5">
-            <label className="text-xs font-semibold text-ink-muted">Category</label>
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+<div className="flex flex-col gap-1.5">
+            <span id="category-label" className="text-xs font-semibold text-ink-muted">Category</span>
+            <div role="radiogroup" aria-labelledby="category-label" className="grid grid-cols-2 sm:grid-cols-4 gap-2">
               {categories.map((cat) => (
                 <button
                   key={cat.id}
                   type="button"
+                  role="radio"
+                  aria-checked={category === cat.id}
                   onClick={() => setCategory(cat.id)}
-                  aria-pressed={category === cat.id}
                   className={`flex items-center justify-center gap-1.5 py-2.5 px-3 rounded-xl border text-xs font-medium transition-all ${
                     category === cat.id
                       ? 'bg-primary-strong/30 border-primary text-white font-bold shadow-sm'
                       : 'bg-bg/80 border-surface-2 text-ink-muted hover:text-ink hover:border-elevated'
                   }`}
                 >
-                  <span className={category === cat.id ? 'text-primary-soft' : 'text-ink-faint'}>
+                  <span className={category === cat.id ? 'text-primary-soft' : 'text-ink-muted'}>
                     {cat.icon}
                   </span>
                   <span>{cat.label}</span>
                 </button>
-              ))}
+))}
             </div>
           </div>
 
           {/* Comment Textarea */}
-          <div className="flex flex-col gap-1.5">
-            <label className="text-xs font-semibold text-ink-muted">Your Feedback / Issue Description</label>
+<div className="flex flex-col gap-1.5">
+            <label htmlFor="feedback-text" className="text-xs font-semibold text-ink-muted">Your Feedback / Issue Description</label>
             <textarea
+              id="feedback-text"
               rows={3}
               value={feedbackText}
               onChange={(e) => setFeedbackText(e.target.value)}
               placeholder="Describe your experience, print quality, or suggest a new feature..."
-              className="w-full rounded-xl border border-surface-2 bg-bg p-3 text-xs text-ink placeholder-ink-faint focus:outline-none focus:border-primary transition-colors"
+              className="w-full rounded-xl border border-surface-2 bg-bg p-3 text-xs text-ink placeholder-ink-faint focus:border-primary focus-visible:ring-2 focus-visible:ring-primary/60 transition-colors"
             />
           </div>
 
@@ -346,7 +365,7 @@ export const FeedbackSection: React.FC<FeedbackSectionProps> = ({
               />
               <div className="flex flex-col text-xs">
                 <div className="flex items-center gap-1.5 font-medium text-ink">
-                  <Info className="h-3.5 w-3.5 text-blue-400" />
+                  <Info className="h-3.5 w-3.5 text-primary-soft" />
                   <span>Include Diagnostic Information</span>
                 </div>
                 <span className="text-[11px] text-ink-muted">
@@ -357,8 +376,8 @@ export const FeedbackSection: React.FC<FeedbackSectionProps> = ({
           </div>
 
           {/* Error Alert */}
-          {errorMessage && (
-            <div className="flex items-center gap-2 rounded-xl bg-red-950/80 border border-red-800/80 p-3 text-xs text-red-300">
+{errorMessage && (
+            <div role="alert" className="flex items-center gap-2 rounded-xl bg-danger-faint/80 border border-danger-strong/80 p-3 text-xs text-danger-soft">
               <AlertCircle className="h-4 w-4 shrink-0 text-danger" />
               <span>{errorMessage}</span>
             </div>
@@ -385,12 +404,13 @@ export const FeedbackSection: React.FC<FeedbackSectionProps> = ({
             </button>
           </div>
 
-          <p className="text-center text-[10px] text-ink-faint">
+          <p className="text-center text-[10px] text-ink-muted">
             Developer?{' '}
-            <button
+<button
+              ref={devModalTriggerRef}
               type="button"
               onClick={handleOpenPreviewModal}
-              className="font-semibold text-ink-muted underline decoration-ink-faint underline-offset-2 hover:text-primary-soft transition-colors cursor-pointer"
+              className="font-semibold text-ink-muted underline decoration-elevated underline-offset-2 hover:text-primary-soft transition-colors cursor-pointer"
             >
               Inspect the payload &amp; script
             </button>{' '}
@@ -403,7 +423,7 @@ export const FeedbackSection: React.FC<FeedbackSectionProps> = ({
           <div className="flex h-12 w-12 items-center justify-center rounded-full bg-success-strong/20 text-success border border-success-strong/40">
             <Check className="h-6 w-6" />
           </div>
-          <h4 className="text-sm font-bold text-emerald-200">Thank you for your feedback!</h4>
+          <h4 className="text-sm font-bold text-success-soft">Thank you for your feedback!</h4>
           <p className="text-xs text-success-soft/80 max-w-md">
             Your rating and diagnostics have been sent to our Telegram channel. Your feedback directly helps us improve PW Notes Print Optimizer.
           </p>
@@ -423,10 +443,11 @@ export const FeedbackSection: React.FC<FeedbackSectionProps> = ({
       {/* Developer Modal / Payload Preview & GAS Code */}
       {showDeveloperModal && (
         <div
+          ref={devModalRef}
           role="dialog"
           aria-modal="true"
           aria-label="Feedback payload and Apps Script preview"
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4"
+          className="fixed inset-0 z-50 flex items-center justify-center bg-bg/80 backdrop-blur-sm p-4"
         >
           <div className="flex flex-col w-full max-w-3xl max-h-[90vh] rounded-2xl border border-surface-2 bg-surface shadow-2xl overflow-hidden text-ink">
             {/* Modal Header */}

@@ -43,12 +43,12 @@ export class PhaseErrorBoundary extends React.Component<
   render() {
     if (this.state.hasError) {
       return (
-        <div className="mx-auto max-w-md rounded-xl border border-red-800/50 bg-red-950/30 p-6 text-center">
+        <div className="mx-auto max-w-md rounded-xl border border-danger-strong/50 bg-danger-faint/30 p-6 text-center">
           <div className="mb-3 flex justify-center">
             <TriangleAlert className="h-10 w-10 text-danger" aria-hidden="true" />
           </div>
-          <h3 className="mb-1 text-sm font-bold text-red-300">
-            {this.props.phaseName} â€” Something went wrong
+          <h3 className="mb-1 text-sm font-bold text-danger-soft">
+            {this.props.phaseName} &mdash; Something went wrong
           </h3>
           <p className="mb-4 text-xs text-danger/80">
             {this.state.error?.message ?? 'An unexpected error occurred.'}
@@ -57,7 +57,7 @@ export class PhaseErrorBoundary extends React.Component<
             <button
               type="button"
               onClick={this.handleRetry}
-              className="rounded-lg bg-red-700 px-4 py-2 text-xs font-semibold text-white hover:bg-danger-deep transition-colors"
+              className="rounded-lg bg-danger-deep px-4 py-2 text-xs font-semibold text-white hover:bg-danger-strong transition-colors"
             >
               Retry
             </button>

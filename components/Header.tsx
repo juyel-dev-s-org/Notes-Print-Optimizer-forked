@@ -10,12 +10,13 @@ import {
   RefreshCw,
 } from 'lucide-react';
 import { AppLogo } from './AppLogo';
+import { useDialogFocus } from '@/lib/ui/useDialogFocus';
 
 import type { WorkflowPhase } from '@/lib/workflow/types';
 export type { WorkflowPhase };
 
 /* SettingsDrawer is heavy (markdown renderer, menu registry, feedback modal,
- * install/share card) but only renders when the menu opens â€” code-split it
+ * install/share card) but only renders when the menu opens - code-split it
  * out of First Load and preload on hamburger hover/focus for instant open. */
 const LazySettingsDrawer = lazy(() => import('./menu/SettingsDrawer').then((m) => ({ default: m.SettingsDrawer })));
 
@@ -47,36 +48,43 @@ export const Header: React.FC<HeaderProps> = ({
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const hamburgerRef = useRef<HTMLButtonElement>(null);
   const drawerCloseRef = useRef<HTMLButtonElement>(null);
+  const drawerRef = useRef<HTMLDivElement>(null);
 
-  // Escape closes the drawer; focus returns to the hamburger.
+  // Escape closes the drawer, unless a nested dialog owns the focus.
   useEffect(() => {
     if (!isMenuOpen) return;
     const onKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') setIsMenuOpen(false);
+      if (e.key !== 'Escape') return;
+      const active = document.activeElement;
+      if (active instanceof HTMLElement) {
+        const dlg = active.closest('[role="dialog"]');
+        if (dlg && dlg !== drawerRef.current) return;
+      }
+      setIsMenuOpen(false);
     };
     window.addEventListener('keydown', onKeyDown);
     return () => window.removeEventListener('keydown', onKeyDown);
   }, [isMenuOpen]);
 
-  // Move focus into the drawer when it opens, restore it when it closes.
+  // Move focus into the drawer when it opens; return it to the hamburger
+  // only when the drawer was actually open (never on initial page load).
+  const wasMenuOpenRef = useRef(false);
   useEffect(() => {
     if (isMenuOpen) {
+      wasMenuOpenRef.current = true;
       drawerCloseRef.current?.focus();
-    } else {
+    } else if (wasMenuOpenRef.current) {
+      wasMenuOpenRef.current = false;
       hamburgerRef.current?.focus();
     }
   }, [isMenuOpen]);
 
-  // Lock body scroll while the drawer is open.
-  useEffect(() => {
-    if (isMenuOpen) {
-      const prev = document.body.style.overflow;
-      document.body.style.overflow = 'hidden';
-      return () => {
-        document.body.style.overflow = prev;
-      };
-    }
-  }, [isMenuOpen]);
+  useDialogFocus({
+    open: isMenuOpen,
+    containerRef: drawerRef,
+    initialFocusRef: drawerCloseRef,
+    restoreFocusRef: hamburgerRef,
+  });
 
   const handleAppAction = useCallback(
     (name: string) => {
@@ -148,12 +156,13 @@ export const Header: React.FC<HeaderProps> = ({
                     }}
                     disabled={!isCompleted && !isActive}
                     aria-current={isActive ? 'step' : undefined}
+                    aria-label={`Step ${step.phase}: ${step.label}`}
                     className={`flex items-center gap-1 rounded-lg px-2 py-1.5 text-xs font-semibold transition-all ${
                       isActive
                         ? 'bg-primary-strong text-white shadow-xs lg:scale-105'
                         : isCompleted
                         ? 'text-success hover:bg-elevated/60'
-                        : 'text-ink-faint cursor-not-allowed'
+                        : 'text-ink-muted cursor-not-allowed'
                     }`}
                   >
                     <span
@@ -209,7 +218,7 @@ export const Header: React.FC<HeaderProps> = ({
         {/* Top Progress Line Indicator */}
         <div className="h-0.5 w-full bg-surface-2">
           <div
-            className="h-full bg-gradient-to-r from-primary via-sky-400 to-success transition-[width] duration-200 ease-in-out"
+            className="h-full bg-gradient-to-r from-primary via-accent-soft to-success transition-[width] duration-200 ease-in-out"
             style={{ width: `${(currentPhase / 4) * 100}%` }}
           />
         </div>
@@ -227,6 +236,7 @@ export const Header: React.FC<HeaderProps> = ({
 
           {/* Side Drawer Content */}
           <aside
+            ref={drawerRef}
             id="settings-drawer"
             role="dialog"
             aria-modal="true"
@@ -259,7 +269,7 @@ export const Header: React.FC<HeaderProps> = ({
               </div>
 
               {/* Drawer Footer */}
-              <div className="space-y-0.5 border-t border-surface-2 p-3 text-center text-[10px] text-ink-faint">
+              <div className="space-y-0.5 border-t border-surface-2 p-3 text-center text-[10px] text-ink-muted">
                 <div>&copy; 2026 Juyel Hossain &bull; JSL v1.0</div>
                 <a
                   href="mailto:myself.juyel.dev@gmail.com"

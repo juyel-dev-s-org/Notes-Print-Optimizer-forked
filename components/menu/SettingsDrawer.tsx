@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useCallback, useMemo, useRef, useState } from 'react';
-import { AnimatePresence, motion } from 'motion/react';
+import { AnimatePresence, MotionConfig, motion } from 'motion/react';
 import { ChevronDown, ExternalLink, Loader2 } from 'lucide-react';
 import { clearAppCaches, menuRegistry } from '@/lib/menu';
 import type { ContentId, MenuItemConfig, ResolvedMenuSection } from '@/lib/menu';
@@ -103,7 +103,7 @@ export const SettingsDrawer: React.FC<SettingsDrawerProps> = ({ onAppAction }) =
         </span>
         <span className="min-w-0 flex-1 text-left">
           <span className="flex items-center gap-1.5">
-            <span className={`truncate text-xs font-semibold ${disabled ? 'text-ink-faint' : 'text-ink'}`}>
+            <span className={`truncate text-xs font-semibold ${disabled ? 'text-ink-muted' : 'text-ink'}`}>
               {item.title}
             </span>
             {item.badge && (
@@ -113,11 +113,11 @@ export const SettingsDrawer: React.FC<SettingsDrawerProps> = ({ onAppAction }) =
             )}
           </span>
           {item.description && (
-            <span className="block truncate text-[10px] text-ink-faint">{item.description}</span>
+            <span className="block truncate text-[10px] text-ink-muted">{item.description}</span>
           )}
         </span>
         {item.action.type === 'link' && item.action.external && (
-          <ExternalLink className="h-3.5 w-3.5 shrink-0 text-ink-faint" />
+          <ExternalLink className="h-3.5 w-3.5 shrink-0 text-ink-muted" />
         )}
       </>
     );
@@ -156,7 +156,8 @@ export const SettingsDrawer: React.FC<SettingsDrawerProps> = ({ onAppAction }) =
   };
 
   return (
-    <div className="space-y-2">
+    <MotionConfig reducedMotion="user">
+      <div className="space-y-2">
       {/* PWA install/share card - install when not installed, share once installed */}
       <InstallShareCard />
 
@@ -183,7 +184,7 @@ export const SettingsDrawer: React.FC<SettingsDrawerProps> = ({ onAppAction }) =
               <span className="flex-1 text-xs font-bold uppercase tracking-wide text-ink">
                 {section.title}
               </span>
-              <span className="text-[10px] font-medium text-ink-faint">{section.items.length}</span>
+              <span className="text-[10px] font-medium text-ink-muted">{section.items.length}</span>
               <motion.span
                 animate={{ rotate: isOpen ? 180 : 0 }}
                 transition={{ duration: 0.18 }}
@@ -217,9 +218,9 @@ export const SettingsDrawer: React.FC<SettingsDrawerProps> = ({ onAppAction }) =
 
       {/* Busy indicator for async actions */}
       {busy && (
-        <div className="flex items-center justify-center gap-2 py-1 text-[11px] text-ink-muted">
+        <div role="status" className="flex items-center justify-center gap-2 py-1 text-[11px] text-ink-muted">
           <Loader2 className="h-3.5 w-3.5 animate-spin" />
-          <span>Workingâ€¦</span>
+          <span>Working&hellip;</span>
         </div>
       )}
 
@@ -230,6 +231,7 @@ export const SettingsDrawer: React.FC<SettingsDrawerProps> = ({ onAppAction }) =
         )}
         {feedbackOpen && <FeedbackModal key="feedback" onClose={() => setFeedbackOpen(false)} />}
       </AnimatePresence>
-    </div>
+      </div>
+    </MotionConfig>
   );
 };

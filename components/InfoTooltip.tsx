@@ -3,6 +3,7 @@
 import React, { useState, useRef, useEffect, useCallback, useId } from 'react';
 import { createPortal } from 'react-dom';
 import { HelpCircle, Info, X } from 'lucide-react';
+import { useDialogFocus } from '@/lib/ui/useDialogFocus';
 
 interface InfoTooltipProps {
   content: string;
@@ -24,8 +25,18 @@ export const InfoTooltip: React.FC<InfoTooltipProps> = ({
   const [coords, setCoords] = useState<{ top: number; left: number }>({ top: 0, left: 0 });
 
   const buttonRef = useRef<HTMLSpanElement>(null);
-  const tooltipRef = useRef<HTMLDivElement>(null);
+  const sheetRef = useRef<HTMLDivElement>(null);
+  const sheetCloseRef = useRef<HTMLButtonElement>(null);
   const tooltipId = useId();
+
+  // Mobile sheet behaves as a dialog: focus moves in, Tab is trapped, the
+  // body scroll locks, and focus returns to the trigger on close.
+  useDialogFocus({
+    open: isMobile && isOpen,
+    containerRef: sheetRef,
+    initialFocusRef: sheetCloseRef,
+    restoreFocusRef: buttonRef,
+  });
 
   // Responsive resize check (initial state resolved on mount, not during render)
   useEffect(() => {
@@ -147,7 +158,8 @@ export const InfoTooltip: React.FC<InfoTooltipProps> = ({
         onBlur={() => !isMobile && setIsOpen(false)}
         className="flex h-8 w-8 items-center justify-center -m-1 rounded-full text-ink-muted hover:text-primary-soft focus:text-primary-soft focus-visible:ring-2 focus-visible:ring-primary-soft/70 transition-colors cursor-pointer hover:bg-surface-2/60 active:scale-95"
         aria-label={title || 'More information'}
-        aria-describedby={isOpen ? tooltipId : undefined}
+        aria-haspopup="dialog"
+        aria-describedby={!isMobile && isOpen ? tooltipId : undefined}
       >
         <IconComponent className="h-4 w-4" />
       </span>
@@ -157,6 +169,7 @@ export const InfoTooltip: React.FC<InfoTooltipProps> = ({
         isMobile ? (
           /* MOBILE BOTTOM SHEET POPUP WITH BACKDROP */
           <div
+            ref={sheetRef}
             role="dialog"
             aria-modal="true"
             aria-label={title || 'More information'}
@@ -178,9 +191,10 @@ export const InfoTooltip: React.FC<InfoTooltipProps> = ({
                   {title && <h4 className="text-sm font-bold text-white">{title}</h4>}
                 </div>
                 <button
+                  ref={sheetCloseRef}
                   type="button"
                   onClick={() => setIsOpen(false)}
-                  aria-label="Close"
+                  aria-label="Close information"
                   className="flex h-9 w-9 items-center justify-center rounded-lg text-ink-muted hover:bg-surface-2 hover:text-white"
                 >
                   <X className="h-4 w-4" />
@@ -203,7 +217,6 @@ export const InfoTooltip: React.FC<InfoTooltipProps> = ({
         ) : (
           /* DESKTOP / TABLET FLOATING TOOLTIP */
           <div
-            ref={tooltipRef}
             id={tooltipId}
             style={{
               position: 'fixed',

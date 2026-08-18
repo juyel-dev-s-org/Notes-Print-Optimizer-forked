@@ -42,27 +42,40 @@ export const GridFormatPicker: React.FC<GridFormatPickerProps> = ({ gridFormat, 
   const cardSize = columns === 2 ? 'p-2.5' : 'p-3';
   const descSize = columns === 6 ? 'text-[11px]' : 'text-[10px]';
 
+  const isSelected = (format: string) =>
+    gridFormat === format || (format === '2x2' && gridFormat === '4up');
+
+  const selectByIndex = (idx: number) => {
+    const clamped = (idx + GRID_FORMATS.length) % GRID_FORMATS.length;
+    onSelect(GRID_FORMATS[clamped].format as LayoutConfig['gridFormat']);
+  };
+
   return (
-    <div className={`grid ${COLUMNS[columns]} gap-3`}>
-      {GRID_FORMATS.map((item) => {
-        const isSelected =
-          gridFormat === item.format || (item.format === '2x2' && gridFormat === '4up');
+    <div role="radiogroup" aria-label="Grid format" className={`grid ${COLUMNS[columns]} gap-3`}>
+      {GRID_FORMATS.map((item, idx) => {
+        const selected = isSelected(item.format);
         return (
           <div
             key={item.format}
-            role="button"
-            tabIndex={0}
-            aria-pressed={isSelected}
+            role="radio"
+            tabIndex={selected ? 0 : -1}
+            aria-checked={selected}
             aria-label={`${item.label} grid format${item.recommended ? ' (recommended)' : ''}`}
             onClick={() => onSelect(item.format as LayoutConfig['gridFormat'])}
             onKeyDown={(e) => {
               if (e.key === 'Enter' || e.key === ' ') {
                 e.preventDefault();
                 onSelect(item.format as LayoutConfig['gridFormat']);
+              } else if (e.key === 'ArrowDown' || e.key === 'ArrowRight') {
+                e.preventDefault();
+                selectByIndex(idx + 1);
+              } else if (e.key === 'ArrowUp' || e.key === 'ArrowLeft') {
+                e.preventDefault();
+                selectByIndex(idx - 1);
               }
             }}
-            className={`flex flex-col justify-between rounded-xl border text-left cursor-pointer transition-all active:scale-98 ${
-              isSelected
+            className={`flex flex-col justify-between rounded-xl border text-left cursor-pointer transition-all active:scale-98 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-soft ${
+              selected
                 ? 'border-primary bg-primary-faint/60 ring-2 ring-primary shadow-md'
                 : 'border-surface-2 bg-bg/60 hover:border-elevated'
             } ${cardSize}`}
@@ -76,7 +89,7 @@ export const GridFormatPicker: React.FC<GridFormatPickerProps> = ({ gridFormat, 
               <h4 className="text-xs font-bold text-white">{item.label}</h4>
               <p className={`mt-0.5 text-ink-muted ${descSize}`}>{item.desc}</p>
             </div>
-            {isSelected && (
+            {selected && (
               <div className="mt-2 flex justify-end">
                 <Check className="h-3.5 w-3.5 text-primary-soft" aria-hidden="true" />
               </div>

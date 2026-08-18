@@ -45,12 +45,13 @@ export const BeforeAfterSlider: React.FC<BeforeAfterSliderProps> = ({ page, merg
         if (!isCancelled) {
           const origBlob = await new Promise<Blob>((res) => origCanvas.toBlob((b) => res(b || new Blob()), 'image/jpeg', 0.6));
           const optBlob = await new Promise<Blob>((res) => optCanvas.toBlob((b) => res(b || new Blob()), 'image/jpeg', 0.6));
-          // Revoke URLs from the previous page before replacing them.
-          createdUrlsRef.current.forEach((u) => URL.revokeObjectURL(u));
+          // Commit the new URLs first, then revoke the previous page's URLs -
+          // revoking before state commits would blank the still-displayed image.
           const nextUrls = [URL.createObjectURL(origBlob), URL.createObjectURL(optBlob)];
-          createdUrlsRef.current = nextUrls;
           setOrigUrl(nextUrls[0]);
           setOptUrl(nextUrls[1]);
+          createdUrlsRef.current.forEach((u) => URL.revokeObjectURL(u));
+          createdUrlsRef.current = nextUrls;
         }
 
         memoryManager.disposeCanvas(origCanvas);
@@ -135,10 +136,10 @@ export const BeforeAfterSlider: React.FC<BeforeAfterSliderProps> = ({ page, merg
         {/* Ink Saved Metric */}
         <div className="flex flex-wrap items-center gap-2.5 text-xs">
           <div className="flex items-center gap-1 font-medium text-ink-muted">
-            <Droplet className="h-3.5 w-3.5 text-ink-faint" />
+            <Droplet className="h-3.5 w-3.5 text-ink-muted" />
             <span>Before: <strong className="text-ink">{page.inkCoverageBeforePct}% Ink</strong></span>
           </div>
-          <ArrowRight className="h-3.5 w-3.5 text-ink-faint" aria-hidden="true" />
+          <ArrowRight className="h-3.5 w-3.5 text-ink-muted" aria-hidden="true" />
           <div className="flex items-center gap-1.5 font-semibold text-success">
             <CheckCircle2 className="h-3.5 w-3.5 text-success" />
             <span>Optimized: <strong>{page.inkCoverageAfterPct}% Ink</strong></span>

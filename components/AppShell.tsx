@@ -156,7 +156,7 @@ export default function AppShell() {
       />
       <ProcessingModal progress={state.progress} onCancel={handleCancelProcessing} progressiveThumbnails={progressiveThumbnails} />
       {swUpdateAvailable && (
-        <div className="bg-primary-faint/90 border-b border-primary-deep text-indigo-200 text-xs py-2 px-4 flex items-center justify-between font-medium shadow-md">
+        <div role="status" className="bg-primary-faint/90 border-b border-primary-deep text-primary-soft text-xs py-2 px-4 flex items-center justify-between font-medium shadow-md">
           <div className="flex items-center gap-2">
             <RefreshCw className="w-3.5 h-3.5 text-primary-soft animate-spin" />
             <span>A new version of Notes Print Optimizer is available.</span>
@@ -170,7 +170,7 @@ export default function AppShell() {
             </button>
             <button
               onClick={() => setSwUpdateAvailable(false)}
-              className="p-1 hover:text-white text-primary-soft transition"
+              className="p-2 hover:text-white text-primary-soft transition"
               aria-label="Dismiss update alert"
             >
               <X className="w-3.5 h-3.5" />
@@ -179,11 +179,11 @@ export default function AppShell() {
         </div>
       )}
       {state.errorMessage && (
-        <div className="bg-red-950/90 border-b border-red-800 text-red-200 text-xs py-2.5 px-4 flex items-center justify-between font-medium shadow-md">
+        <div role="alert" className="bg-danger-faint/90 border-b border-danger-deep text-danger-soft text-xs py-2.5 px-4 flex items-center justify-between font-medium shadow-md">
           <div className="flex-1 text-center">{state.errorMessage}</div>
           <button
             onClick={() => actions.setError(null)}
-            className="p-1 hover:text-white text-red-300 transition"
+            className="p-2 hover:text-white text-danger-soft transition"
             aria-label="Dismiss error"
           >
             <X className="w-4 h-4" />

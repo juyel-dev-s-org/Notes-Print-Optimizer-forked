@@ -138,15 +138,15 @@ const ToggleSwitch: React.FC<{
     aria-label={`${label} override`}
     disabled={disabled}
     onClick={() => onChange(!enabled)}
-    className={`relative inline-flex h-5 w-9 shrink-0 items-center rounded-full transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-primary/50 ${
+    className={`relative inline-flex h-7 w-11 shrink-0 items-center rounded-full transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-soft ${
       enabled
         ? 'bg-primary-strong'
         : 'bg-elevated'
     } ${disabled ? 'opacity-40 cursor-not-allowed' : 'cursor-pointer'}`}
   >
     <span
-      className={`inline-block h-3.5 w-3.5 transform rounded-full bg-white shadow-sm transition-transform duration-200 ${
-        enabled ? 'translate-x-[18px]' : 'translate-x-[3px]'
+      className={`inline-block h-4 w-4 transform rounded-full bg-white shadow-sm transition-transform duration-200 ${
+        enabled ? 'translate-x-[22px]' : 'translate-x-[4px]'
       }`}
     />
   </button>
@@ -185,7 +185,7 @@ export const ProcessingSettingsPanel: React.FC<ProcessingSettingsPanelProps> = (
     previewTimerRef.current = setTimeout(() => {
       onPreviewReprocessRef.current();
     }, 300);
-  }, []);   // stable â€” reads from ref
+  }, []);   // stable Ã¢â‚¬” reads from ref
 
   useEffect(() => {
     return () => {
@@ -246,7 +246,7 @@ export const ProcessingSettingsPanel: React.FC<ProcessingSettingsPanelProps> = (
         className="flex w-full items-center justify-between px-4 py-3 text-left hover:bg-surface-2/50 transition-colors"
       >
         <div className="flex items-center gap-2.5">
-          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-amber-500/20 text-warning border border-amber-500/30">
+          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-warning-strong/20 text-warning border border-warning-strong/30">
             <SlidersHorizontal className="h-4 w-4" />
           </div>
           <div>
@@ -260,7 +260,7 @@ export const ProcessingSettingsPanel: React.FC<ProcessingSettingsPanelProps> = (
         </div>
         <div className="flex items-center gap-2">
           {isDirty && (
-            <span className="rounded-full bg-amber-500/20 px-2 py-0.5 text-[9px] font-bold text-amber-300 border border-amber-500/30">
+            <span className="rounded-full bg-warning-strong/20 px-2 py-0.5 text-[9px] font-bold text-warning-soft border border-warning-strong/30">
               Modified
             </span>
           )}
@@ -312,7 +312,7 @@ export const ProcessingSettingsPanel: React.FC<ProcessingSettingsPanelProps> = (
                   {/* Row: Icon + Label + Tooltip + Toggle */}
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-1.5">
-                      <span className={isOn ? 'text-primary-soft' : 'text-ink-faint'}>
+                      <span className={isOn ? 'text-primary-soft' : 'text-ink-muted'}>
                         {slider.icon}
                       </span>
                       <span
@@ -374,7 +374,7 @@ export const ProcessingSettingsPanel: React.FC<ProcessingSettingsPanelProps> = (
 
                   {/* OFF hint */}
                   {!isOn && (
-                    <p className="text-[9px] text-ink-faint leading-tight">
+                    <p className="text-[9px] text-ink-muted leading-tight">
                       {slider.toggleKey === 'strokeDilation'
                         ? 'OFF - Raw PDF preserved. No morphology applied.'
                         : 'OFF - Using preset default value.'}
@@ -386,7 +386,7 @@ export const ProcessingSettingsPanel: React.FC<ProcessingSettingsPanelProps> = (
           </div>
 
           {/* -- Preview note -- */}
-          <p className="text-center text-[9px] text-ink-faint italic">
+          <p className="text-center text-[9px] text-ink-muted italic">
             Preview updates only the selected page.
           </p>
 
@@ -408,7 +408,7 @@ export const ProcessingSettingsPanel: React.FC<ProcessingSettingsPanelProps> = (
               className={`flex h-10 flex-1 items-center justify-center gap-2 rounded-xl px-4 text-xs font-bold transition-all ${
                 !isProcessing && !isPreviewProcessing
                   ? 'bg-primary-strong text-white hover:bg-primary shadow-lg shadow-primary-faint/30 active:scale-[0.98]'
-                  : 'bg-surface-2 text-ink-faint cursor-not-allowed border border-elevated'
+                  : 'bg-surface-2 text-ink-muted cursor-not-allowed border border-elevated'
               }`}
             >
               {isProcessing ? (
@@ -428,7 +428,7 @@ export const ProcessingSettingsPanel: React.FC<ProcessingSettingsPanelProps> = (
           </div>
 
           {!isDirty && !anyToggleOn && (
-            <p className="text-center text-[9px] text-ink-faint">
+            <p className="text-center text-[9px] text-ink-muted">
               Enable a toggle above to override preset defaults, then tap &ldquo;Re-process All&rdquo; to apply to every page.
             </p>
           )}

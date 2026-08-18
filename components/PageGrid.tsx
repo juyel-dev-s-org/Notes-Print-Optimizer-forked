@@ -66,7 +66,7 @@ const LazyPageCard: React.FC<{
           title={isExcluded ? 'Include page' : 'Exclude page'}
         >
           {isExcluded ? (
-            <Square className="h-4 w-4 text-ink-faint" />
+            <Square className="h-4 w-4 text-ink-muted" />
           ) : (
             <CheckSquare className="h-4 w-4 text-primary-soft fill-primary/20" />
           )}
@@ -137,7 +137,7 @@ export const PageGrid: React.FC<PageGridProps> = ({
             <h3 className="text-sm font-bold text-white">Document Page Thumbnails</h3>
             <InfoTooltip
               title="Selective Page Exclusion"
-              content="Skip pages you don't need to print â€” like promo slides, chapter covers, or breaks."
+              content="Skip pages you don't need to print Ã¢â‚¬” like promo slides, chapter covers, or breaks."
               position="right"
             />
           </div>
@@ -152,14 +152,14 @@ export const PageGrid: React.FC<PageGridProps> = ({
               <button
                 type="button"
                 onClick={() => onToggleExcludeAll(false)}
-                className="rounded-lg bg-surface-2 px-2 py-1 text-[11px] font-bold text-ink-muted hover:bg-elevated"
+                className="rounded-lg bg-surface-2 px-2.5 py-1.5 text-[11px] font-bold text-ink-muted hover:bg-elevated"
               >
                 Include All
               </button>
               <button
                 type="button"
                 onClick={() => onToggleExcludeAll(true)}
-                className="rounded-lg bg-surface-2 px-2 py-1 text-[11px] font-bold text-ink-muted hover:bg-elevated"
+                className="rounded-lg bg-surface-2 px-2.5 py-1.5 text-[11px] font-bold text-ink-muted hover:bg-elevated"
               >
                 Exclude All
               </button>

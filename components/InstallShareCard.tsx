@@ -95,12 +95,12 @@ export const InstallShareCard: React.FC = () => {
     return (
       <div className="relative overflow-hidden rounded-2xl border border-success-strong/25 bg-gradient-to-br from-success-faint/70 via-surface to-bg p-4 shadow-lg">
         <div className="pointer-events-none absolute -right-8 -top-8 h-24 w-24 rounded-full bg-success-strong/15 blur-2xl" />
-        <div className="pointer-events-none absolute -bottom-6 -left-6 h-20 w-20 rounded-full bg-teal-500/10 blur-2xl" />
+        <div className="pointer-events-none absolute -bottom-6 -left-6 h-20 w-20 rounded-full bg-success-strong/10 blur-2xl" />
 
         <div className="relative">
           <div className="flex items-start justify-between gap-2">
             <div className="flex items-center gap-3">
-              <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-gradient-to-br from-success-deep to-teal-700 shadow-md ring-1 ring-white/10">
+              <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-gradient-to-br from-success-deep to-accent-deep shadow-md ring-1 ring-white/10">
                 <AppLogo className="h-7 w-7" />
               </div>
               <div>
@@ -163,7 +163,7 @@ export const InstallShareCard: React.FC = () => {
             <Zap className="h-3 w-3 text-warning" /> Fast
           </span>
           <span className="flex items-center gap-1 rounded-full border border-elevated/60 bg-surface-2/60 px-2 py-0.5 text-[10px] font-medium text-ink-muted">
-            <WifiOff className="h-3 w-3 text-sky-400" /> Offline
+            <WifiOff className="h-3 w-3 text-primary-soft" /> Offline
           </span>
           <span className="flex items-center gap-1 rounded-full border border-elevated/60 bg-surface-2/60 px-2 py-0.5 text-[10px] font-medium text-ink-muted">
             <ShieldCheck className="h-3 w-3 text-success" /> Private

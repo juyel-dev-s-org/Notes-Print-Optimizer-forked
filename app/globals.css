@@ -3,8 +3,9 @@
 
 /* ------------------------------------------------------------------ */
 /* Design tokens (Tailwind v4 @theme)                                  */
-/* Primitive -> Semantic -> Component layers, brand-aligned to the     */
-/* app icon (indigo #243BFF -> violet #A12CFF gradient on dark).       */
+/* Primitive -> Semantic -> Component layers: a muted dark-theme       */
+/* interpretation of the app icon's indigo #243BFF -> violet #A12CFF   */
+/* gradient (the icon itself keeps the richer neon stops).             */
 /* ------------------------------------------------------------------ */
 @theme {
   /* Fonts (Plus Jakarta Sans self-hosted via next/font) */
@@ -16,6 +17,7 @@
   --color-surface: #0f172a; /* slate-900 cards */
   --color-surface-2: #1e293b; /* slate-800 wells / inputs */
   --color-elevated: #334155; /* slate-700 borders on dark */
+  --color-line: #e2e8f0; /* slate-200 borders on white paper surfaces */
 
   --color-primary: #6366f1; /* indigo-500 */
   --color-primary-strong: #4f46e5; /* indigo-600 buttons */
@@ -32,9 +34,14 @@
   --color-success-soft: #6ee7b7; /* emerald-300 */
   --color-success-faint: #022c22; /* emerald-950 */
   --color-warning: #fbbf24; /* amber-400 */
+  --color-warning-strong: #f59e0b; /* amber-500 */
+  --color-warning-soft: #fde047; /* amber-300 */
+  --color-warning-faint: #451a03; /* amber-950 */
   --color-danger: #f87171; /* red-400 */
   --color-danger-strong: #ef4444; /* red-500 */
   --color-danger-deep: #dc2626; /* red-600 */
+  --color-danger-soft: #fca5a5; /* red-300 */
+  --color-danger-faint: #450a0a; /* red-950 */
 
   --color-ink: #f1f5f9; /* slate-100 primary text */
   --color-ink-muted: #94a3b8; /* slate-400 secondary text */

@@ -1,8 +1,9 @@
 'use client';
 
-import React from 'react';
+import React, { useRef } from 'react';
 import { ProcessingProgress } from '@/lib/optimizer/types';
 import { Loader2, ShieldCheck, XCircle } from 'lucide-react';
+import { useDialogFocus } from '@/lib/ui/useDialogFocus';
 
 interface ProcessingModalProps {
   progress: ProcessingProgress | null;
@@ -12,6 +13,11 @@ interface ProcessingModalProps {
 }
 
 export const ProcessingModal: React.FC<ProcessingModalProps> = ({ progress, phaseTitle, onCancel, progressiveThumbnails }) => {
+  const modalRef = useRef<HTMLDivElement>(null);
+  const isOpen = !!(progress && progress.stage !== 'COMPLETE');
+
+  useDialogFocus({ open: isOpen, containerRef: modalRef });
+
   if (!progress || progress.stage === 'COMPLETE') return null;
 
   const thumbArray = progressiveThumbnails
@@ -19,7 +25,13 @@ export const ProcessingModal: React.FC<ProcessingModalProps> = ({ progress, phas
     : [];
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-bg/80 p-0 sm:p-4 backdrop-blur-sm pb-safe animate-fade-in">
+    <div
+      ref={modalRef}
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="processing-modal-title"
+      className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-bg/80 p-0 sm:p-4 backdrop-blur-sm pb-safe animate-fade-in"
+    >
       <div className="relative flex w-full max-w-md flex-col rounded-t-3xl sm:rounded-2xl border border-surface-2 bg-surface p-6 shadow-2xl text-white animate-slide-up">
           <div className="flex items-center gap-3">
             <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-primary-strong/20 text-primary-soft border border-primary/30">
@@ -29,13 +41,13 @@ export const ProcessingModal: React.FC<ProcessingModalProps> = ({ progress, phas
               <span className="text-[10px] font-bold tracking-wider uppercase text-primary-soft">
                 {phaseTitle || 'Processing Workflow'}
               </span>
-              <h3 className="text-sm font-bold text-white truncate">
+              <h3 id="processing-modal-title" className="text-sm font-bold text-white truncate">
                 {progress.currentAction || 'Processing Document...'}
               </h3>
             </div>
           </div>
 
-          <div className="mt-5 flex flex-col gap-2">
+          <div role="status" className="mt-5 flex flex-col gap-2">
             <div className="flex justify-between text-xs font-semibold text-ink-muted">
               <span>
                 {progress.totalPages > 0
@@ -47,7 +59,7 @@ export const ProcessingModal: React.FC<ProcessingModalProps> = ({ progress, phas
 
             <div className="h-3 w-full overflow-hidden rounded-full bg-surface-2 border border-elevated/50">
               <div
-                className="h-full rounded-full bg-gradient-to-r from-primary via-sky-400 to-success transition-[width] duration-200 ease-out"
+                className="h-full rounded-full bg-gradient-to-r from-primary via-accent-soft to-success transition-[width] duration-200 ease-out"
                 style={{ width: `${Math.max(5, progress.percent)}%` }}
               />
             </div>
@@ -82,7 +94,7 @@ export const ProcessingModal: React.FC<ProcessingModalProps> = ({ progress, phas
                 <button
                   type="button"
                   onClick={onCancel}
-                  className="flex items-center gap-1 px-2 py-1 rounded-md bg-red-900/40 text-red-300 hover:bg-red-800/60 transition-colors text-[10px] font-bold"
+                  className="flex items-center gap-1 px-2.5 py-1.5 rounded-md bg-danger-faint/40 text-danger-soft hover:bg-danger-faint/60 transition-colors text-[10px] font-bold"
                 >
                   <XCircle className="h-3 w-3" /> Cancel
                 </button>

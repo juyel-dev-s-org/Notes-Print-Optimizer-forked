@@ -83,7 +83,7 @@ export const ToastProvider: React.FC<{ children: React.ReactNode }> = ({ childre
                     type="button"
                     onClick={() => dismiss(t.id)}
                     aria-label="Dismiss notification"
-                    className="flex h-6 w-6 shrink-0 items-center justify-center rounded-md text-ink-faint hover:bg-surface-2 hover:text-white"
+                    className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md text-ink-muted hover:bg-surface-2 hover:text-white"
                   >
                     <X className="h-3.5 w-3.5" />
                   </button>

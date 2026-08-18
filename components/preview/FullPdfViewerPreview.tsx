@@ -13,6 +13,7 @@ import {
   RotateCcw,
 } from 'lucide-react';
 import { LayoutConfig } from '@/lib/optimizer/types';
+import { useDialogFocus } from '@/lib/ui/useDialogFocus';
 
 interface FullPdfViewerPreviewProps {
   sheetPreviews: string[];
@@ -29,12 +30,20 @@ export const FullPdfViewerPreview: React.FC<FullPdfViewerPreviewProps> = ({
   const [viewMode, setViewMode] = useState<'single' | 'grid'>('single');
   const [zoomLevel, setZoomLevel] = useState(100);
   const [isFullscreen, setIsFullscreen] = useState(false);
+  const fullscreenRef = useRef<HTMLDivElement>(null);
   const fullscreenCloseRef = useRef<HTMLButtonElement>(null);
+  const expandButtonRef = useRef<HTMLButtonElement>(null);
 
-  // Focus the close button when the fullscreen modal opens; close on Escape.
+  useDialogFocus({
+    open: isFullscreen,
+    containerRef: fullscreenRef,
+    initialFocusRef: fullscreenCloseRef,
+    restoreFocusRef: expandButtonRef,
+  });
+
+  // Close the fullscreen modal on Escape.
   useEffect(() => {
     if (!isFullscreen) return;
-    fullscreenCloseRef.current?.focus();
     const onKey = (e: KeyboardEvent) => {
       if (e.key === 'Escape') setIsFullscreen(false);
     };
@@ -98,6 +107,7 @@ export const FullPdfViewerPreview: React.FC<FullPdfViewerPreviewProps> = ({
               type="button"
               onClick={() => setViewMode('single')}
               aria-pressed={viewMode === 'single'}
+              aria-label="View single sheet"
               className={`flex items-center gap-1 px-2 py-1 rounded-md text-[10px] font-bold transition-all ${
                 viewMode === 'single'
                   ? 'bg-primary-strong text-white shadow-xs'
@@ -113,6 +123,7 @@ export const FullPdfViewerPreview: React.FC<FullPdfViewerPreviewProps> = ({
               type="button"
               onClick={() => setViewMode('grid')}
               aria-pressed={viewMode === 'grid'}
+              aria-label="Show grid overview"
               className={`flex items-center gap-1 px-2 py-1 rounded-md text-[10px] font-bold transition-all ${
                 viewMode === 'grid'
                   ? 'bg-primary-strong text-white shadow-xs'
@@ -165,8 +176,10 @@ export const FullPdfViewerPreview: React.FC<FullPdfViewerPreviewProps> = ({
 
           {/* Fullscreen Modal Toggle */}
           <button
+            ref={expandButtonRef}
             type="button"
             onClick={() => setIsFullscreen(true)}
+            aria-label="Expand full screen PDF viewer"
             className="flex items-center gap-1 rounded-lg border border-elevated bg-surface-2 px-2.5 py-1.5 text-[11px] font-bold text-ink hover:bg-elevated hover:text-white transition-all"
             title="Expand Full Screen PDF Viewer"
           >
@@ -186,7 +199,7 @@ export const FullPdfViewerPreview: React.FC<FullPdfViewerPreviewProps> = ({
           >
             {/* Realistic A4 Paper */}
             <div
-              className={`relative bg-white rounded-xs shadow-[0_20px_50px_rgba(0,0,0,0.7)] border border-ink-muted overflow-hidden flex items-center justify-center p-1 sm:p-2 transition-all ${
+              className={`relative bg-white rounded-xs shadow-[0_20px_50px_rgba(0,0,0,0.7)] border border-line overflow-hidden flex items-center justify-center p-1 sm:p-2 transition-all ${
                 isLandscape
                   ? 'w-full max-w-[620px] aspect-[1.414/1]'
                   : 'w-full max-w-[440px] aspect-[1/1.414]'
@@ -232,18 +245,21 @@ export const FullPdfViewerPreview: React.FC<FullPdfViewerPreviewProps> = ({
           {/* Sheet Indicators */}
           {totalSheets > 1 && (
             <div className="mt-4 flex items-center justify-center gap-1.5 flex-wrap">
-              {sheetPreviews.map((_, idx) => (
+{sheetPreviews.map((_, idx) => (
                 <button
                   key={idx}
                   type="button"
                   onClick={() => setCurrentSheetIdx(idx)}
-                  className={`h-2 rounded-full transition-all ${
-                    idx === currentSheetIdx
-                      ? 'w-6 bg-primary'
-                      : 'w-2 bg-elevated hover:bg-ink-faint'
-                  }`}
                   aria-label={`Go to sheet ${idx + 1}`}
-                />
+                  aria-current={idx === currentSheetIdx ? 'step' : undefined}
+                  className="flex h-4 min-w-8 items-center justify-center px-1"
+                >
+                  <span
+                    className={`h-2 rounded-full transition-all ${
+                      idx === currentSheetIdx ? 'w-6 bg-primary' : 'w-2 bg-elevated hover:bg-ink-muted'
+                    }`}
+                  />
+                </button>
               ))}
             </div>
           )}
@@ -282,7 +298,7 @@ export const FullPdfViewerPreview: React.FC<FullPdfViewerPreviewProps> = ({
 
               {/* Realistic A4 Thumbnail */}
               <div
-                className={`relative w-full overflow-hidden rounded-xs bg-white border border-ink flex items-center justify-center p-1 shadow-md group-hover:shadow-xl transition-all ${
+                className={`relative w-full overflow-hidden rounded-xs bg-white border border-line flex items-center justify-center p-1 shadow-md group-hover:shadow-xl transition-all ${
                   isLandscape ? 'aspect-[1.414/1]' : 'aspect-[1/1.414]'
                 }`}
               >
@@ -301,10 +317,11 @@ export const FullPdfViewerPreview: React.FC<FullPdfViewerPreviewProps> = ({
       {/* FULLSCREEN PDF VIEWER MODAL */}
       {isFullscreen && (
         <div
+          ref={fullscreenRef}
           role="dialog"
           aria-modal="true"
           aria-label="Full screen A4 sheet viewer"
-          className="fixed inset-0 z-50 flex flex-col bg-bg/98 backdrop-blur-xl animate-in fade-in duration-200"
+          className="fixed inset-0 z-50 flex flex-col bg-bg/90 backdrop-blur-xl animate-in fade-in duration-200"
         >
           {/* Fullscreen Header */}
           <div className="flex items-center justify-between border-b border-surface-2 bg-surface p-3 sm:px-6">
@@ -322,6 +339,7 @@ export const FullPdfViewerPreview: React.FC<FullPdfViewerPreviewProps> = ({
                 type="button"
                 onClick={handlePrevSheet}
                 disabled={totalSheets <= 1}
+                aria-label="Previous sheet"
                 className="flex h-9 items-center gap-1 rounded-lg border border-elevated bg-surface-2 px-3 text-xs font-bold text-ink hover:bg-elevated disabled:opacity-30"
               >
                 <ChevronLeft className="h-4 w-4" />
@@ -332,6 +350,7 @@ export const FullPdfViewerPreview: React.FC<FullPdfViewerPreviewProps> = ({
                 type="button"
                 onClick={handleNextSheet}
                 disabled={totalSheets <= 1}
+                aria-label="Next sheet"
                 className="flex h-9 items-center gap-1 rounded-lg border border-elevated bg-surface-2 px-3 text-xs font-bold text-ink hover:bg-elevated disabled:opacity-30"
               >
                 <span className="hidden sm:inline">Next</span>
@@ -353,7 +372,7 @@ export const FullPdfViewerPreview: React.FC<FullPdfViewerPreviewProps> = ({
           {/* Fullscreen Paper Area */}
           <div className="flex-1 overflow-auto p-4 sm:p-8 flex items-center justify-center bg-bg">
             <div
-              className={`relative bg-white rounded-xs shadow-[0_25px_60px_rgba(0,0,0,0.8)] border border-ink p-2 max-w-full max-h-full flex items-center justify-center ${
+              className={`relative bg-white rounded-xs shadow-[0_25px_60px_rgba(0,0,0,0.8)] border border-line p-2 max-w-full max-h-full flex items-center justify-center ${
                 isLandscape
                   ? 'w-[92vw] max-w-[1100px] aspect-[1.414/1]'
                   : 'w-[88vw] max-w-[800px] aspect-[1/1.414]'

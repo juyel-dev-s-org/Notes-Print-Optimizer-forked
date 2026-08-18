@@ -164,7 +164,7 @@ export const FileSequencePanel: React.FC<FileSequencePanelProps> = ({
               }`}
             >
               <div className="flex min-w-0 items-center gap-2.5">
-                <GripVertical className="h-4 w-4 shrink-0 text-ink-faint" aria-hidden="true" />
+                <GripVertical className="h-4 w-4 shrink-0 text-ink-muted" aria-hidden="true" />
                 <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-primary/30 bg-primary-strong/30 text-xs font-bold text-primary-soft">
                   {idx + 1}
                 </div>
@@ -199,7 +199,7 @@ export const FileSequencePanel: React.FC<FileSequencePanelProps> = ({
                   type="button"
                   onClick={() => onRemoveItem(idx)}
                   disabled={isProcessing}
-                  className={`${btn} text-danger hover:bg-red-950/60 disabled:opacity-20`}
+                  className={`${btn} text-danger hover:bg-danger-faint/60 disabled:opacity-20`}
                   title="Remove File"
                   aria-label={`Remove ${item.name}`}
                 >

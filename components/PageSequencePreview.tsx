@@ -47,7 +47,7 @@ const SequenceItemCard: React.FC<{
             {!isLoaded && (
               <div className="absolute inset-0 flex flex-col items-center justify-center bg-surface animate-pulse text-elevated">
                 <FileText className="h-5 w-5 mb-1 opacity-40" />
-                <span className="text-[10px] font-mono text-ink-faint">p.{pageIndex + 1}</span>
+                <span className="text-[10px] font-mono text-ink-muted">p.{pageIndex + 1}</span>
               </div>
             )}
             {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -64,7 +64,7 @@ const SequenceItemCard: React.FC<{
           /* Unmounted / Released RAM State - Skeleton Placeholder */
           <div className="flex flex-col items-center justify-center h-full w-full bg-surface/60 p-2">
             <div className="h-2 w-12 rounded bg-surface-2/80 animate-pulse mb-1" />
-            <span className="text-[10px] font-bold font-mono text-ink-faint">p.{pageIndex + 1}</span>
+            <span className="text-[10px] font-bold font-mono text-ink-muted">p.{pageIndex + 1}</span>
           </div>
         )}
 
@@ -98,7 +98,7 @@ export const PageSequencePreview: React.FC<PageSequencePreviewProps> = ({ pageUr
           Page Sequence Preview ({pageUrls.length} Pages)
         </h4>
         <span className="text-[10px] text-ink-muted sm:hidden font-mono shrink-0">
-          1 Column â€¢ RAM Virtualized
+          1 Column Ã¢â‚¬Â¢ RAM Virtualized
         </span>
       </div>
 
