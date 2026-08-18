@@ -16,11 +16,11 @@ const pub = resolve(root, 'public');
 
 const svg = readFileSync(resolve(pub, 'icon.svg'));
 
-await sharp(svg).resize(192, 192).png().toFile(resolve(pub, 'icon-192.png'));
-console.log('icon-192.png OK');
+await sharp(svg).resize(192, 192).png().toFile(resolve(pub, 'icon-192-v2.png'));
+console.log('icon-192-v2.png OK');
 
-await sharp(svg).resize(512, 512).png().toFile(resolve(pub, 'icon-512.png'));
-console.log('icon-512.png OK');
+await sharp(svg).resize(512, 512).png().toFile(resolve(pub, 'icon-512-v2.png'));
+console.log('icon-512-v2.png OK');
 
 // Maskable artwork: full-bleed gradient background (no rounded corners /
 // transparency), paper + badge scaled to ~85% and centered on the paper
@@ -70,6 +70,6 @@ const maskableSvg = `<svg width="1024" height="1024" viewBox="0 0 1024 1024" xml
   <path d="M0 110 C220 10 520 40 1024 230 V0 H0 Z" fill="#FFFFFF" opacity="0.09"/>
 </svg>`;
 
-writeFileSync(resolve(pub, 'icon-maskable.svg'), maskableSvg);
-await sharp(Buffer.from(maskableSvg)).resize(512, 512).png().toFile(resolve(pub, 'icon-maskable.png'));
-console.log('icon-maskable.png OK');
+writeFileSync(resolve(pub, 'icon-maskable-v2.svg'), maskableSvg);
+await sharp(Buffer.from(maskableSvg)).resize(512, 512).png().toFile(resolve(pub, 'icon-maskable-v2.png'));
+console.log('icon-maskable-v2.png OK');

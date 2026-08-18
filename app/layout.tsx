@@ -28,7 +28,7 @@ export const metadata: Metadata = {
     type: 'website',
     images: [
       {
-        url: `${basePath}/icon-512.png`,
+        url: `${basePath}/icon-512-v2.png`,
         width: 512,
         height: 512,
         alt: 'PW Notes Print Optimizer',
@@ -38,23 +38,23 @@ export const metadata: Metadata = {
   icons: {
     icon: [
       {
-        url: `${basePath}/icon-192.png`,
+        url: `${basePath}/icon-192-v2.png`,
         type: 'image/png',
         sizes: '192x192',
       },
       {
-        url: `${basePath}/icon-512.png`,
+        url: `${basePath}/icon-512-v2.png`,
         type: 'image/png',
         sizes: '512x512',
       },
     ],
-    shortcut: `${basePath}/icon-192.png`,
-    apple: `${basePath}/icon-512.png`,
+    shortcut: `${basePath}/icon-192-v2.png`,
+    apple: `${basePath}/icon-512-v2.png`,
     other: [
       {
         rel: 'mask-icon',
         color: '#243BFF',
-        url: `${basePath}/icon-maskable.svg`,
+        url: `${basePath}/icon-maskable-v2.svg`,
       },
     ],
   },
@@ -64,7 +64,7 @@ export const metadata: Metadata = {
     title: 'PW Optimizer',
     startupImage: [
       {
-        url: `${basePath}/icon-512.png`,
+        url: `${basePath}/icon-512-v2.png`,
         media:
           '(device-width: 390px) and (device-height: 844px) and (-webkit-device-pixel-ratio: 3)',
       },
