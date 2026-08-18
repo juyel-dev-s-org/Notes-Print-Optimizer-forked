@@ -1,35 +1,39 @@
-# Security Policy
+# Security Policy — Agent Document
 
-## Supported Versions
+> **AGENT-ONLY DOCUMENT.** Written for AI coding agents and maintainers.
+> Follow the reporting flow below when a vulnerability is discovered.
+
+## 1. Supported versions
 
 | Version | Supported |
-|---------|-----------|
-| 1.x.x   | Yes       |
+|---|---|
+| 1.x.x | Yes |
 
-## Reporting a Vulnerability
+## 2. Reporting a vulnerability (agent rules)
 
-If you discover a security vulnerability within this project, please report it responsibly.
+- **NEVER open a public issue** for a security vulnerability.
+- Report via the private advisory flow:
+  `https://github.com/juyel-dev/Notes-Print-Optimizer/security/advisories/new`
+- Include: detailed description, repro steps, affected component, impact.
+- Expected SLA: acknowledgment ≤ 48 h; fix/mitigation plan ≤ 7 days;
+  credit in release notes unless anonymity requested.
 
-**Please do NOT open a public GitHub issue for security vulnerabilities.**
+## 3. Threat model (static, client-side app)
 
-### How to Report
+The application runs entirely in the browser. Security invariants:
 
-1. Email: Open a private security advisory via GitHub
-2. Go to: https://github.com/juyel-dev/Notes-Print-Optimizer/security/advisories/new
-3. Describe the vulnerability in detail
-4. Include steps to reproduce if possible
+| # | Invariant |
+|---|---|
+| 1 | No server-side processing of user PDFs — nothing leaves the device |
+| 2 | No user data uploaded to any server except optional feedback (opt-in checkbox, disabled by default) |
+| 3 | All PDF processing is local: WebAssembly + Web Workers + IndexedDB |
+| 4 | Service worker caches static assets only — never user data |
+| 5 | Feedback relay (Google Apps Script) is endpoint-whitelisted, rate-limited, and forces server-controlled `chat_id` — client-supplied values are stripped |
 
-### What to Expect
+## 4. Agent constraints
 
-- Acknowledgment within 48 hours
-- A fix or mitigation plan within 7 days
-- Credit in the release notes (unless you prefer anonymity)
-
-## Security Considerations
-
-This application runs entirely in the browser (client-side). Key points:
-
-- No server-side processing of user PDFs
-- No data is uploaded to any server (except optional feedback)
-- All PDF processing happens locally via WebAssembly and Web Workers
-- Service Worker caches only static assets (no user data)
+- Do not add telemetry or upload code paths without review (violates #2).
+- Do not expand the service worker precache to dynamic/user content.
+- Keep the GAS relay template (`lib/feedback/gasScriptTemplate.ts`) in sync
+  with the hardening guarantees in `GOOGLE_APPS_SCRIPT.md`.
+- CI runs `npm audit` — resolve high/critical findings before merging.

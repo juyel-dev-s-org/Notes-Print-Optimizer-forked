@@ -1,100 +1,118 @@
-# Contributing to Notes Print Optimizer
+# Contributing — Agent Workflow
 
-Thank you for your interest in contributing! This document explains the development
-and release workflow and the coding guidelines for this project.
+> **AGENT-ONLY DOCUMENT.** Written for AI coding agents. Follow the rules
+> here verbatim when making changes to this project. Do not show this file
+> to end users.
 
-## Development & Release Workflow
+## 1. Repository roles (non-negotiable)
 
-This project uses a **two-repository model** to keep production safe:
-
-| Repository | Role | Branch |
-|------------|------|--------|
+| Repo | Role | Branch |
+|---|---|---|
 | `juyel-dev/Notes-Print-Optimizer` | **Production** (live users) | `main` (protected) |
 | `juyel-dev-s-org/Notes-Print-Optimizer-forked` | **Development / testing / preview** | `main` + feature branches |
 
-**Rules:**
+Rules:
 
-- **All development happens in the fork** (`Notes-Print-Optimizer-forked`).
-  New features, bug fixes, refactors, and experiments are committed and pushed
-  to the fork only.
-- **The production repository is never changed directly.** Its `main` branch is
-  protected and only updated via an approved Pull Request from the fork.
-- **The fork auto-deploys a preview** on every push to its `main` branch, so the
-  latest development build can be tested at:
+1. All development happens in the **fork** — commits, experiments, fixes.
+2. The **production repo is never modified directly**. Its `main` is
+   protected and updated ONLY via a merged PR from the fork.
+3. Every push to fork `main` auto-deploys a preview:
+   `https://juyel-dev-s-org.github.io/Notes-Print-Optimizer-forked/`
+4. A `develop` branch exists in production for historical reasons — do NOT
+   use it.
 
-  > **Preview:** https://juyel-dev-s-org.github.io/Notes-Print-Optimizer-forked/
+## 2. Day-to-day flow (agent checklist)
 
-- The fork's base path is derived automatically from the repository name, so the
-  same build config works in both repositories.
+1. Work in the fork. For non-trivial work use a feature branch:
+   `git checkout -b feature/<name>`
+2. Run the verification gate before committing:
+   - `npx tsc --noEmit`
+   - `npm run lint`
+   - `npm run test` (241/241 at HEAD)
+   - `npm run build`
+3. Commit with a conventional message (section 5), push to fork `main`.
+4. Verify the preview URL on desktop and mobile (0 console errors, no
+   horizontal overflow).
+5. Create the PR:
+   `gh pr create -R juyel-dev/Notes-Print-Optimizer --base main --head juyel-dev-s-org:main`
+6. Wait for checks (ci / lighthouse / budget) → merge:
+   `gh pr merge -R juyel-dev/Notes-Print-Optimizer --merge --delete-branch=false`
+7. Confirm production deploy completes and the live site is updated.
 
-### Day-to-day flow
+## 3. Local setup
 
-1. Create a feature branch in the fork: `git checkout -b feature/your-feature`
-2. Make your changes, run `npm run test`, `npm run lint`, `npm run build`
-3. Merge/commit into the fork's `main` to update the preview
-4. Test the preview URL and exercise the functionality
-5. When confirmed, open a **Pull Request from the fork to the production repo**
-6. The PR must pass CI and receive approval before it is merged to production
+```bash
+git clone https://github.com/juyel-dev-s-org/Notes-Print-Optimizer-forked.git
+cd Notes-Print-Optimizer-forked
+npm ci
+npm run dev      # http://localhost:3000
+```
 
-> **Note:** The original repository also keeps a `develop` branch for historical
-> reasons, but active development no longer uses it. All new work goes to the fork.
+## 4. Code guidelines
 
-## Getting Started (local)
+- TypeScript strict mode is on — do not loosen it.
+- Functional React components with hooks; small focused components.
+- Tailwind CSS for styling (no inline styles).
+- Follow the existing folder structure (see README §5).
 
-1. Clone the fork: `git clone https://github.com/juyel-dev-s-org/Notes-Print-Optimizer-forked.git`
-2. Install dependencies: `npm install`
-3. Create a branch: `git checkout -b feature/your-feature-name`
-4. Run locally: `npm run dev`
-5. Run tests: `npm run test`
-6. Build to verify: `npm run build`
+Placement rules:
 
-## Development Guidelines
+| What | Where |
+|---|---|
+| Pipeline plugins | `lib/plugins/` |
+| Image kernels | `lib/kernels/` (JS) or `wasm/src/` (Rust) |
+| UI components | `components/` |
+| Services (business logic) | `lib/services/` |
+| Workers | `lib/workers/` |
+| Shared UI hooks | `lib/ui/` |
+| User-facing markdown docs | `public/content/` (human-readable — keep human format) |
 
-### Code Style
+Testing layout:
 
-- TypeScript strict mode is enabled
-- Use functional React components with hooks
-- Follow the existing file/folder structure
-- Use Tailwind CSS for styling (no inline styles)
-- Keep components small and focused
-
-### Architecture
-
-- **Pipeline plugins** go in `lib/plugins/`
-- **Image kernels** go in `lib/kernels/` (JS) or `wasm/src/` (Rust)
-- **UI components** go in `components/`
-- **Services** (business logic) go in `lib/services/`
-- **Workers** go in `lib/workers/`
-
-### Testing
-
-- Unit tests: `tests/unit/`
-- Integration tests: `tests/integration/`
-- Stress tests: `tests/stress/`
-- Benchmarks: `tests/benchmarks/`
-- E2E tests: `tests/smoke/` (Playwright)
+| Suite | Location |
+|---|---|
+| Unit | `tests/unit/` |
+| Integration | `tests/integration/` |
+| Stress | `tests/stress/` |
+| Benchmarks | `tests/benchmarks/` |
+| E2E smoke (Playwright) | `tests/smoke/` |
+| PDF fixtures + goldens | `tests/fixtures/pdf/` |
 
 All PRs must pass `npm run test` and `npm run build`.
 
-### Commit Messages
+## 5. Commit conventions
 
-Use conventional commits:
+- `feat:` new feature
+- `fix:` bug fix
+- `docs:` documentation
+- `chore:` maintenance
+- `perf:` performance improvement
+- `test:` tests
+- `refactor:` refactoring
 
-- `feat:` - New feature
-- `fix:` - Bug fix
-- `docs:` - Documentation
-- `chore:` - Maintenance
-- `perf:` - Performance improvement
-- `test:` - Adding tests
-- `refactor:` - Code refactoring
+Keep one logical change per commit. Do not mix unrelated changes.
 
-## Reporting Issues
+## 6. Hard constraints (violations are blocking)
 
-- Use the GitHub Issues tab
-- Include browser, OS, and device information
-- Attach sample PDFs if relevant (small files only)
-- Describe expected vs actual behavior
+- **Never push to production directly** — PR only.
+- **Never regenerate goldens** without intent (`PDF_UPDATE_GOLDENS=1`) and
+  justification; goldens are byte-exact acceptance criteria.
+- **Never commit secrets** (tokens, credentials, private URLs).
+- **Never rename PWA icon files** back to pre-`-v2` names — that would
+  resurrect stale-cache icon serving.
+- **Do not change engine defaults** (V2) without a paired A/B on real PDF
+  fixtures (see tests/benchmarks/ENGINEERING_ASSESSMENT.md §8).
+- **Do not introduce server-side processing** — the product is static-only.
+- **Never edit `out/`** — it is build output, regenerated by `npm run build`.
 
-## License
+## 7. Reporting issues
 
-By contributing, you agree that your contributions will be licensed under the Juyel Source License (JSL) v1.0.
+- File issues on the production repo issue tracker (fork has issues
+  disabled).
+- Include browser, OS, device, PDF page count, expected vs actual behavior.
+- Attach sample PDFs only if small.
+
+## 8. License
+
+By contributing you agree that contributions are licensed under the Juyel
+Source License (JSL) v1.0.
