@@ -34,15 +34,25 @@ export const FIXTURE_NAMES = ['text.pdf', 'image.pdf', 'scanned.pdf', 'mixed.pdf
 
 export const FIXTURES_DIR = join(__dirname, '..', 'fixtures', 'pdf');
 
-/** Merge the four committed fixture PDFs into a single multi-page deck. */
-export async function buildFixtureDeck(deckPath: string): Promise<number> {
-  const deck = await PDFDocument.create();
+/** Merge the four committed fixture PDFs into a single deck.
+ *
+ *  With `targetPages`, fixture pages are cycled (re-copied in fixture order)
+ *  until the deck reaches the target — every page is still real committed
+ *  content, which keeps large-deck runs honest (no synthetic pages). */
+export async function buildFixtureDeck(deckPath: string, targetPages?: number): Promise<number> {
+  /* updateMetadata:false — pdf-lib otherwise stamps CreationDate/ModDate from
+     new Date(), making every save nondeterministic (breaks reproducibility). */
+  const deck = await PDFDocument.create({ updateMetadata: false });
   let pages = 0;
-  for (const name of FIXTURE_NAMES) {
-    const src = await PDFDocument.load(readFileSync(join(FIXTURES_DIR, name)));
-    const copied = await deck.copyPages(src, src.getPageIndices());
-    for (const p of copied) deck.addPage(p);
-    pages += copied.length;
+  while (targetPages === undefined || pages < targetPages) {
+    for (const name of FIXTURE_NAMES) {
+      if (targetPages !== undefined && pages >= targetPages) break;
+      const src = await PDFDocument.load(readFileSync(join(FIXTURES_DIR, name)));
+      const copied = await deck.copyPages(src, src.getPageIndices());
+      for (const p of copied) deck.addPage(p);
+      pages += copied.length;
+    }
+    if (targetPages === undefined) break;
   }
   const bytes = await deck.save();
   mkdirSync(dirname(deckPath), { recursive: true });

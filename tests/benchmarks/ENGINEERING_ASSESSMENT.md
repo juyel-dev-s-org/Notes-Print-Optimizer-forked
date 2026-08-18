@@ -458,6 +458,29 @@ Browser, real engine V2 + WASM (per page, all phases incl. thumbnail/persist):
 > variance (2.5x); the relative phase structure is stable (process
 > dominates text/mixed, render+persist dominate scanned).
 
+**Final production verification (2026-08-18, clean HEAD):** 100-page
+REAL-content deck (committed fixtures cycled — no synthetic pages) through
+the production engine: `hundredPageReal.spec.ts`, V2 + WASM, wasm=ON:
+
+| metric | value |
+|---|---|
+| pages | 100 |
+| total | 11.45 s |
+| throughput | 8.73 pps |
+| per-page | render 31.4 + analyze 2.4 + process 41.7 + thumb 8.3 + persist 24.2 = 108.0 ms |
+| heap | peak +46.1 MB, retained +28.7 MB (flat at 100 pages — no growth) |
+
+**Fixture determinism — root cause found & fixed (2026-08-18):** the
+fixture generator was NOT byte-stable: `pdf-lib`'s `PDFDocument.create()`
+defaults `updateMetadata: true`, stamping `CreationDate`/`ModDate` from
+`new Date()` (second resolution) into the Info dictionary — every run in a
+different second produced different fixture bytes, which would silently
+break the golden suite for anyone regenerating. Fixed by creating docs with
+`{ updateMetadata: false }` (gen script + deck builder). Verified: 3
+consecutive regeneration runs produce identical SHA-256 hashes for all four
+fixtures; goldens were regenerated against the deterministic bytes and the
+suite passes 241/241.
+
 These replace synthetic-only evidence for production acceptance; WASM
 process is ~1.8-6x faster than the Node JS pipeline (mixed.pdf 155.2 → 41.6,
 scanned 11.2 → 9.2, text 33.9 → 31.4).

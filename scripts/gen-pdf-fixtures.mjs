@@ -11,6 +11,9 @@
  * All randomness comes from a fixed-seed LCG, and drawing uses only
  * pdf-lib (deterministic) + @napi-rs/canvas (CPU rasterizer), so the
  * byte output is stable across machines for a given dependency set.
+ * IMPORTANT: every PDFDocument.create() must pass { updateMetadata: false }
+ * — pdf-lib otherwise stamps CreationDate/ModDate from new Date(), making
+ * every regeneration nondeterministic and breaking the golden suite.
  */
 import { PDFDocument, StandardFonts, rgb } from 'pdf-lib';
 import { createCanvas, ImageData } from '@napi-rs/canvas';
@@ -181,7 +184,7 @@ function paintScannedPage(rand) {
 /* ---------- PDF builders ---------- */
 
 async function buildTextPdf() {
-  const doc = await PDFDocument.create();
+  const doc = await PDFDocument.create({ updateMetadata: false });
   const font = await doc.embedFont(StandardFonts.Helvetica);
   const bold = await doc.embedFont(StandardFonts.HelveticaBold);
   const pageSize = [612, 792];
@@ -237,7 +240,7 @@ async function buildTextPdf() {
 }
 
 async function buildImagePdf() {
-  const doc = await PDFDocument.create();
+  const doc = await PDFDocument.create({ updateMetadata: false });
   const font = await doc.embedFont(StandardFonts.Helvetica);
   const variants = [paintDarkSlide(lcg(101)), paintLightSlide(lcg(202)), paintDiagramSlide(lcg(303)), paintPhotoSlide()];
   const titles = ['Dark raster slide', 'Light raster slide', 'Diagram raster slide', 'Photo-style raster slide'];
@@ -251,7 +254,7 @@ async function buildImagePdf() {
 }
 
 async function buildScannedPdf() {
-  const doc = await PDFDocument.create();
+  const doc = await PDFDocument.create({ updateMetadata: false });
   for (const seed of [505, 606, 707, 808]) {
     const page = doc.addPage([960, 540]);
     const img = await doc.embedJpg(paintScannedPage(lcg(seed)));
@@ -261,7 +264,7 @@ async function buildScannedPdf() {
 }
 
 async function buildMixedPdf() {
-  const doc = await PDFDocument.create();
+  const doc = await PDFDocument.create({ updateMetadata: false });
   const font = await doc.embedFont(StandardFonts.Helvetica);
   const bold = await doc.embedFont(StandardFonts.HelveticaBold);
 
