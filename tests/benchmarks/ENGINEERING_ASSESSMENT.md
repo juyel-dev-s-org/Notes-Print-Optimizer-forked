@@ -454,6 +454,29 @@ These replace synthetic-only evidence for production acceptance; WASM
 process is ~1.8-6x faster than the Node JS pipeline (mixed.pdf 155.2 → 41.6,
 scanned 11.2 → 9.2, text 33.9 → 31.4).
 
+**Pooled `dst`/`fm` buffers — measured, NOT merged (2026-08-18):** paired
+same-window A/B on the 18 committed real pages (Node JS pipeline, 3 repeats,
+alternating order, `--expose-gc`, warm pool): **B (pooled) was +8.6% and
++11.4% slower** on process time (46.4–48.2 → 51.7–52.4 ms/page) across two
+runs, with **no heap benefit** (peak live heap ±1.3 MB, hit rate 55%).
+Production WASM path is unaffected by design (processPage's WASM branch never
+allocates dst/fm in JS). Per the paired-A/B gate (merge only on meaningful
+end-to-end improvement + no regression), the change was **reverted**; the
+V8 young-gen allocator handles these per-page buffers cheaper than pool
+bookkeeping + retained old-gen scanning. Prototype pieces removed from the
+tree; the pool keeps only the undersized-buffer fix above.
+
+**V1 vs V2 — measured, V1-as-default dropped (2026-08-18):** same-window
+paired A/B on the real 18-page fixture deck (`tests/benchmarks/v1VsV2.spec.ts`,
+3 alternate rounds, page-side gc + heap sampling): V1 was **2.4x slower**
+(7.26s vs 3.04s per deck; 2.5 vs 6.0 pps) and retained **11x more memory**
+(peak +235–400 MB vs +54–58 MB; retained +99–401 MB vs +9–36 MB). The
+synthetic-only "V1 2.2x at 10 pages" claim does NOT hold on real content —
+the same synthetic PDFs favored V1's single-thread pipeline, while real
+pages (vector text + embedded rasters) expose V1's missing worker offload
+and per-page buffer retention. V2 remains the production engine; the
+"1.9x memory" concern is actually ~11x on real PDFs.
+
 ### Q44. Optimizations that change semantics
 
 - **RGB-threshold classification: changes output** (15.75% diff on mixed).
@@ -474,8 +497,8 @@ scanned 11.2 → 9.2, text 33.9 → 31.4).
 | 1 | 1-channel unsharp (JS + Rust) | 2.4–2.5x on sharpen ≈ **29% end-to-end** | low (few lines) | zero (byte-proof) | **MUST DO** |
 | 2 | transferables in composeSheet (no `.slice(0)`) | ~2.3 MB×N copies removed per sheet | low | low | SHOULD DO |
 | 3 | fused HSV+classify (per-kernel wasm path) | 1.46–1.57x, −26 MB/page | medium | zero (0-diff) | SHOULD DO |
-| 4 | pooled `dst`/`fm` buffers in processPage | ~7 MB/page churn removed | medium | low | SHOULD DO |
-| 5 | V1 as default for ≥10-page decks | 2.2x at 10 pages | low (config) | medium (1.9x memory, blocking) | OPTIONAL (A/B first) |
+| 4 | pooled `dst`/`fm` buffers in processPage | measured **+8.6–11.4% slower**, no heap gain (paired A/B, real PDFs) | — | — | **NOT WORTH DOING** (reverted) |
+| 5 | V1 as default for ≥10-page decks | measured **2.4x slower + 11x memory** on real PDFs (paired A/B) | — | — | **NOT WORTH DOING** (V2 stays default) |
 | 6 | integer HSV in Rust (drop f32) | 0-diff proven; gain unmeasured (likely 1.2–1.5x on hsv) | medium | zero | OPTIONAL |
 | 7 | WASM SIMD (+simd128) | unmeasured; copies dominate | medium | low | OPTIONAL |
 | 8 | IDB persist batching | ~8.6% of page | medium | low | OPTIONAL |

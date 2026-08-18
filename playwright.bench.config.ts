@@ -2,7 +2,7 @@ import { defineConfig } from '@playwright/test';
 
 export default defineConfig({
   testDir: './tests/benchmarks',
-  testMatch: /(browserPhases|pipelineScale|kernelHeadToHead|bufferMemory|abWasm|fusedMemory|realPdfBaseline)\.spec\.ts/,
+  testMatch: /(browserPhases|pipelineScale|kernelHeadToHead|bufferMemory|abWasm|fusedMemory|realPdfBaseline|v1VsV2)\.spec\.ts/,
   timeout: 180000,
   retries: 0,
   use: {
