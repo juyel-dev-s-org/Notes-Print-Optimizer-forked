@@ -26,7 +26,7 @@ const BUCKET_SPECS: Array<{ threshold: number; key: string; maxCount: number }> 
   { threshold: Infinity, key: 'LARGE', maxCount: 1 },
 ];
 
-class BufferPool {
+export class BufferPool {
   private pools: Map<string, PoolBucket> = new Map();
   private totalPooledBytes = 0;
   private maxPooledBytes: number;
@@ -45,9 +45,15 @@ class BufferPool {
     const bucket = this.pools.get(key);
     if (bucket && bucket.buffers.length > 0) {
       const buf = bucket.buffers.pop()!;
+      if (buf.byteLength >= size) {
+        this.totalPooledBytes -= buf.byteLength;
+        this.hitCount++;
+        return new Uint8Array(buf);
+      }
+      /* Pooled buffer smaller than requested (buckets are threshold-keyed, so
+         a bucket can hold buffers of any size below its threshold) — discard
+         it and allocate fresh; returning it would corrupt callers. */
       this.totalPooledBytes -= buf.byteLength;
-      this.hitCount++;
-      return new Uint8Array(buf);
     }
     this.missCount++;
     return new Uint8Array(size);
@@ -58,9 +64,12 @@ class BufferPool {
     const bucket = this.pools.get(key);
     if (bucket && bucket.buffers.length > 0) {
       const buf = bucket.buffers.pop()!;
+      if (buf.byteLength >= size) {
+        this.totalPooledBytes -= buf.byteLength;
+        this.hitCount++;
+        return buf;
+      }
       this.totalPooledBytes -= buf.byteLength;
-      this.hitCount++;
-      return buf;
     }
     this.missCount++;
     return new ArrayBuffer(size);

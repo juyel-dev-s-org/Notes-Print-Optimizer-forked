@@ -73,9 +73,17 @@ export async function runFullBenchmark(
   opts: { pageCount?: number; engineVersion?: EngineVersion } = {}
 ): Promise<FullBenchmarkReport> {
   const pageCount = opts.pageCount ?? 12;
+  const pdfBuffer = await buildBenchmarkPdf(pageCount);
+  return runEngineOnPdf(pdfBuffer, { engineVersion: opts.engineVersion });
+}
+
+/** Run the real engine on arbitrary PDF bytes (fixture-driven baselines). */
+export async function runEngineOnPdf(
+  pdfBuffer: ArrayBuffer,
+  opts: { engineVersion?: EngineVersion } = {}
+): Promise<FullBenchmarkReport> {
   const { getProcessingEngine } = await import('../engine');
   const engine = getProcessingEngine(opts.engineVersion);
-  const pdfBuffer = await buildBenchmarkPdf(pageCount);
 
   let doc: DocPhasesEvent | null = null;
   const unsub = metricsBus.on('doc:phases', (e) => { doc = e as DocPhasesEvent; });
@@ -153,6 +161,20 @@ export function installGlobalBenchmark(): void {
       console.log(`  engine=${report.engineId} wasm=${report.wasmLoaded ? 'ON' : 'OFF(js)'} pages=${report.totalPages} total=${report.totalMs.toFixed(0)}ms pps=${report.pagesPerSecond.toFixed(2)}`);
       console.log(`  per-page avg: render=${report.perPageAvg.renderMs.toFixed(1)}ms analyze=${report.perPageAvg.analyzeMs.toFixed(1)}ms process=${report.perPageAvg.processMs.toFixed(1)}ms thumb=${report.perPageAvg.thumbnailMs.toFixed(1)}ms persist=${report.perPageAvg.persistMs.toFixed(1)}ms`);
       console.log('[NPO Benchmark]', report);
+      return report;
+    };
+  }
+
+  if (!w.__npoProcessPdf) {
+    w.__npoProcessPdf = async (pdfBuffer: ArrayBuffer, opts?: { engineVersion?: string }) => {
+      console.log('[NPO Benchmark] Running real-PDF engine benchmark…');
+      const report = await runEngineOnPdf(pdfBuffer, {
+        engineVersion: opts?.engineVersion as EngineVersion | undefined,
+      });
+      console.log('%c[NPO Real-PDF Benchmark] Full pipeline report', 'color:#34d399;font-weight:bold');
+      console.log(`  engine=${report.engineId} wasm=${report.wasmLoaded ? 'ON' : 'OFF(js)'} pages=${report.totalPages} total=${report.totalMs.toFixed(0)}ms pps=${report.pagesPerSecond.toFixed(2)}`);
+      console.log(`  per-page avg: render=${report.perPageAvg.renderMs.toFixed(1)}ms analyze=${report.perPageAvg.analyzeMs.toFixed(1)}ms process=${report.perPageAvg.processMs.toFixed(1)}ms thumb=${report.perPageAvg.thumbnailMs.toFixed(1)}ms persist=${report.perPageAvg.persistMs.toFixed(1)}ms`);
+      console.log('[NPO Real-PDF Benchmark]', report);
       return report;
     };
   }
