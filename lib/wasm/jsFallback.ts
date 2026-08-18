@@ -34,6 +34,25 @@ export const jsKernels: IWasmKernels = {
     return out;
   },
 
+  classifyFused(rgba: Uint8ClampedArray, pixelCount: number): Uint8Array {
+    const out = new Uint8Array(pixelCount);
+    const hsv: [number, number, number] = [0, 0, 0];
+    for (let i = 0; i < pixelCount; i++) {
+      const off = i * 4;
+      rgbToHsv(rgba[off], rgba[off + 1], rgba[off + 2], hsv);
+      const h = hsv[0], s = hsv[1], v = hsv[2];
+      if (v < 70) continue;
+      if ((s < 55 && v > 155) ||
+          (h >= 15 && h <= 35 && s > 80 && v > 100) ||
+          (h >= 36 && h <= 85 && s > 55 && v > 75) ||
+          (h >= 86 && h <= 105 && s > 55 && v > 75) ||
+          (h >= 106 && h <= 135 && s > 55 && v > 65) ||
+          (h >= 136 && h <= 175 && s > 55 && v > 75) ||
+          ((h <= 15 || h >= 175) && s > 75 && v > 95)) out[i] = 1;
+    }
+    return out;
+  },
+
   connectedComponents(mask: Uint8Array, w: number, h: number): Int32Array {
     const tp = w * h;
     ensureCC(tp);

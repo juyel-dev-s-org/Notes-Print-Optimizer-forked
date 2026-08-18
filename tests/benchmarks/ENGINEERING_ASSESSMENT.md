@@ -496,9 +496,14 @@ not more kernel math.
    (full-length, offset-0 buffers, same as the old slices).
 
 **CHANGE NEXT** (after the above is merged and re-benchmarked)
-3. Fused single-pass HSV+classify in the per-kernel WASM path (1.46x,
-   −26 MB/page).
-4. Pool `dst`/`fm` per-page buffers in processPage JS fallback.
+3. ~~**Fused single-pass HSV+classify in the per-kernel WASM path (1.46x,
+   −26 MB/page)**~~ — **DONE (committed with this report).** Single-pass
+   `classify_fused` (Rust) shared by `process_page` and the per-kernel path;
+   JS fallback mirrors it. Same-window paired A/B (100p warm): process
+   171→137 ms/page (−19.7%), total 24.2→20.6 s (−14.9%), pps 4.12→4.85.
+   Kernel: 51.1→24.8 ms (2.06x), 0/1.44M diff, transient heap
+   27.4 MB→1.4 MB (−25.9 MB/page). 231 tests green.
+4. **Pool `dst`/`fm` per-page buffers in processPage JS fallback.**
 5. Add real PDF fixtures (from `samplePdfGenerator.ts`) to the golden suite
    to cover text/image/scanned/mixed content.
 6. A/B-test V1 as default for ≥10-page decks (time vs 1.9x memory).

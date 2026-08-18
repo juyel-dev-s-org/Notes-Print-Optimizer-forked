@@ -199,16 +199,22 @@ export function processPage(
   const fm = new Uint8Array(totalPixels);
 
   if (convertColors && wasmKernels) {
-    /* WASM-accelerated path: classify all channels, OR into fm, then single CC pass */
+    /* WASM-accelerated path: single-pass fused classify when available
+       (no 17.3 MB HSV + 10.1 MB channel buffers), else classify all
+       channels and OR into fm, then single CC pass */
     const cropped = srcData.subarray(ct * sw * 4, (ct + dh) * sw * 4);
-    const hsv = wasmKernels.rgbToHsvBatch(cropped, totalPixels);
-    const channels = wasmKernels.classifyColors(hsv, totalPixels);
-    for (let i = 0; i < totalPixels; i++) {
-      const base = i * 7;
-      if (channels[base] === 1 || channels[base + 1] === 1 || channels[base + 2] === 1 ||
-          channels[base + 3] === 1 || channels[base + 4] === 1 || channels[base + 5] === 1 ||
-          channels[base + 6] === 1) {
-        fm[i] = 1;
+    if (typeof wasmKernels.classifyFused === 'function') {
+      fm.set(wasmKernels.classifyFused(cropped, totalPixels));
+    } else {
+      const hsv = wasmKernels.rgbToHsvBatch(cropped, totalPixels);
+      const channels = wasmKernels.classifyColors(hsv, totalPixels);
+      for (let i = 0; i < totalPixels; i++) {
+        const base = i * 7;
+        if (channels[base] === 1 || channels[base + 1] === 1 || channels[base + 2] === 1 ||
+            channels[base + 3] === 1 || channels[base + 4] === 1 || channels[base + 5] === 1 ||
+            channels[base + 6] === 1) {
+          fm[i] = 1;
+        }
       }
     }
     removeDecorativeAndNoise(fm, dw, dh);

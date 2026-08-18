@@ -32,6 +32,7 @@ async function loadWasm(): Promise<IWasmKernels | null> {
     const exports = wasm as {
       rgb_to_hsv_batch: (rgba: Uint8Array, pixel_count: number) => Float32Array;
       classify_colors: (hsv: Float32Array, pixel_count: number) => Uint8Array;
+      classify_fused: (rgba: Uint8Array, pixel_count: number) => Uint8Array;
       connected_components: (mask: Uint8Array, width: number, height: number) => Int32Array;
       strip_decorative_fills: (mask: Uint8Array, width: number, height: number) => void;
       remove_noise: (mask: Uint8Array, width: number, height: number) => void;
@@ -80,6 +81,11 @@ async function loadWasm(): Promise<IWasmKernels | null> {
       kernels.unsharpMaskBW = (data, w, h, amt) => {
         exports.unsharp_mask_bw(new Uint8Array(data.buffer, data.byteOffset, data.byteLength), w, h, amt);
       };
+    }
+    // Same for the fused single-pass classifier (older binaries lack it).
+    if (typeof exports.classify_fused === 'function') {
+      kernels.classifyFused = (rgba, pixelCount) =>
+        exports.classify_fused(new Uint8Array(rgba.buffer, rgba.byteOffset, rgba.byteLength), pixelCount);
     }
     return kernels;
   } catch (e) {
