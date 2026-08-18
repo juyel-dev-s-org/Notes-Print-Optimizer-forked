@@ -225,9 +225,10 @@ pub fn process_page(
         data[di + 3] = 255;
     }
 
-    // Sharpen (unsharp mask)
+    // Sharpen (unsharp mask) — input above is strictly B/W (R=G=B), so the
+    // 1-channel variant is byte-identical and ~2.5x faster (measured).
     if sharpen_amount > 0.0 {
-        sharpen::unsharp_mask(&mut data, dw, dh, sharpen_amount);
+        sharpen::unsharp_mask_bw(&mut data, dw, dh, sharpen_amount);
     }
 
     data

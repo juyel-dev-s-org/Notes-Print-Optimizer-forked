@@ -46,6 +46,11 @@ pub fn unsharp_mask(data: &mut [u8], width: u32, height: u32, amt: f64) {
 }
 
 #[wasm_bindgen]
+pub fn unsharp_mask_bw(data: &mut [u8], width: u32, height: u32, amt: f64) {
+    sharpen::unsharp_mask_bw(data, width as usize, height as usize, amt);
+}
+
+#[wasm_bindgen]
 pub fn ink_coverage(data: &[u8], pixel_count: u32, threshold: u8) -> f64 {
     ink::ink_coverage(data, pixel_count as usize, threshold)
 }

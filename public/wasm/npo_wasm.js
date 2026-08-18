@@ -148,6 +148,18 @@ export function unsharp_mask(data, width, height, amt) {
     var len0 = WASM_VECTOR_LEN;
     wasm.unsharp_mask(ptr0, len0, addHeapObject(data), width, height, amt);
 }
+
+/**
+ * @param {Uint8Array} data
+ * @param {number} width
+ * @param {number} height
+ * @param {number} amt
+ */
+export function unsharp_mask_bw(data, width, height, amt) {
+    var ptr0 = passArray8ToWasm0(data, wasm.__wbindgen_export);
+    var len0 = WASM_VECTOR_LEN;
+    wasm.unsharp_mask_bw(ptr0, len0, addHeapObject(data), width, height, amt);
+}
 function __wbg_get_imports() {
     const import0 = {
         __proto__: null,

@@ -37,6 +37,7 @@ async function loadWasm(): Promise<IWasmKernels | null> {
       remove_noise: (mask: Uint8Array, width: number, height: number) => void;
       dilate_mask: (mask: Uint8Array, width: number, height: number, ks: number) => void;
       unsharp_mask: (data: Uint8Array, width: number, height: number, amt: number) => void;
+      unsharp_mask_bw: (data: Uint8Array, width: number, height: number, amt: number) => void;
       ink_coverage: (data: Uint8Array, pixel_count: number, threshold: number) => number;
       process_page: (rgba: Uint8Array, width: number, height: number, invert_mode_smart: boolean, is_dark: boolean, dilation_ks: number, sharpen_amount: number) => Uint8Array;
     };
@@ -73,6 +74,12 @@ async function loadWasm(): Promise<IWasmKernels | null> {
     if (typeof exports.process_page === 'function') {
       kernels.processPage = (rgba, width, height, invertModeSmart, isDark, dilationKs, sharpenAmount) =>
         exports.process_page(rgba, width, height, invertModeSmart, isDark, dilationKs, sharpenAmount);
+    }
+    // Same for the 1-channel BW unsharp (older binaries lack it).
+    if (typeof exports.unsharp_mask_bw === 'function') {
+      kernels.unsharpMaskBW = (data, w, h, amt) => {
+        exports.unsharp_mask_bw(new Uint8Array(data.buffer, data.byteOffset, data.byteLength), w, h, amt);
+      };
     }
     return kernels;
   } catch (e) {

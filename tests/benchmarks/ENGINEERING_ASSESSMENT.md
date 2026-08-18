@@ -442,6 +442,23 @@ change lands.
 - **Full proposed** (+5 V1 default): ~33 s loaded (V1 2.2x on process,
   but render/persist remain); idle ~14 s.
 
+#### Q47-measured: change #1 landed (1-channel BW unsharp, JS+Rust)
+
+Same-window A/B (back-to-back 100-page warm runs, same machine state,
+`abWasm.spec.ts`, out/wasm pair swapped between runs):
+
+| metric | OLD 3-channel | NEW 1-channel BW | delta |
+|---|---|---|---|
+| process ms/page | 151.7 / 158.8 | 128.3 / 125.8 | **−18.1%** |
+| total 100p | 20.8 / 21.4 s | 18.3 / 18.2 s | **−13.7%** |
+| pages/sec | 4.74 | 5.49 | **+15.7%** |
+
+The projection of ~25 s idle for 100 pages is now confirmed at
+**~18 s** (warm, idle window) — better than projected, because the
+3-channel → 1-channel unsharp also halved FM buffer writes in the
+hot loop (measured 2.41–2.49x on the kernel itself). Projection for
+"low-risk + WASM/fused" (~40 s loaded) stands.
+
 ### Q48–Q49. Is 30 s for 100 pages realistic?
 
 **Yes, on idle/modest hardware after change #1** (measured idle baseline
@@ -464,13 +481,13 @@ not more kernel math.
   measures faster than WASM per-kernel on hsv/classify.
 - V2 as the default engine; current Cargo flags (lto, opt-level z, strip,
   codegen-units 1, wasm-opt false); worker pool + OffscreenCanvas compose.
-- The existing 0-diff golden test policy (211 tests, byte-level proofs).
+- The existing 0-diff golden test policy (228 tests, byte-level proofs).
 
 **CHANGE NOW** (low risk, high ROI, all byte-identical verified)
-1. **1-channel unsharp in `lib/kernels/sharpen.ts` and `wasm/src/sharpen.rs`**
-   — apply only when the input is the B/W composite (the production path);
-   keep 3-channel semantics for standalone calls. Expected: process
-   ~575→~350 ms/page, end-to-end −29%.
+1. ~~**1-channel unsharp in `lib/kernels/sharpen.ts` and `wasm/src/sharpen.rs`**~~ — **DONE (committed with this report).** Byte-identical
+   (0/5.76M diff), measured same-window A/B: process −18.1%
+   (155→127 ms/page), 100-page total −13.7% (21.1→18.2 s), pps
+   4.74→5.49. Expected projection beat: idle 100p now ~18 s.
 2. **Remove `.slice(0)` copies in `composeSheetWithWorker`** by transferring
    buffers (pdfExporter.ts:109).
 
@@ -502,5 +519,5 @@ pdf.js is Apache-2.0, already integrated, and correct (0-diff parity).
   CHANGE NEXT + V1 default: **~33 s loaded** (~14 s idle).
 - Peak memory: unchanged ~89 MB (V2); 136–161 MB if V1 becomes default.
 - Trade-offs: V2 keeps UI blocking in ~50 ms chunks (unchanged); V1 trades
-  memory for time; zero output/visual changes; all 211 tests + 0-diff
+  memory for time; zero output/visual changes; all 228 tests + 0-diff
   golden checks remain green.

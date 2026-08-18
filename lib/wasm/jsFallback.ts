@@ -122,6 +122,16 @@ export const jsKernels: IWasmKernels = {
           const en = ctr + amt * lap; data[idx + c] = en < 0 ? 0 : en > 255 ? 255 : (en + 0.5) | 0; } } }
   },
 
+  unsharpMaskBW(data: Uint8ClampedArray, w: number, h: number, amt: number): void {
+    const cp = new Uint8ClampedArray(data);
+    for (let y = 1; y < h - 1; y++) { const ro = y * w * 4, pro = (y - 1) * w * 4, nro = (y + 1) * w * 4;
+      for (let x = 1; x < w - 1; x++) { const idx = ro + x * 4;
+        const ctr = cp[idx];
+        const lap = 4 * ctr - cp[pro + x * 4] - cp[nro + x * 4] - cp[idx - 4] - cp[idx + 4];
+        const en = ctr + amt * lap; const v = en < 0 ? 0 : en > 255 ? 255 : (en + 0.5) | 0;
+        data[idx] = v; data[idx + 1] = v; data[idx + 2] = v; } }
+  },
+
   inkCoverage(data: Uint8ClampedArray, pixelCount: number, threshold: number): number {
     const st = Math.max(1, Math.floor(Math.sqrt(pixelCount / 50000)));
     let nw = 0, sm = 0;

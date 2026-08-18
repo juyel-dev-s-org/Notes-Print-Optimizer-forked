@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { analyzeImageData } from '../../lib/optimizer/analysis';
 import { processPage, createImageDataFromBuffer, calculateInkCoverage } from '../../lib/kernels';
-import { applyUnsharpMask } from '../../lib/kernels/sharpen';
+import { applyUnsharpMask, applyUnsharpMaskBW } from '../../lib/kernels/sharpen';
 import { ProcessingParameters } from '../../lib/optimizer/types';
 
 function createSyntheticImageData(width: number, height: number, type: 'dark' | 'light' | 'diagram'): ImageData {
@@ -135,6 +135,61 @@ describe('ImageProcessingKernels', () => {
       const b = new Uint8ClampedArray(src);
       reference(a);
       applyUnsharpMask(b, w, h, 0.7);
+      expect(b).toEqual(a);
+    });
+  });
+
+  describe('applyUnsharpMaskBW', () => {
+    it('is byte-identical to the 3-channel version on strictly B/W data', () => {
+      const w = 47;
+      const h = 31;
+      const n = w * h * 4;
+      const bw = new Uint8ClampedArray(n);
+      for (let i = 0; i < n / 4; i++) {
+        const v = (i * 7 + (i / 3) | 0) % 5 === 0 ? 0 : 255;
+        bw[i * 4] = v; bw[i * 4 + 1] = v; bw[i * 4 + 2] = v; bw[i * 4 + 3] = 255;
+      }
+
+      const a = new Uint8ClampedArray(bw);
+      const b = new Uint8ClampedArray(bw);
+      applyUnsharpMask(a, w, h, 0.35);
+      applyUnsharpMaskBW(b, w, h, 0.35);
+      expect(b).toEqual(a);
+    });
+
+    it('keeps alpha and boundary pixels untouched', () => {
+      const w = 21;
+      const h = 17;
+      const n = w * h * 4;
+      const bw = new Uint8ClampedArray(n);
+      for (let i = 0; i < n / 4; i++) {
+        const v = i % 3 === 0 ? 0 : 255;
+        bw[i * 4] = v; bw[i * 4 + 1] = v; bw[i * 4 + 2] = v;
+        bw[i * 4 + 3] = 200;
+      }
+      const original = new Uint8ClampedArray(bw);
+      applyUnsharpMaskBW(bw, w, h, 1.0);
+      for (let i = 0; i < n / 4; i++) expect(bw[i * 4 + 3]).toBe(200);
+      /* boundary row/col unchanged */
+      for (let y = 0; y < h; y++) {
+        const top = y * w * 4;
+        expect(bw[top]).toBe(original[top]);
+        expect(bw[top + (w - 1) * 4]).toBe(original[top + (w - 1) * 4]);
+      }
+      for (let x = 0; x < w; x++) {
+        const row = x * 4;
+        expect(bw[row]).toBe(original[row]);
+        expect(bw[(h - 1) * w * 4 + row]).toBe(original[(h - 1) * w * 4 + row]);
+      }
+    });
+
+    it('no-ops on tiny images like the 3-channel version', () => {
+      const tiny = new Uint8ClampedArray([10, 10, 10, 255, 250, 250, 250, 255, 10, 10, 10, 255]);
+      const a = new Uint8ClampedArray(tiny);
+      const b = new Uint8ClampedArray(tiny);
+      applyUnsharpMaskBW(a, 3, 1, 0.5);
+      applyUnsharpMask(b, 3, 1, 0.5);
+      expect(a).toEqual(tiny);
       expect(b).toEqual(a);
     });
   });
