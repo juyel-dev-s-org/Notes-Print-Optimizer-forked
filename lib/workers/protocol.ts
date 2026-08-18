@@ -1,5 +1,3 @@
-import type { PageProfile } from '../optimizer/types';
-
 export type WorkerType = 'pixel' | 'compose' | 'render';
 
 export interface PixelTask {
@@ -33,21 +31,16 @@ export interface ComposeTask {
   marginRight: number;
   marginBottom: number;
   marginInner: number;
+  footerHeight: number;
+  footerFontSize: number;
+  footerBaseline: number;
   showSlideBorders: boolean;
   showPageNumbers: boolean;
-}
-
-export interface RenderTask {
-  taskId: string;
-  pageIndex: number;
-  pdfBuffer: ArrayBuffer;
-  scale: number;
 }
 
 export type WorkerRequest =
   | { type: 'PROCESS_PIXEL'; task: PixelTask }
   | { type: 'COMPOSE_SHEET'; task: ComposeTask }
-  | { type: 'RENDER_PAGE'; task: RenderTask }
   | { type: 'PING' }
   | { type: 'CANCEL'; taskId?: string }
   | { type: 'GET_BUFFER_STATS' }
@@ -56,7 +49,6 @@ export type WorkerRequest =
 export type WorkerResponse =
   | { type: 'PIXEL_PROCESSED'; taskId: string; pageIndex: number; buffer: ArrayBuffer; width: number; height: number; inkBefore: number; inkAfter: number }
   | { type: 'SHEET_COMPOSED'; taskId: string; sheetIndex: number; buffer: ArrayBuffer; width: number; height: number }
-  | { type: 'PAGE_RENDERED'; taskId: string; pageIndex: number; buffer: ArrayBuffer; width: number; height: number }
   | { type: 'PONG' }
   | { type: 'BUFFER_STATS'; bufferedCount: number; maxBuffered: number }
   | { type: 'ERROR'; taskId: string; error: string };
@@ -69,6 +61,7 @@ export interface TaskEntry<T = any> {
   startTime: number;
   timeout: number;
   retriesLeft: number;
+  timerId?: ReturnType<typeof setTimeout> | null;
 }
 
 export interface WorkerInfo {

@@ -1,6 +1,67 @@
 @import "tailwindcss";
 @import "tw-animate-css";
 
+/* ------------------------------------------------------------------ */
+/* Design tokens (Tailwind v4 @theme)                                  */
+/* Primitive -> Semantic -> Component layers: a muted dark-theme       */
+/* interpretation of the app icon's indigo #243BFF -> violet #A12CFF   */
+/* gradient (the icon itself keeps the richer neon stops).             */
+/* ------------------------------------------------------------------ */
+@theme {
+  /* Fonts (Plus Jakarta Sans self-hosted via next/font) */
+  --font-sans: var(--font-jakarta), ui-sans-serif, system-ui, -apple-system,
+    "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+
+  /* Semantic colors */
+  --color-bg: #020617; /* slate-950 page background */
+  --color-surface: #0f172a; /* slate-900 cards */
+  --color-surface-2: #1e293b; /* slate-800 wells / inputs */
+  --color-elevated: #334155; /* slate-700 borders on dark */
+  --color-line: #e2e8f0; /* slate-200 borders on white paper surfaces */
+
+  --color-primary: #6366f1; /* indigo-500 */
+  --color-primary-strong: #4f46e5; /* indigo-600 buttons */
+  --color-primary-deep: #4338ca; /* indigo-700 hover */
+  --color-primary-faint: #1e1b4b; /* indigo-950 deep wells */
+  --color-primary-soft: #818cf8; /* indigo-400 links/focus */
+  --color-accent: #8b5cf6; /* violet-500 (icon gradient end) */
+  --color-accent-soft: #a78bfa; /* violet-400 */
+  --color-accent-deep: #6d28d9; /* violet-700 */
+
+  --color-success: #34d399; /* emerald-400 */
+  --color-success-strong: #10b981; /* emerald-500 */
+  --color-success-deep: #059669; /* emerald-600 */
+  --color-success-soft: #6ee7b7; /* emerald-300 */
+  --color-success-faint: #022c22; /* emerald-950 */
+  --color-warning: #fbbf24; /* amber-400 */
+  --color-warning-strong: #f59e0b; /* amber-500 */
+  --color-warning-soft: #fde047; /* amber-300 */
+  --color-warning-faint: #451a03; /* amber-950 */
+  --color-danger: #f87171; /* red-400 */
+  --color-danger-strong: #ef4444; /* red-500 */
+  --color-danger-deep: #dc2626; /* red-600 */
+  --color-danger-soft: #fca5a5; /* red-300 */
+  --color-danger-faint: #450a0a; /* red-950 */
+
+  --color-ink: #f1f5f9; /* slate-100 primary text */
+  --color-ink-muted: #94a3b8; /* slate-400 secondary text */
+  --color-ink-faint: #64748b; /* slate-500 tertiary text */
+
+  /* Component radii */
+  --radius-btn: 0.75rem;
+  --radius-card: 1rem;
+  --radius-input: 0.5rem;
+  --radius-pop: 0.75rem;
+
+  /* Component shadows */
+  --shadow-card: 0 1px 2px rgb(2 6 23 / 0.5), 0 8px 24px -16px rgb(2 6 23 / 0.6);
+  --shadow-pop: 0 12px 32px -8px rgb(2 6 23 / 0.7), 0 4px 8px -4px rgb(2 6 23 / 0.5);
+  --shadow-float: 0 20px 50px -12px rgb(2 6 23 / 0.8);
+
+  /* Motion */
+  --ease-soft: cubic-bezier(0.22, 1, 0.36, 1);
+}
+
 @layer utilities {
   /* Safe area padding support for Android notches, camera cutouts & bottom gesture bars */
   .pt-safe {
@@ -15,7 +76,7 @@
   .pr-safe {
     padding-right: env(safe-area-inset-right, 0px);
   }
-  
+
   .min-h-screen-safe {
     min-height: calc(100vh - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px));
   }
@@ -28,7 +89,7 @@
   }
 }
 
-/* Custom mobile-first scrollbar styling */
+/* Custom mobile-first scrollbar styling (single global system) */
 ::-webkit-scrollbar {
   width: 6px;
   height: 6px;
@@ -47,23 +108,102 @@
   background: rgba(100, 116, 139, 0.6);
 }
 
+html {
+  scrollbar-width: thin;
+  scrollbar-color: rgb(100 116 139 / 0.5) transparent;
+}
+
 /* Disable overscroll bounce on mobile app shell for native feel */
 html, body {
   overscroll-behavior-y: none;
   -webkit-tap-highlight-color: transparent;
 }
 
-/* Desktop-only ambient background: soft radial glow + very subtle blueprint grid.
-   Kept extremely low-opacity and paint-cheap (no fixed attachment, no images). */
+/* Desktop-only ambient background: soft subtle radial glow.
+   Kept paint-cheap and clean without grid lines. Brand-aligned to the
+   icon gradient (indigo top -> violet bottom). */
 @media (min-width: 1024px) {
   .app-shell-bg {
     background-image:
-      radial-gradient(60rem 30rem at 50% -10%, rgba(99, 102, 241, 0.07), transparent 70%),
-      radial-gradient(50rem 26rem at 100% 112%, rgba(56, 189, 248, 0.05), transparent 70%),
-      linear-gradient(rgba(148, 163, 184, 0.035) 1px, transparent 1px),
-      linear-gradient(90deg, rgba(148, 163, 184, 0.035) 1px, transparent 1px);
-    background-repeat: no-repeat, no-repeat, repeat, repeat;
-    background-size: auto, auto, 44px 44px, 44px 44px;
-    background-position: center top, center bottom, 0 0, 0 0;
+      radial-gradient(60rem 30rem at 50% -10%, rgba(99, 102, 241, 0.06), transparent 70%),
+      radial-gradient(50rem 26rem at 100% 112%, rgba(139, 92, 246, 0.05), transparent 70%);
+    background-repeat: no-repeat, no-repeat;
+    background-size: auto, auto;
+    background-position: center top, center bottom;
+  }
+}
+
+/* ------------------------------------------------------------------ */
+/* Animation keyframes (CSS replacements for motion/react)            */
+/* ------------------------------------------------------------------ */
+@keyframes fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+@keyframes slide-up {
+  from { opacity: 0; transform: translateY(50px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@keyframes slide-in-left {
+  from { transform: translateX(-100%); }
+  to { transform: translateX(0); }
+}
+@keyframes toast-in {
+  from { opacity: 0; transform: translateY(12px) scale(0.97); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+.animate-fade-in {
+  animation: fade-in 0.2s ease-out both;
+}
+.animate-slide-up {
+  animation: slide-up 0.25s ease-out both;
+}
+.animate-slide-in-left {
+  animation: slide-in-left 0.3s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+.animate-toast-in {
+  animation: toast-in 0.22s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+/* ------------------------------------------------------------------ */
+/* Accessibility: visible keyboard focus + skip-to-content link       */
+/* ------------------------------------------------------------------ */
+/* Ensure keyboard users always see a clear focus ring (WCAG 2.4.7) */
+:focus-visible {
+  outline: 2px solid var(--color-primary-soft);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+/* Skip link: visually hidden until focused, then appears top-left (WCAG 2.4.1) */
+.skip-link {
+  position: absolute;
+  left: -9999px;
+  top: 0;
+  z-index: 100;
+  padding: 0.75rem 1.25rem;
+  background: var(--color-primary-strong);
+  color: #ffffff;
+  font-size: 0.875rem;
+  font-weight: 600;
+  text-decoration: none;
+  border-radius: 0 0 0.5rem 0;
+}
+.skip-link:focus {
+  left: 0;
+  top: 0;
+  outline: 2px solid var(--color-primary-soft);
+  outline-offset: 2px;
+}
+
+/* Respect users who prefer reduced motion (WCAG 2.3.3) */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
   }
 }

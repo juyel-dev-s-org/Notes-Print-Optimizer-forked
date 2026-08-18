@@ -32,11 +32,13 @@ async function loadWasm(): Promise<IWasmKernels | null> {
     const exports = wasm as {
       rgb_to_hsv_batch: (rgba: Uint8Array, pixel_count: number) => Float32Array;
       classify_colors: (hsv: Float32Array, pixel_count: number) => Uint8Array;
+      classify_fused: (rgba: Uint8Array, pixel_count: number) => Uint8Array;
       connected_components: (mask: Uint8Array, width: number, height: number) => Int32Array;
       strip_decorative_fills: (mask: Uint8Array, width: number, height: number) => void;
       remove_noise: (mask: Uint8Array, width: number, height: number) => void;
       dilate_mask: (mask: Uint8Array, width: number, height: number, ks: number) => void;
       unsharp_mask: (data: Uint8Array, width: number, height: number, amt: number) => void;
+      unsharp_mask_bw: (data: Uint8Array, width: number, height: number, amt: number) => void;
       ink_coverage: (data: Uint8Array, pixel_count: number, threshold: number) => number;
       process_page: (rgba: Uint8Array, width: number, height: number, invert_mode_smart: boolean, is_dark: boolean, dilation_ks: number, sharpen_amount: number) => Uint8Array;
     };
@@ -73,6 +75,17 @@ async function loadWasm(): Promise<IWasmKernels | null> {
     if (typeof exports.process_page === 'function') {
       kernels.processPage = (rgba, width, height, invertModeSmart, isDark, dilationKs, sharpenAmount) =>
         exports.process_page(rgba, width, height, invertModeSmart, isDark, dilationKs, sharpenAmount);
+    }
+    // Same for the 1-channel BW unsharp (older binaries lack it).
+    if (typeof exports.unsharp_mask_bw === 'function') {
+      kernels.unsharpMaskBW = (data, w, h, amt) => {
+        exports.unsharp_mask_bw(new Uint8Array(data.buffer, data.byteOffset, data.byteLength), w, h, amt);
+      };
+    }
+    // Same for the fused single-pass classifier (older binaries lack it).
+    if (typeof exports.classify_fused === 'function') {
+      kernels.classifyFused = (rgba, pixelCount) =>
+        exports.classify_fused(new Uint8Array(rgba.buffer, rgba.byteOffset, rgba.byteLength), pixelCount);
     }
     return kernels;
   } catch (e) {

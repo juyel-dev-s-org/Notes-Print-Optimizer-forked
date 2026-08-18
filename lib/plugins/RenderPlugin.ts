@@ -17,8 +17,7 @@ export class RenderPlugin implements IPlugin<ArrayBuffer, { imageData: ImageData
   private initPromise: Promise<void> | null = null;
 
   async init(_ctx: PluginContext): Promise<void> { if (this.initPromise) return this.initPromise; this.initPromise = this.doInit(); return this.initPromise; }
-  private async doInit(): Promise<void> { try { const loader = await import('../optimizer/pdfjsLoader'); this.pdfjsLib = await loader.getPdfjsLib(); } catch { try { this.pdfjsLib = await import('pdfjs-dist'); } catch { // @ts-expect-error dynamic CDN import
-    this.pdfjsLib = await import(/* webpackIgnore: true */ 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.10.38/pdf.min.mjs'); } } }
+  private async doInit(): Promise<void> { const loader = await import('../optimizer/pdfjsLoader'); this.pdfjsLib = await loader.getPdfjsLib(); }
 
   setScale(scale: number): void { this.renderScale = Math.max(0.5, Math.min(scale, 4.0)); }
 

@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect, useSyncExternalStore } from 'react';
 import dynamic from 'next/dynamic';
 import { WorkflowUIProps } from './types';
 import { RotateCcw, X } from 'lucide-react';
@@ -21,26 +21,52 @@ const DesktopWorkflowUI = dynamic(() => import('./desktop/DesktopWorkflowUI').th
 
 type PlatformOverride = 'AUTO' | 'MOBILE' | 'TABLET' | 'DESKTOP';
 
-export const PlatformUIOrchestrator: React.FC<WorkflowUIProps> = (props) => {
+const MOBILE_QUERY = '(max-width: 639px)';
+const TABLET_QUERY = '(min-width: 640px) and (max-width: 1023px)';
+const DESKTOP_QUERY = '(min-width: 1024px)';
+
+function useMediaQuery(query: string): boolean {
+  return useSyncExternalStore(
+    (onChange) => {
+      if (typeof window === 'undefined' || typeof window.matchMedia !== 'function') return () => undefined;
+      const mql = window.matchMedia(query);
+      mql.addEventListener('change', onChange);
+      return () => mql.removeEventListener('change', onChange);
+    },
+    () => (typeof window !== 'undefined' && typeof window.matchMedia === 'function' ? window.matchMedia(query).matches : false),
+    () => false,
+  );
+}
+
+export const PlatformUIOrchestrator: React.FC<WorkflowUIProps> = ({ state, actions, handlers, resume }) => {
   const [overrideMode, setOverrideMode] = useState<PlatformOverride>('AUTO');
+  const [mounted, setMounted] = useState(false);
+  const isMobile = useMediaQuery(MOBILE_QUERY);
+  const isTablet = useMediaQuery(TABLET_QUERY);
+  const isDesktop = useMediaQuery(DESKTOP_QUERY);
+
+  useEffect(() => setMounted(true), []);
+
+  const platformProps = { state, actions, handlers, resume };
 
   return (
     <div className="w-full max-w-full">
       {/* Device Viewport Override Toolbar */}
-      <div className="mb-4 lg:mb-3 flex items-center justify-between gap-2 rounded-xl border border-slate-800 bg-slate-900/60 p-2 lg:p-1.5 text-xs">
+      <div className="mb-4 lg:mb-3 flex items-center justify-between gap-2 rounded-xl border border-surface-2 bg-surface/60 p-2 lg:p-1.5 text-xs">
         <div className="flex items-center gap-2">
-          <Settings2 className="h-3.5 w-3.5 text-indigo-400" />
-          <span className="font-bold text-slate-300 text-[11px]">Platform Layout Mode:</span>
+          <Settings2 className="h-3.5 w-3.5 text-primary-soft" />
+          <span className="font-bold text-ink-muted text-[11px]">Platform Layout Mode:</span>
         </div>
 
-        <div className="flex items-center gap-1 rounded-lg bg-slate-950 p-1 border border-slate-800">
+        <div className="flex items-center gap-1 rounded-lg bg-bg p-1 border border-surface-2">
           <button
             type="button"
             onClick={() => setOverrideMode('AUTO')}
-            className={`flex items-center gap-1 px-2 py-1 rounded-md text-[10px] font-bold transition-colors ${
+            aria-pressed={overrideMode === 'AUTO'}
+            className={`flex h-8 items-center gap-1 px-2.5 rounded-md text-[11px] font-bold transition-colors ${
               overrideMode === 'AUTO'
-                ? 'bg-indigo-600 text-white shadow-xs'
-                : 'text-slate-400 hover:text-slate-200'
+                ? 'bg-primary-strong text-white shadow-xs'
+                : 'text-ink-muted hover:text-ink'
             }`}
           >
             <span>Auto Responsive</span>
@@ -49,10 +75,11 @@ export const PlatformUIOrchestrator: React.FC<WorkflowUIProps> = (props) => {
           <button
             type="button"
             onClick={() => setOverrideMode('MOBILE')}
-            className={`flex items-center gap-1 px-2 py-1 rounded-md text-[10px] font-bold transition-colors ${
+            aria-pressed={overrideMode === 'MOBILE'}
+            className={`flex h-8 items-center gap-1 px-2.5 rounded-md text-[11px] font-bold transition-colors ${
               overrideMode === 'MOBILE'
-                ? 'bg-indigo-600 text-white shadow-xs'
-                : 'text-slate-400 hover:text-slate-200'
+                ? 'bg-primary-strong text-white shadow-xs'
+                : 'text-ink-muted hover:text-ink'
             }`}
             title="Force Mobile UI View"
           >
@@ -63,10 +90,11 @@ export const PlatformUIOrchestrator: React.FC<WorkflowUIProps> = (props) => {
           <button
             type="button"
             onClick={() => setOverrideMode('TABLET')}
-            className={`flex items-center gap-1 px-2 py-1 rounded-md text-[10px] font-bold transition-colors ${
+            aria-pressed={overrideMode === 'TABLET'}
+            className={`flex h-8 items-center gap-1 px-2.5 rounded-md text-[11px] font-bold transition-colors ${
               overrideMode === 'TABLET'
-                ? 'bg-indigo-600 text-white shadow-xs'
-                : 'text-slate-400 hover:text-slate-200'
+                ? 'bg-primary-strong text-white shadow-xs'
+                : 'text-ink-muted hover:text-ink'
             }`}
             title="Force Tablet UI View"
           >
@@ -77,10 +105,11 @@ export const PlatformUIOrchestrator: React.FC<WorkflowUIProps> = (props) => {
           <button
             type="button"
             onClick={() => setOverrideMode('DESKTOP')}
-            className={`flex items-center gap-1 px-2 py-1 rounded-md text-[10px] font-bold transition-colors ${
+            aria-pressed={overrideMode === 'DESKTOP'}
+            className={`flex h-8 items-center gap-1 px-2.5 rounded-md text-[11px] font-bold transition-colors ${
               overrideMode === 'DESKTOP'
-                ? 'bg-indigo-600 text-white shadow-xs'
-                : 'text-slate-400 hover:text-slate-200'
+                ? 'bg-primary-strong text-white shadow-xs'
+                : 'text-ink-muted hover:text-ink'
             }`}
             title="Force Desktop UI View"
           >
@@ -91,29 +120,30 @@ export const PlatformUIOrchestrator: React.FC<WorkflowUIProps> = (props) => {
       </div>
 
       {/* Resume Prompt Banner */}
-      {props.resumeInfo && props.currentPhase === 1 && (
-        <div className="mb-4 flex items-center justify-between gap-3 rounded-xl border border-amber-500/40 bg-amber-950/30 p-3 shadow-md">
+      {resume.resumeInfo && state.currentPhase === 1 && (
+        <div role="status" className="mb-4 flex items-center justify-between gap-3 rounded-xl border border-warning-strong/40 bg-warning-faint/30 p-3 shadow-md">
           <div className="flex items-center gap-3 min-w-0">
-            <RotateCcw className="h-5 w-5 shrink-0 text-amber-400" />
+            <RotateCcw className="h-5 w-5 shrink-0 text-warning" />
             <div className="min-w-0">
-              <p className="text-xs font-bold text-amber-200">Resume where you left off?</p>
-              <p className="text-[11px] text-amber-300/70 truncate">
-                {props.resumeInfo.completedCount} of {props.resumeInfo.totalPages} pages already processed.
+              <p className="text-xs font-bold text-warning-soft">Resume where you left off?</p>
+              <p className="text-[11px] text-warning-soft/70 truncate">
+                {resume.resumeInfo.completedCount} of {resume.resumeInfo.totalPages} pages already processed.
               </p>
             </div>
           </div>
           <div className="flex items-center gap-2 shrink-0">
             <button
               type="button"
-              onClick={props.onResumeProcessing}
-              className="rounded-lg bg-amber-600 px-3 py-1.5 text-[10px] font-bold text-white hover:bg-amber-500 transition-colors"
+              onClick={handlers.handleResumeProcessing}
+              className="rounded-lg bg-warning-strong px-3 py-1.5 text-[10px] font-bold text-white hover:bg-warning transition-colors"
             >
               Resume
             </button>
             <button
               type="button"
-              onClick={props.onDismissResume}
-              className="flex h-7 w-7 items-center justify-center rounded-lg text-amber-300/70 hover:bg-amber-950/60 hover:text-amber-200 transition-colors"
+              onClick={handlers.handleDismissResume}
+              aria-label="Dismiss resume prompt"
+              className="flex h-9 w-9 items-center justify-center rounded-lg text-warning-soft/70 hover:bg-warning-faint/60 hover:text-warning-soft transition-colors"
               title="Dismiss"
             >
               <X className="h-4 w-4" />
@@ -122,27 +152,21 @@ export const PlatformUIOrchestrator: React.FC<WorkflowUIProps> = (props) => {
         </div>
       )}
 
-      {/* Render view based on override or CSS responsive breakpoints */}
-      {overrideMode === 'MOBILE' && <MobileWorkflowUI {...props} />}
-      {overrideMode === 'TABLET' && <TabletWorkflowUI {...props} />}
-      {overrideMode === 'DESKTOP' && <DesktopWorkflowUI {...props} />}
+      {/* Render only the active view (matchMedia) so idle platform UIs stay unmounted */}
+      {mounted && overrideMode === 'MOBILE' && <MobileWorkflowUI {...platformProps} />}
+      {mounted && overrideMode === 'TABLET' && <TabletWorkflowUI {...platformProps} />}
+      {mounted && overrideMode === 'DESKTOP' && <DesktopWorkflowUI {...platformProps} />}
 
-      {overrideMode === 'AUTO' && (
+      {mounted && overrideMode === 'AUTO' && (
         <>
           {/* Mobile Layout (<640px) */}
-          <div className="block sm:hidden">
-            <MobileWorkflowUI {...props} />
-          </div>
+          {isMobile && <MobileWorkflowUI {...platformProps} />}
 
           {/* Tablet Layout (>=640px and <1024px) */}
-          <div className="hidden sm:block lg:hidden">
-            <TabletWorkflowUI {...props} />
-          </div>
+          {isTablet && <TabletWorkflowUI {...platformProps} />}
 
           {/* Desktop/Laptop Layout (>=1024px) */}
-          <div className="hidden lg:block">
-            <DesktopWorkflowUI {...props} />
-          </div>
+          {isDesktop && <DesktopWorkflowUI {...platformProps} />}
         </>
       )}
     </div>

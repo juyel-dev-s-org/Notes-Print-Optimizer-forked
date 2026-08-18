@@ -4,16 +4,13 @@ import { useReducer, useMemo } from 'react';
 import { workflowReducer, initialState } from './workflowReducer';
 import type {
   ProcessingToggleState,
-  WorkflowAction,
   WorkflowPhase,
   WorkflowState,
 } from './types';
 import type {
   DocumentProfile,
-  GridFormat,
   LayoutConfig,
   OptimizationMetrics,
-  OuterMarginConfig,
   PageProfile,
   ProcessedPage,
   ProcessingParameters,

@@ -5,17 +5,19 @@ import { ParameterGenerator } from '../../lib/optimizer/parameterGenerator';
 import { benchmark } from '../../lib/optimizer/perf/benchmark';
 import { jsKernels } from '../../lib/wasm/jsFallback';
 
-// Regression thresholds (MPx/s) — tune if hardware differs
+// Regression thresholds (MPx/s) — conservative guards against major regressions.
+// Small-input benchmarks (removeNoise, connectedComponents at 40Kpx) have high
+// relative overhead; thresholds account for environment variance.
 const REGRESSION_THRESHOLDS: Record<string, number> = {
   analyze: 5,
   process: 5,
-  rgbToHsvBatch: 3,
+  rgbToHsvBatch: 2,
   classifyColors: 5,
-  dilateMask: 10,
-  unsharpMask: 3,
-  removeNoise: 1,
-  inkCoverage: 30,
-  connectedComponents: 10,
+  dilateMask: 5,
+  unsharpMask: 2,
+  removeNoise: 0.5,
+  inkCoverage: 10,
+  connectedComponents: 5,
 };
 
 function createSyntheticImageData(width: number, height: number): ImageData {

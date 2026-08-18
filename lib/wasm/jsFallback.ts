@@ -1,6 +1,5 @@
 import type { IWasmKernels } from './types';
 import { rgbToHsv } from '../kernels/hsv';
-import { getLuminance } from '../kernels/luminance';
 import { ensureCC, getCCLabels, getCCQueue } from '../kernels/connectedComponents';
 
 export const jsKernels: IWasmKernels = {
@@ -31,6 +30,25 @@ export const jsKernels: IWasmKernels = {
       if (h >= 106 && h <= 135 && s > 55 && v > 65) out[base + 4] = 1;
       if (h >= 136 && h <= 175 && s > 55 && v > 75) out[base + 5] = 1;
       if ((h <= 15 || h >= 175) && s > 75 && v > 95) out[base + 6] = 1;
+    }
+    return out;
+  },
+
+  classifyFused(rgba: Uint8ClampedArray, pixelCount: number): Uint8Array {
+    const out = new Uint8Array(pixelCount);
+    const hsv: [number, number, number] = [0, 0, 0];
+    for (let i = 0; i < pixelCount; i++) {
+      const off = i * 4;
+      rgbToHsv(rgba[off], rgba[off + 1], rgba[off + 2], hsv);
+      const h = hsv[0], s = hsv[1], v = hsv[2];
+      if (v < 70) continue;
+      if ((s < 55 && v > 155) ||
+          (h >= 15 && h <= 35 && s > 80 && v > 100) ||
+          (h >= 36 && h <= 85 && s > 55 && v > 75) ||
+          (h >= 86 && h <= 105 && s > 55 && v > 75) ||
+          (h >= 106 && h <= 135 && s > 55 && v > 65) ||
+          (h >= 136 && h <= 175 && s > 55 && v > 75) ||
+          ((h <= 15 || h >= 175) && s > 75 && v > 95)) out[i] = 1;
     }
     return out;
   },
@@ -121,6 +139,16 @@ export const jsKernels: IWasmKernels = {
         for (let c = 0; c < 3; c++) { const ctr = cp[idx + c];
           const lap = 4 * ctr - cp[pro + x * 4 + c] - cp[nro + x * 4 + c] - cp[idx - 4 + c] - cp[idx + 4 + c];
           const en = ctr + amt * lap; data[idx + c] = en < 0 ? 0 : en > 255 ? 255 : (en + 0.5) | 0; } } }
+  },
+
+  unsharpMaskBW(data: Uint8ClampedArray, w: number, h: number, amt: number): void {
+    const cp = new Uint8ClampedArray(data);
+    for (let y = 1; y < h - 1; y++) { const ro = y * w * 4, pro = (y - 1) * w * 4, nro = (y + 1) * w * 4;
+      for (let x = 1; x < w - 1; x++) { const idx = ro + x * 4;
+        const ctr = cp[idx];
+        const lap = 4 * ctr - cp[pro + x * 4] - cp[nro + x * 4] - cp[idx - 4] - cp[idx + 4];
+        const en = ctr + amt * lap; const v = en < 0 ? 0 : en > 255 ? 255 : (en + 0.5) | 0;
+        data[idx] = v; data[idx + 1] = v; data[idx + 2] = v; } }
   },
 
   inkCoverage(data: Uint8ClampedArray, pixelCount: number, threshold: number): number {

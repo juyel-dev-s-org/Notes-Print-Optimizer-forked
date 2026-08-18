@@ -1,6 +1,6 @@
 import type { IPlugin, PluginManifest, PluginContext, PluginResult, PluginMetrics } from '../pipeline/plugin/types';
 import { Channels } from '../pipeline/plugin/channels';
-import { LayoutEngine, type SheetDimensions } from '../optimizer/layoutEngine';
+import { LayoutEngine } from '../optimizer/layoutEngine';
 import type { LayoutConfig } from '../optimizer/types';
 
 const manifest: PluginManifest = {
@@ -41,6 +41,8 @@ export class LayoutPlugin implements IPlugin<LayoutPluginInput, { sheets: ArrayB
       );
       const blob = await new Promise<Blob>((res) => canvas.toBlob((b) => res(b || new Blob()), 'image/jpeg', 0.85));
       sheets.push(await blob.arrayBuffer());
+      canvas.width = 0;
+      canvas.height = 0;
     }
 
     const totalInputBytes = pages.reduce((s, p) => s + p.imageData.data.length, 0);

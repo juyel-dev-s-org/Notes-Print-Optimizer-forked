@@ -21,6 +21,9 @@ jobs:
     runs-on: ubuntu-latest
     env:
       NEXT_PUBLIC_BASE_PATH: /${{ github.event.repository.name }}
+      # Feedback relay (public GAS web-app URL; security enforced server-side
+      # via chat_id override + endpoint whitelist + rate limiting)
+      NEXT_PUBLIC_FEEDBACK_URL: ${{ vars.NEXT_PUBLIC_FEEDBACK_URL || 'https://script.google.com/macros/s/AKfycbyYBvhRphdbvTAEI-hktpUWcpYyFjdsOjSHhHwuQyt0K310uqIX3ManTNfQ1Kx7UEtw/exec' }}
     steps:
       - uses: actions/checkout@v4
 
@@ -30,21 +33,30 @@ jobs:
           cache: 'npm'
 
       - name: Install dependencies
-        run: npm ci --prefer-offline --no-audit --no-fund
+        run: npm ci --prefer-offline --no-fund
 
       - name: Lint
         run: npm run lint
-        continue-on-error: true
 
       - name: Type Check
-        run: npx tsc --noEmit
+        run: npm run typecheck
 
       - name: Unit Tests
         run: npm run test
-        continue-on-error: true
+
+      # sharp is next's optional build-time dep (server image optimizer);
+      # static export never includes it, so exclude optional deps from audit.
+      - name: Dependency Audit
+        run: npm audit --omit=dev --omit=optional --audit-level=high
 
       - name: Build
         run: npm run build
+
+      - name: Install Playwright Browsers
+        run: npx playwright install --with-deps chromium
+
+      - name: Smoke Tests (Playwright)
+        run: npx playwright test --config=playwright.config.ts --project=chromium --grep-invert "worker pool runtime"
 
       - name: Upload build artifact
         uses: actions/upload-artifact@v4

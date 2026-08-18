@@ -22,6 +22,27 @@ export function classify_colors(hsv, pixel_count) {
 }
 
 /**
+ * @param {Uint8Array} rgba
+ * @param {number} pixel_count
+ * @returns {Uint8Array}
+ */
+export function classify_fused(rgba, pixel_count) {
+    try {
+        const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
+        const ptr0 = passArray8ToWasm0(rgba, wasm.__wbindgen_export);
+        const len0 = WASM_VECTOR_LEN;
+        wasm.classify_fused(retptr, ptr0, len0, pixel_count);
+        var r0 = getDataViewMemory0().getInt32(retptr + 4 * 0, true);
+        var r1 = getDataViewMemory0().getInt32(retptr + 4 * 1, true);
+        var v2 = getArrayU8FromWasm0(r0, r1).slice();
+        wasm.__wbindgen_export2(r0, r1 * 1, 1);
+        return v2;
+    } finally {
+        wasm.__wbindgen_add_to_stack_pointer(16);
+    }
+}
+
+/**
  * @param {Uint8Array} mask
  * @param {number} width
  * @param {number} height
@@ -147,6 +168,18 @@ export function unsharp_mask(data, width, height, amt) {
     var ptr0 = passArray8ToWasm0(data, wasm.__wbindgen_export);
     var len0 = WASM_VECTOR_LEN;
     wasm.unsharp_mask(ptr0, len0, addHeapObject(data), width, height, amt);
+}
+
+/**
+ * @param {Uint8Array} data
+ * @param {number} width
+ * @param {number} height
+ * @param {number} amt
+ */
+export function unsharp_mask_bw(data, width, height, amt) {
+    var ptr0 = passArray8ToWasm0(data, wasm.__wbindgen_export);
+    var len0 = WASM_VECTOR_LEN;
+    wasm.unsharp_mask_bw(ptr0, len0, addHeapObject(data), width, height, amt);
 }
 function __wbg_get_imports() {
     const import0 = {

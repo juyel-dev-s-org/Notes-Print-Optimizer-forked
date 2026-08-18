@@ -1,6 +1,25 @@
 import { GridFormat, LayoutConfig, Orientation, PaperSize } from './types';
+import { memoryManager } from './memoryManager';
 
 export interface SheetDimensions { widthPx: number; heightPx: number; dpi: number; }
+export interface SheetCompositionGeometry {
+  dims: SheetDimensions;
+  cols: number;
+  rows: number;
+  marginTop: number;
+  marginLeft: number;
+  marginRight: number;
+  marginBottom: number;
+  marginInner: number;
+  footerHeight: number;
+  footerFontSize: number;
+  footerBaseline: number;
+  cellWidth: number;
+  cellHeight: number;
+}
+
+/** Keep the worker and main-thread export paths at the same print quality. */
+export const PRINT_LAYOUT_DPI = 300;
 
 export class LayoutEngine {
   public static getSheetDimensions(paperSize: PaperSize, orientation: Orientation, dpi: number = 200): SheetDimensions {
@@ -24,52 +43,78 @@ export class LayoutEngine {
     }
   }
 
-  public static composeSheet(slideImages: ImageData[], sheetIndex: number, totalSheets: number, config: LayoutConfig): HTMLCanvasElement {
+  public static getSheetCompositionGeometry(config: LayoutConfig): SheetCompositionGeometry {
     const { cols, rows } = this.getGridDimensions(config.gridFormat);
-    const dpi = 300;
-    const dims = this.getSheetDimensions(config.paperSize, config.orientation, dpi);
+    const dims = this.getSheetDimensions(config.paperSize, config.orientation, PRINT_LAYOUT_DPI);
+    const mmPx = dims.dpi / 25.4;
+    const marginTop = Math.round((config.outerMarginMm?.top ?? config.marginMm ?? 2) * mmPx);
+    const marginLeft = Math.round((config.outerMarginMm?.left ?? config.marginMm ?? 5) * mmPx);
+    const marginRight = Math.round((config.outerMarginMm?.right ?? config.marginMm ?? 3) * mmPx);
+    const marginBottom = Math.round((config.outerMarginMm?.bottom ?? config.marginMm ?? 2) * mmPx);
+    const marginInner = Math.round((config.innerMarginMm ?? config.spacingMm ?? 1) * mmPx);
+    const footerHeight = config.showPageNumbers ? Math.max(20, Math.round(marginBottom * 1.5)) : 0;
+    const availableWidth = dims.widthPx - marginLeft - marginRight - (cols - 1) * marginInner;
+    const availableHeight = dims.heightPx - marginTop - marginBottom - (rows - 1) * marginInner - footerHeight;
+
+    return {
+      dims, cols, rows, marginTop, marginLeft, marginRight, marginBottom, marginInner,
+      footerHeight,
+      footerFontSize: Math.round(dims.dpi * 0.08),
+      footerBaseline: dims.heightPx - Math.max(10, Math.round(marginBottom * 0.4)),
+      cellWidth: Math.max(10, Math.floor(availableWidth / cols)),
+      cellHeight: Math.max(10, Math.floor(availableHeight / rows)),
+    };
+  }
+
+  public static getSheetFooterText(sheetIndex: number, totalSheets: number): string {
+    return `Sheet ${sheetIndex + 1} of ${totalSheets}  \u2022  PW Notes Print Optimizer`;
+  }
+
+  public static composeSheet(slideImages: ImageData[], sheetIndex: number, totalSheets: number, config: LayoutConfig): HTMLCanvasElement {
+    const geometry = this.getSheetCompositionGeometry(config);
+    const { dims, cols, marginTop, marginLeft, marginInner, cellWidth, cellHeight } = geometry;
     const canvas = document.createElement('canvas');
     canvas.width = dims.widthPx; canvas.height = dims.heightPx;
-    const ctx = canvas.getContext('2d')!;
+    const ctx = canvas.getContext('2d', { willReadFrequently: true })!;
     ctx.fillStyle = '#FFFFFF'; ctx.fillRect(0, 0, dims.widthPx, dims.heightPx);
 
-    const mmPx = dpi / 25.4;
-    const mT = Math.round((config.outerMarginMm?.top ?? config.marginMm ?? 2) * mmPx);
-    const mL = Math.round((config.outerMarginMm?.left ?? config.marginMm ?? 5) * mmPx);
-    const mR = Math.round((config.outerMarginMm?.right ?? config.marginMm ?? 3) * mmPx);
-    const mB = Math.round((config.outerMarginMm?.bottom ?? config.marginMm ?? 2) * mmPx);
-    const mI = Math.round((config.innerMarginMm ?? config.spacingMm ?? 1) * mmPx);
-    const footerH = config.showPageNumbers ? Math.max(20, Math.round(mB * 1.5)) : 0;
-    const availW = dims.widthPx - mL - mR - (cols - 1) * mI;
-    const availH = dims.heightPx - mT - mB - (rows - 1) * mI - footerH;
-    const cellW = Math.max(10, Math.floor(availW / cols));
-    const cellH = Math.max(10, Math.floor(availH / rows));
+    let tmpCanvas: HTMLCanvasElement | null = null;
+    let tmpCtx: CanvasRenderingContext2D | null = null;
 
     for (let i = 0; i < slideImages.length; i++) {
       const slide = slideImages[i];
       const col = i % cols, row = Math.floor(i / cols);
-      const cellX = mL + col * (cellW + mI), cellY = mT + row * (cellH + mI);
-      const scale = Math.min(cellW / slide.width, cellH / slide.height);
+      const cellX = marginLeft + col * (cellWidth + marginInner), cellY = marginTop + row * (cellHeight + marginInner);
+      const scale = Math.min(cellWidth / slide.width, cellHeight / slide.height);
       const dW = Math.floor(slide.width * scale), dH = Math.floor(slide.height * scale);
-      const dX = cellX + Math.floor((cellW - dW) / 2), dY = cellY + Math.floor((cellH - dH) / 2);
-      const tmp = document.createElement('canvas');
-      tmp.width = slide.width; tmp.height = slide.height;
-      tmp.getContext('2d')!.putImageData(slide, 0, 0);
-      ctx.drawImage(tmp, dX, dY, dW, dH);
-      tmp.width = 0; tmp.height = 0;
+      const dX = cellX + Math.floor((cellWidth - dW) / 2), dY = cellY + Math.floor((cellHeight - dH) / 2);
+
+      if (!tmpCanvas || tmpCanvas.width !== slide.width || tmpCanvas.height !== slide.height) {
+        if (tmpCanvas) memoryManager.disposeCanvas(tmpCanvas);
+        tmpCanvas = memoryManager.acquireCanvas(slide.width, slide.height);
+        tmpCtx = tmpCanvas.getContext('2d', { willReadFrequently: true });
+      }
+      if (tmpCtx) {
+        tmpCtx.putImageData(slide, 0, 0);
+        ctx.drawImage(tmpCanvas, dX, dY, dW, dH);
+      }
+
       if (config.showSlideBorders ?? true) {
         ctx.strokeStyle = '#D2D2D2';
-        ctx.lineWidth = Math.max(1, Math.round(dpi / 150));
-        ctx.strokeRect(cellX - 1, cellY - 1, cellW + 2, cellH + 2);
+        ctx.lineWidth = Math.max(1, Math.round(dims.dpi / 150));
+        ctx.strokeRect(cellX - 1, cellY - 1, cellWidth + 2, cellHeight + 2);
       }
+    }
+
+    if (tmpCanvas) {
+      memoryManager.disposeCanvas(tmpCanvas);
     }
 
     if (config.showPageNumbers) {
       ctx.fillStyle = '#64748B';
-      ctx.font = `500 ${Math.round(dpi * 0.08)}px system-ui, -apple-system, sans-serif`;
+      ctx.font = `500 ${geometry.footerFontSize}px system-ui, -apple-system, sans-serif`;
       ctx.textAlign = 'center'; ctx.textBaseline = 'bottom';
-      ctx.fillText(`Sheet ${sheetIndex + 1} of ${totalSheets}  \u2022  PW Notes Print Optimizer`,
-        dims.widthPx / 2, dims.heightPx - Math.max(10, Math.round(mB * 0.4)));
+      ctx.fillText(this.getSheetFooterText(sheetIndex, totalSheets), dims.widthPx / 2, geometry.footerBaseline);
     }
     return canvas;
   }

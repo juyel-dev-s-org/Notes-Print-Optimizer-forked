@@ -1,6 +1,8 @@
 import { describe, it, expect } from 'vitest';
 import { analyzeImageData } from '../../lib/optimizer/analysis';
 import { processPage, createImageDataFromBuffer, calculateInkCoverage } from '../../lib/kernels';
+import { applyUnsharpMask, applyUnsharpMaskBW } from '../../lib/kernels/sharpen';
+import { jsKernels } from '../../lib/wasm/jsFallback';
 import { ProcessingParameters } from '../../lib/optimizer/types';
 
 function createSyntheticImageData(width: number, height: number, type: 'dark' | 'light' | 'diagram'): ImageData {
@@ -101,6 +103,154 @@ describe('ImageProcessingKernels', () => {
 
       expect(processed.width).toBe(50);
       expect(processed.height).toBe(50);
+    });
+  });
+
+  describe('applyUnsharpMask', () => {
+    it('matches a full-copy mathematical reference (rolling-buffer correctness)', () => {
+      const w = 37;
+      const h = 23;
+      const n = w * h * 4;
+      const src = new Uint8ClampedArray(n);
+      for (let i = 0; i < n; i++) src[i] = ((i * 7 + (i / 3) | 0) % 256);
+
+      /* Full-copy reference: sharpens from an unmodified snapshot (correct). */
+      const reference = (data: Uint8ClampedArray): void => {
+        const cp = new Uint8ClampedArray(data);
+        const amt = 0.7;
+        for (let y = 1; y < h - 1; y++) {
+          const ro = y * w * 4, pro = (y - 1) * w * 4, nro = (y + 1) * w * 4;
+          for (let x = 1; x < w - 1; x++) {
+            const idx = ro + x * 4;
+            for (let c = 0; c < 3; c++) {
+              const ctr = cp[idx + c];
+              const lap = 4 * ctr - cp[pro + x * 4 + c] - cp[nro + x * 4 + c] - cp[idx - 4 + c] - cp[idx + 4 + c];
+              const en = ctr + amt * lap;
+              data[idx + c] = en < 0 ? 0 : en > 255 ? 255 : (en + 0.5) | 0;
+            }
+          }
+        }
+      };
+
+      const a = new Uint8ClampedArray(src);
+      const b = new Uint8ClampedArray(src);
+      reference(a);
+      applyUnsharpMask(b, w, h, 0.7);
+      expect(b).toEqual(a);
+    });
+  });
+
+  describe('applyUnsharpMaskBW', () => {
+    it('is byte-identical to the 3-channel version on strictly B/W data', () => {
+      const w = 47;
+      const h = 31;
+      const n = w * h * 4;
+      const bw = new Uint8ClampedArray(n);
+      for (let i = 0; i < n / 4; i++) {
+        const v = (i * 7 + (i / 3) | 0) % 5 === 0 ? 0 : 255;
+        bw[i * 4] = v; bw[i * 4 + 1] = v; bw[i * 4 + 2] = v; bw[i * 4 + 3] = 255;
+      }
+
+      const a = new Uint8ClampedArray(bw);
+      const b = new Uint8ClampedArray(bw);
+      applyUnsharpMask(a, w, h, 0.35);
+      applyUnsharpMaskBW(b, w, h, 0.35);
+      expect(b).toEqual(a);
+    });
+
+    it('keeps alpha and boundary pixels untouched', () => {
+      const w = 21;
+      const h = 17;
+      const n = w * h * 4;
+      const bw = new Uint8ClampedArray(n);
+      for (let i = 0; i < n / 4; i++) {
+        const v = i % 3 === 0 ? 0 : 255;
+        bw[i * 4] = v; bw[i * 4 + 1] = v; bw[i * 4 + 2] = v;
+        bw[i * 4 + 3] = 200;
+      }
+      const original = new Uint8ClampedArray(bw);
+      applyUnsharpMaskBW(bw, w, h, 1.0);
+      for (let i = 0; i < n / 4; i++) expect(bw[i * 4 + 3]).toBe(200);
+      /* boundary row/col unchanged */
+      for (let y = 0; y < h; y++) {
+        const top = y * w * 4;
+        expect(bw[top]).toBe(original[top]);
+        expect(bw[top + (w - 1) * 4]).toBe(original[top + (w - 1) * 4]);
+      }
+      for (let x = 0; x < w; x++) {
+        const row = x * 4;
+        expect(bw[row]).toBe(original[row]);
+        expect(bw[(h - 1) * w * 4 + row]).toBe(original[(h - 1) * w * 4 + row]);
+      }
+    });
+
+    it('no-ops on tiny images like the 3-channel version', () => {
+      const tiny = new Uint8ClampedArray([10, 10, 10, 255, 250, 250, 250, 255, 10, 10, 10, 255]);
+      const a = new Uint8ClampedArray(tiny);
+      const b = new Uint8ClampedArray(tiny);
+      applyUnsharpMaskBW(a, 3, 1, 0.5);
+      applyUnsharpMask(b, 3, 1, 0.5);
+      expect(a).toEqual(tiny);
+      expect(b).toEqual(a);
+    });
+  });
+
+  describe('classifyFused', () => {
+    function twoStepReference(src: Uint8ClampedArray, pixelCount: number): Uint8Array {
+      const hsv = jsKernels.rgbToHsvBatch(src, pixelCount);
+      const channels = jsKernels.classifyColors(hsv, pixelCount);
+      const out = new Uint8Array(pixelCount);
+      for (let i = 0; i < pixelCount; i++) {
+        const base = i * 7;
+        if (channels[base] === 1 || channels[base + 1] === 1 || channels[base + 2] === 1 ||
+            channels[base + 3] === 1 || channels[base + 4] === 1 || channels[base + 5] === 1 ||
+            channels[base + 6] === 1) out[i] = 1;
+      }
+      return out;
+    }
+
+    function boundaryPixels(): Uint8ClampedArray {
+      const levels = [0, 54, 55, 56, 64, 65, 66, 69, 70, 71, 74, 75, 76,
+                      79, 80, 81, 94, 95, 96, 99, 100, 101, 154, 155, 156,
+                      170, 175, 176, 200, 255];
+      const out = new Uint8ClampedArray(levels.length ** 3 * 4);
+      let i = 0;
+      for (const r of levels) for (const g of levels) for (const b of levels) {
+        out[i] = r; out[i + 1] = g; out[i + 2] = b; out[i + 3] = 255; i += 4;
+      }
+      return out;
+    }
+
+    it('is byte-identical to rgbToHsvBatch + classifyColors + OR on classify boundaries', () => {
+      const src = boundaryPixels();
+      const fused = jsKernels.classifyFused!(src, src.length / 4);
+      expect(Array.from(fused)).toEqual(Array.from(twoStepReference(src, src.length / 4)));
+    });
+
+    it('is byte-identical on pseudo-random pixels', () => {
+      const n = 100_000;
+      const src = new Uint8ClampedArray(n * 4);
+      let state = 0x9E3779B97F4A7C15;
+      for (let i = 0; i < n * 4; i++) {
+        state ^= state << 13; state ^= state >> 7; state ^= state << 17;
+        src[i] = state >>> 24;
+      }
+      const fused = jsKernels.classifyFused!(src, n);
+      expect(Array.from(fused)).toEqual(Array.from(twoStepReference(src, n)));
+    });
+
+    it('matches the 7-channel OR semantics for hand-picked colors', () => {
+      /* white (gray ch), yellow, green, blue, red, dark (none), magenta */
+      const colors: Array<[number, number, number]> = [
+        [255, 255, 255], [240, 200, 40], [40, 200, 60], [40, 80, 220],
+        [220, 50, 50], [20, 20, 20], [200, 40, 160],
+      ];
+      const src = new Uint8ClampedArray(colors.length * 4);
+      colors.forEach(([r, g, b], i) => { src[i * 4] = r; src[i * 4 + 1] = g; src[i * 4 + 2] = b; src[i * 4 + 3] = 255; });
+      const fused = jsKernels.classifyFused!(src, colors.length);
+      const ref = twoStepReference(src, colors.length);
+      expect(Array.from(fused)).toEqual(Array.from(ref));
+      expect(Array.from(fused)).toEqual([1, 1, 1, 1, 1, 0, 1]);
     });
   });
 });

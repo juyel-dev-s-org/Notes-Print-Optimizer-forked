@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeAll } from 'vitest';
+import { describe, it, expect } from 'vitest';
 import { MemoryGuard, memoryGuard } from '../../lib/pipeline/MemoryGuard';
 import { CheckpointManager } from '../../lib/pipeline/checkpoint/CheckpointManager';
 import { computeScheduleProfile } from '../../lib/pipeline/types';

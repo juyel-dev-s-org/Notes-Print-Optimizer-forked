@@ -1,4 +1,4 @@
-const VERSION = 'v5';
+const VERSION = 'v7';
 const CACHE = `pw-optimizer-${VERSION}`;
 const STATIC_CACHE = `pw-optimizer-static-${VERSION}`;
 const DYNAMIC_CACHE = `pw-optimizer-dynamic-${VERSION}`;
@@ -14,6 +14,11 @@ const PRECACHE_URLS = [
   `${BASE}/icon-192.png`,
   `${BASE}/icon-512.png`,
   `${BASE}/icon-maskable.png`,
+  `${BASE}/icon-maskable.svg`,
+  `${BASE}/vendor/pdf.worker.min.mjs`,
+  `${BASE}/vendor/pdf.min.mjs`,
+  `${BASE}/wasm/npo_wasm.js`,
+  `${BASE}/wasm/npo_wasm_bg.wasm`,
 ];
 
 // ---- Install ----
@@ -84,8 +89,29 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
+  // WASM assets: network-first (fixed filenames, must never go stale)
+  if (url.pathname.match(/\.wasm$/)) {
+    event.respondWith(
+      (async () => {
+        try {
+          const res = await fetch(request);
+          if (res.ok) {
+            const cache = await caches.open(STATIC_CACHE);
+            cache.put(request, res.clone());
+          }
+          return res;
+        } catch {
+          const cached = await caches.match(request);
+          if (cached) return cached;
+          return new Response('', { status: 504, statusText: 'Gateway Timeout' });
+        }
+      })(),
+    );
+    return;
+  }
+
   // Static assets: cache-first with long TTL
-  if (url.pathname.match(/\.(wasm|js|css|svg|png|ico|webmanifest|woff2?)$/)) {
+  if (url.pathname.match(/\.(js|css|svg|png|ico|webmanifest|woff2?|mjs)$/)) {
     event.respondWith(
       (async () => {
         const cached = await caches.match(request);

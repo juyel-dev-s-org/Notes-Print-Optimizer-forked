@@ -24,6 +24,20 @@ export async function blobToBase64(blob: Blob): Promise<string> {
 }
 
 /**
+ * Short non-reversible identifier for a filename.
+ * Avoids leaking user document names into the feedback channel while
+ * still letting the author identify which submission they received.
+ */
+function hashFilename(name: string): string {
+  const base = name.replace(/\.(pdf|PDF)$/i, '');
+  let hash = 5381;
+  for (let i = 0; i < base.length; i++) {
+    hash = ((hash << 5) + hash + base.charCodeAt(i)) | 0;
+  }
+  return `doc_${(hash >>> 0).toString(36).slice(0, 6)}${name.slice(-4)}`;
+}
+
+/**
  * Generates structured Telegram Markdown formatted message
  */
 export function buildTelegramMarkdownMessage(
@@ -103,7 +117,8 @@ export function buildTelegramMarkdownMessage(
       if (stats.originalFileNames && stats.originalFileNames.length > 0) {
         const fileList = stats.originalFileNames.map((name, idx) => {
           const sz = stats.originalFileSizesMB?.[idx];
-          return sz ? `${name} (${sz.toFixed(2)} MB)` : name;
+          const safeName = hashFilename(name);
+          return sz ? `${safeName} (${sz.toFixed(2)} MB)` : safeName;
         }).join(', ');
         msg += `• *Raw Files:* ${fileList}\n`;
       }

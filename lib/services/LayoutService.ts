@@ -1,4 +1,3 @@
-import { PdfExporter } from '../optimizer/pdfExporter';
 import { memoryManager } from '../optimizer/memoryManager';
 import type { ProcessedPage, LayoutConfig, OptimizationMetrics, GridFormat, OuterMarginConfig } from '../optimizer/types';
 
@@ -10,6 +9,8 @@ export class LayoutService {
   ): Promise<{ finalPdfBlob: Blob; sheetPreviews: string[]; metrics: OptimizationMetrics }> {
     memoryManager.revokeAllBlobUrls();
     if (activePages.length === 0) throw new Error('No pages to layout');
+    // Defer pdf-lib (via PdfExporter) until layout/export is actually requested.
+    const { PdfExporter } = await import('../optimizer/pdfExporter');
     return PdfExporter.compileSheetsAndExportPdf(activePages, config, onProgress);
   }
 

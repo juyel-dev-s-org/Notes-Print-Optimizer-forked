@@ -1,16 +1,20 @@
 export function rgbToHsv(r: number, g: number, b: number, out: [number, number, number]): void {
-  const rN = r * 0.00392156862745098, gN = g * 0.00392156862745098, bN = b * 0.00392156862745098;
-  const vN = rN > gN ? (rN > bN ? rN : bN) : (gN > bN ? gN : bN);
-  const mn = rN < gN ? (rN < bN ? rN : bN) : (gN < bN ? gN : bN);
-  const delta = vN - mn;
-  let hN = 0;
+  const max = r > g ? (r > b ? r : b) : (g > b ? g : b);
+  const min = r < g ? (r < b ? r : b) : (g < b ? g : b);
+  const delta = max - min;
+  let h = 0;
   if (delta !== 0) {
-    if (vN === rN) hN = 60 * (((gN - bN) / delta) % 6);
-    else if (vN === gN) hN = 60 * ((bN - rN) / delta + 2);
-    else hN = 60 * ((rN - gN) / delta + 4);
-    if (hN < 0) hN += 360;
+    if (max === r) h = ((g - b) * 60 / delta + 360) % 360;
+    else if (max === g) h = (b - r) * 60 / delta + 120;
+    else h = (r - g) * 60 / delta + 240;
+    if (h < 0) h += 360;
   }
-  out[0] = (hN * 0.5 + 0.5) | 0;
-  out[1] = (vN === 0 ? 0 : (delta / vN) * 255 + 0.5) | 0;
-  out[2] = (vN * 255 + 0.5) | 0;
+  out[0] = (h * 0.5 + 0.5) | 0;
+  out[1] = max === 0 ? 0 : (delta * 255 / max + 0.5) | 0;
+  out[2] = max;
+}
+
+/** Fast min-channel check for white pixel detection (avoids full HSV) */
+export function fastMinChannel(r: number, g: number, b: number): number {
+  return r < g ? (r < b ? r : b) : (g < b ? g : b);
 }

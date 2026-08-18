@@ -1,49 +1,73 @@
+import { detectDeviceProfile } from '../pipeline/types';
+
 /**
  * Memory Management & Device Utilities
  */
 class MemoryManager {
   private activeBlobUrls: Set<string> = new Set();
   private canvasPool: HTMLCanvasElement[] = [];
-  private canvasPoolMax = 3;
+  private canvasPoolMax = 8;
+  private canvasPoolBytes = 0;
+  private canvasPoolMaxBytes = 32 * 1048576; // 32 MB pool budget
 
   public acquireCanvas(width: number, height: number): HTMLCanvasElement {
+    if (typeof document === 'undefined') {
+      return { width, height } as unknown as HTMLCanvasElement;
+    }
+    // 1. Try exact match first (zero reallocation)
     for (let i = 0; i < this.canvasPool.length; i++) {
       const c = this.canvasPool[i];
-      if (c.width >= width && c.height >= height) {
+      if (c.width === width && c.height === height) {
         this.canvasPool.splice(i, 1);
-        c.width = width; c.height = height;
+        this.canvasPoolBytes -= c.width * c.height * 4;
         return c;
       }
     }
+    // 2. Try best-fit match (closest larger size)
+    let bestIdx = -1;
+    let minExcess = Infinity;
+    for (let i = 0; i < this.canvasPool.length; i++) {
+      const c = this.canvasPool[i];
+      if (c.width >= width && c.height >= height) {
+        const excess = (c.width * c.height) - (width * height);
+        if (excess < minExcess) {
+          minExcess = excess;
+          bestIdx = i;
+        }
+      }
+    }
+    if (bestIdx !== -1) {
+      const c = this.canvasPool.splice(bestIdx, 1)[0];
+      this.canvasPoolBytes -= c.width * c.height * 4;
+      c.width = width;
+      c.height = height;
+      return c;
+    }
+
     const canvas = document.createElement('canvas');
-    canvas.width = width; canvas.height = height;
+    canvas.width = width;
+    canvas.height = height;
     return canvas;
   }
 
   public releaseCanvas(canvas: HTMLCanvasElement | null | undefined): void {
-    if (!canvas) return;
-    if (this.canvasPool.length < this.canvasPoolMax) {
+    if (!canvas || typeof document === 'undefined') return;
+    const memSize = canvas.width * canvas.height * 4;
+    if (memSize > 0 && this.canvasPool.length < this.canvasPoolMax && this.canvasPoolBytes + memSize <= this.canvasPoolMaxBytes) {
+      try {
+        const ctx = canvas.getContext('2d');
+        if (ctx) ctx.clearRect(0, 0, canvas.width, canvas.height);
+      } catch { /* noop */ }
       this.canvasPool.push(canvas);
+      this.canvasPoolBytes += memSize;
     } else {
-      canvas.width = 0; canvas.height = 0;
+      canvas.width = 0;
+      canvas.height = 0;
     }
   }
 
   public isMobileDevice(): boolean {
-    if (typeof window === 'undefined') return false;
-    
-    const nav = navigator as Navigator & { userAgentData?: { mobile?: boolean }; deviceMemory?: number };
-    if (nav.userAgentData?.mobile !== undefined) {
-      return nav.userAgentData.mobile;
-    }
-    
-    const ua = navigator.userAgent || '';
-    const isMobileUA = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(ua);
-    const isLowMemory = typeof nav.deviceMemory === 'number' && nav.deviceMemory <= 4;
-    const isSmallScreen = window.innerWidth <= 768;
-    const isTouchOnly = navigator.maxTouchPoints > 0 && !window.matchMedia('(pointer: fine)').matches;
-    
-    return isMobileUA || isLowMemory || (isSmallScreen && isTouchOnly);
+    return detectDeviceProfile().isMobile;
   }
 
   public getConcurrencyLimit(): number {
@@ -88,7 +112,7 @@ class MemoryManager {
         URL.revokeObjectURL(url);
         resolve(img);
       };
-      img.onerror = (err) => {
+      img.onerror = () => {
         URL.revokeObjectURL(url);
         reject(new Error('Failed to load image from blob'));
       };
@@ -144,7 +168,7 @@ class MemoryManager {
   }
 
   public async yieldToUI(): Promise<void> {
-    const sched = (globalThis as any).scheduler;
+    const sched = typeof scheduler !== 'undefined' ? scheduler : undefined;
     if (sched && typeof sched.yield === 'function') return sched.yield();
     if (typeof MessageChannel !== 'undefined') {
       return new Promise<void>((resolve) => {

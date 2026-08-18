@@ -77,27 +77,25 @@ export const FileSequencePanel: React.FC<FileSequencePanelProps> = ({
   };
 
   const rowPad = compact ? 'p-2.5' : 'p-3';
-  const btn = compact
-    ? 'flex h-8 w-8 items-center justify-center rounded-lg'
-    : 'flex h-9 w-9 items-center justify-center rounded-lg';
-  const iconSize = compact ? 'h-3.5 w-3.5' : 'h-4 w-4';
+  const btn = 'flex h-10 w-10 items-center justify-center rounded-lg';
+  const iconSize = 'h-4 w-4';
 
   return (
     <div className="flex flex-col gap-2">
       {/* Smart rearrangement toolbar */}
-      <div className="flex flex-wrap items-center gap-2 rounded-xl border border-indigo-500/30 bg-indigo-950/30 px-3 py-2">
+      <div className="flex flex-wrap items-center gap-2 rounded-xl border border-primary/30 bg-primary-faint/30 px-3 py-2">
         <div className="flex min-w-0 flex-1 items-center gap-2">
-          <Layers className="h-4 w-4 shrink-0 text-indigo-400" aria-hidden="true" />
+          <Layers className="h-4 w-4 shrink-0 text-primary-soft" aria-hidden="true" />
           {seriesCount > 0 ? (
             <p
-              className="truncate text-[11px] font-semibold text-indigo-300"
+              className="truncate text-[11px] font-semibold text-primary-soft"
               title={plan.groups.map((g) => g.title).join(', ')}
             >
               {seriesCount} series detected
               {plan.changed ? ' - tap Smart Arrange' : ' - in natural order'}
             </p>
           ) : (
-            <p className="truncate text-[11px] text-slate-400">
+            <p className="truncate text-[11px] text-ink-muted">
               Drag files to reorder manually
             </p>
           )}
@@ -107,14 +105,14 @@ export const FileSequencePanel: React.FC<FileSequencePanelProps> = ({
             type="button"
             onClick={onSmartArrange}
             disabled={!canArrange}
-            className="flex shrink-0 items-center gap-1.5 rounded-lg bg-indigo-600 px-3 py-1.5 text-[11px] font-bold text-white shadow-sm transition-colors hover:bg-indigo-500 disabled:cursor-not-allowed disabled:opacity-40"
+            className="flex shrink-0 items-center gap-1.5 rounded-lg bg-primary-strong px-3 py-1.5 text-[11px] font-bold text-white shadow-sm transition-colors hover:bg-primary disabled:cursor-not-allowed disabled:opacity-40"
             title="Auto-arrange detected series by their natural volume order"
           >
             <Sparkles className="h-3.5 w-3.5" aria-hidden="true" />
             Smart Arrange
           </button>
         ) : (
-          <span className="flex shrink-0 items-center gap-1.5 rounded-lg border border-emerald-500/40 bg-emerald-950/40 px-2.5 py-1.5 text-[11px] font-bold text-emerald-300">
+          <span className="flex shrink-0 items-center gap-1.5 rounded-lg border border-success-strong/40 bg-success-faint/40 px-2.5 py-1.5 text-[11px] font-bold text-success-soft">
             <CheckCircle2 className="h-3.5 w-3.5" aria-hidden="true" />
             Optimal order
           </span>
@@ -125,7 +123,7 @@ export const FileSequencePanel: React.FC<FileSequencePanelProps> = ({
       <div
         role="list"
         aria-label="PDF sequence"
-        className={`flex flex-col gap-2 overflow-y-auto p-1 scrollbar-thin ${maxHeightClass}`}
+        className={`flex flex-col gap-2 overflow-y-auto p-1 ${maxHeightClass}`}
       >
         {items.map((item, idx) => {
           const isDragging = dragIndex === idx;
@@ -157,22 +155,22 @@ export const FileSequencePanel: React.FC<FileSequencePanelProps> = ({
                 handleDrop(idx);
               }}
               onDragEnd={resetDrag}
-              className={`flex items-center justify-between rounded-xl border bg-slate-950 transition-colors ${rowPad} ${
+              className={`flex items-center justify-between rounded-xl border bg-bg transition-colors ${rowPad} ${
                 isDragging
-                  ? 'cursor-grabbing border-indigo-500 opacity-50'
+                  ? 'cursor-grabbing border-primary opacity-50'
                   : isOver
-                    ? 'border-indigo-400 bg-indigo-950/50'
-                    : 'cursor-grab border-slate-800 hover:bg-slate-800/50'
+                    ? 'border-primary-soft bg-primary-faint/50'
+                    : 'cursor-grab border-surface-2 hover:bg-surface-2/50'
               }`}
             >
               <div className="flex min-w-0 items-center gap-2.5">
-                <GripVertical className="h-4 w-4 shrink-0 text-slate-600" aria-hidden="true" />
-                <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-indigo-500/30 bg-indigo-600/30 text-xs font-bold text-indigo-300">
+                <GripVertical className="h-4 w-4 shrink-0 text-ink-muted" aria-hidden="true" />
+                <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-primary/30 bg-primary-strong/30 text-xs font-bold text-primary-soft">
                   {idx + 1}
                 </div>
                 <div className="min-w-0 flex-1">
-                  <p className="truncate text-xs font-bold text-slate-100">{item.name}</p>
-                  <p className="text-[10px] text-slate-400">{item.sizeMB} MB</p>
+                  <p className="truncate text-xs font-bold text-ink">{item.name}</p>
+                  <p className="text-[10px] text-ink-muted">{item.sizeMB} MB</p>
                 </div>
               </div>
 
@@ -181,7 +179,7 @@ export const FileSequencePanel: React.FC<FileSequencePanelProps> = ({
                   type="button"
                   onClick={() => onMoveItem(idx, 'UP')}
                   disabled={idx === 0 || isProcessing}
-                  className={`${btn} text-slate-400 hover:bg-slate-800 hover:text-white disabled:opacity-20`}
+                  className={`${btn} text-ink-muted hover:bg-surface-2 hover:text-white disabled:opacity-20`}
                   title="Move Up"
                   aria-label={`Move ${item.name} up`}
                 >
@@ -191,7 +189,7 @@ export const FileSequencePanel: React.FC<FileSequencePanelProps> = ({
                   type="button"
                   onClick={() => onMoveItem(idx, 'DOWN')}
                   disabled={idx === items.length - 1 || isProcessing}
-                  className={`${btn} text-slate-400 hover:bg-slate-800 hover:text-white disabled:opacity-20`}
+                  className={`${btn} text-ink-muted hover:bg-surface-2 hover:text-white disabled:opacity-20`}
                   title="Move Down"
                   aria-label={`Move ${item.name} down`}
                 >
@@ -201,7 +199,7 @@ export const FileSequencePanel: React.FC<FileSequencePanelProps> = ({
                   type="button"
                   onClick={() => onRemoveItem(idx)}
                   disabled={isProcessing}
-                  className={`${btn} text-red-400 hover:bg-red-950/60 disabled:opacity-20`}
+                  className={`${btn} text-danger hover:bg-danger-faint/60 disabled:opacity-20`}
                   title="Remove File"
                   aria-label={`Remove ${item.name}`}
                 >

@@ -13,6 +13,9 @@ interface CachedPageRecord {
 class PWOptimizerStorage {
   private dbPromise: Promise<IDBDatabase> | null = null;
 
+  /** In-memory mirror of the total cache size (avoids getAll() per write batch). */
+  private cachedSizeBytes: number | null = null;
+
   private getDB(): Promise<IDBDatabase> {
     if (typeof window === 'undefined') return Promise.reject(new Error('No IndexedDB on server'));
     if (!this.dbPromise) {
@@ -44,33 +47,98 @@ class PWOptimizerStorage {
 
   public async storePage(pdfId: string, pageIndex: number, originalBlob: Blob | null, optimizedBlob: Blob): Promise<void> {
     try {
+      const id = `${pdfId}_page_${pageIndex}`;
       const sizeBytes = (originalBlob?.size ?? 0) + optimizedBlob.size;
-      await this.evictIfNeeded(sizeBytes);
+      const [oldSize] = await this.getSizesByKey([id]);
+      const sizeDelta = sizeBytes - (oldSize ?? 0);
+      if (sizeDelta > 0) await this.evictIfNeeded(sizeDelta);
       const db = await this.getDB();
       const tx = db.transaction(STORE_NAME, 'readwrite');
-      tx.objectStore(STORE_NAME).put({
-        id: `${pdfId}_page_${pageIndex}`, pdfId, pageIndex,
+      const store = tx.objectStore(STORE_NAME);
+      const record: CachedPageRecord = {
+        id, pdfId, pageIndex,
         originalBlob: originalBlob ?? undefined, optimizedBlob, timestamp: Date.now(), cacheVersion: CACHE_VERSION, sizeBytes,
-      } as CachedPageRecord);
-      return new Promise((resolve, reject) => { tx.oncomplete = () => resolve(); tx.onerror = () => reject(tx.error); });
+      };
+      store.put(record);
+      return new Promise((resolve, reject) => {
+        tx.oncomplete = () => { this.adjustCachedSize(sizeDelta); resolve(); };
+        tx.onerror = () => reject(tx.error);
+      });
     } catch (e) { console.warn('IDB write failed', e); }
   }
 
   public async storePagesBatch(pages: Array<{ pdfId: string; pageIndex: number; originalBlob: Blob | null; optimizedBlob: Blob }>): Promise<void> {
     if (pages.length === 0) return;
     try {
-      const totalBytes = pages.reduce((s, p) => s + (p.originalBlob?.size ?? 0) + p.optimizedBlob.size, 0);
-      await this.evictIfNeeded(totalBytes);
+      const now = Date.now();
+      const recordsById = new Map<string, CachedPageRecord>();
+      for (const p of pages) {
+        const record: CachedPageRecord = {
+          id: `${p.pdfId}_page_${p.pageIndex}`, pdfId: p.pdfId, pageIndex: p.pageIndex,
+          originalBlob: p.originalBlob ?? undefined, optimizedBlob: p.optimizedBlob, timestamp: now,
+          cacheVersion: CACHE_VERSION, sizeBytes: (p.originalBlob?.size ?? 0) + p.optimizedBlob.size,
+        };
+        // IndexedDB's final put wins. Mirror that rule before calculating the cache delta.
+        recordsById.set(record.id, record);
+      }
+      const records = Array.from(recordsById.values());
+      /* Delta-aware eviction (separate tx, fully awaited — no await may occur
+         between opening the write tx and queueing its requests, or the tx
+         auto-commits and puts fail with TransactionInactiveError). */
+      const oldSizes = await this.getSizesByKey(records.map(r => r.id));
+      const sizeDelta = records.reduce((s, r, i) => s + r.sizeBytes - (oldSizes[i] ?? 0), 0);
+      const neededBytes = records.reduce((s, r, i) => s + Math.max(0, r.sizeBytes - (oldSizes[i] ?? 0)), 0);
+      if (neededBytes > 0) await this.evictIfNeeded(neededBytes);
+
       const db = await this.getDB();
       const tx = db.transaction(STORE_NAME, 'readwrite');
-      const store = tx.objectStore(STORE_NAME); const now = Date.now();
-      for (const p of pages) {
-        const sizeBytes = (p.originalBlob?.size ?? 0) + p.optimizedBlob.size;
-        store.put({ id: `${p.pdfId}_page_${p.pageIndex}`, pdfId: p.pdfId, pageIndex: p.pageIndex,
-          originalBlob: p.originalBlob ?? undefined, optimizedBlob: p.optimizedBlob, timestamp: now, cacheVersion: CACHE_VERSION, sizeBytes } as CachedPageRecord);
-      }
-      return new Promise((resolve, reject) => { tx.oncomplete = () => resolve(); tx.onerror = () => reject(tx.error); });
+      const store = tx.objectStore(STORE_NAME);
+      for (const r of records) store.put(r);
+      return new Promise((resolve, reject) => {
+        tx.oncomplete = () => {
+          this.adjustCachedSize(sizeDelta);
+          resolve();
+        };
+        tx.onerror = () => reject(tx.error);
+      });
     } catch (e) { console.warn('IDB batch write failed', e); }
+  }
+
+  /** Reads stored sizeBytes for keys via a single readonly transaction. */
+  private getSizesByKey(ids: string[]): Promise<Array<number | null>> {
+    return new Promise((resolve) => {
+      const req = this.getDB().then((db) => {
+        const tx = db.transaction(STORE_NAME, 'readonly');
+        const store = tx.objectStore(STORE_NAME);
+        const sizes: Array<number | null> = new Array(ids.length);
+        let remaining = ids.length;
+        if (remaining === 0) { resolve(sizes); return; }
+        ids.forEach((id, i) => {
+          const r = store.get(id);
+          r.onsuccess = () => {
+            const rec = r.result as CachedPageRecord | undefined;
+            sizes[i] = rec ? (rec.sizeBytes ?? 0) : null;
+            remaining--;
+            if (remaining === 0) resolve(sizes);
+          };
+          r.onerror = () => {
+            sizes[i] = null;
+            remaining--;
+            if (remaining === 0) resolve(sizes);
+          };
+        });
+      });
+      req.catch(() => resolve(new Array(ids.length).fill(null)));
+    });
+  }
+
+  /** Maintains the in-memory total; falls back to a full recount when stale. */
+  private adjustCachedSize(sizeDelta: number): void {
+    if (this.cachedSizeBytes === null) {
+      void this.getCacheSize().catch(() => undefined);
+      return;
+    }
+    this.cachedSizeBytes = Math.max(0, this.cachedSizeBytes + sizeDelta);
   }
 
   public async getPage(pdfId: string, pageIndex: number): Promise<{ originalBlob?: Blob; optimizedBlob: Blob } | null> {
@@ -86,13 +154,15 @@ class PWOptimizerStorage {
   }
 
   public async getCacheSize(): Promise<number> {
+    if (this.cachedSizeBytes !== null) return this.cachedSizeBytes;
     try {
       const db = await this.getDB();
       const req = db.transaction(STORE_NAME, 'readonly').objectStore(STORE_NAME).getAll();
       return new Promise((resolve) => {
         req.onsuccess = () => {
           const records = req.result as CachedPageRecord[];
-          resolve(records.reduce((s, r) => s + (r.sizeBytes || 0), 0));
+          this.cachedSizeBytes = records.reduce((s, r) => s + (r.sizeBytes || 0), 0);
+          resolve(this.cachedSizeBytes);
         };
         req.onerror = () => resolve(0);
       });
@@ -116,6 +186,7 @@ class PWOptimizerStorage {
           const record = c.value as CachedPageRecord;
           const freed = record.sizeBytes || 0;
           c.delete();
+          this.cachedSizeBytes = Math.max(0, (this.cachedSizeBytes ?? 0) - freed);
           toFree -= freed;
           c.continue();
         };
@@ -132,7 +203,10 @@ class PWOptimizerStorage {
       if (!pdfId) store.clear();
       else { const idx = store.index('pdfId'); const req = idx.getAllKeys(pdfId);
         req.onsuccess = () => { req.result.forEach((k) => store.delete(k)); }; }
-      return new Promise((resolve) => { tx.oncomplete = () => resolve(); tx.onerror = () => resolve(); });
+      return new Promise((resolve) => {
+        tx.oncomplete = () => { this.cachedSizeBytes = pdfId ? null : 0; resolve(); };
+        tx.onerror = () => resolve();
+      });
     } catch { /* */ }
   }
 
@@ -143,7 +217,7 @@ class PWOptimizerStorage {
       const range = IDBKeyRange.upperBound(Date.now() - maxAgeMs);
       const req = idx.openCursor(range);
       req.onsuccess = () => { const c = req.result; if (c) { c.delete(); c.continue(); } };
-      return new Promise((resolve) => { tx.oncomplete = () => resolve(); tx.onerror = () => resolve(); });
+      return new Promise((resolve) => { tx.oncomplete = () => { this.cachedSizeBytes = null; resolve(); }; tx.onerror = () => resolve(); });
     } catch { /* */ }
   }
 }

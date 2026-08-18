@@ -31,6 +31,7 @@ if (typeof ImageData === 'undefined') {
 if (typeof HTMLCanvasElement === 'undefined') {
   let createCanvas: any;
   try {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
     createCanvas = require('@napi-rs/canvas').createCanvas;
   } catch {
     createCanvas = () => ({ width: 100, height: 100, getContext: () => null });

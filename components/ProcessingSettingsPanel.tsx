@@ -60,8 +60,7 @@ const SLIDERS: SliderConfig[] = [
     unit: 'px',
     tooltipTitle: 'Stroke / Dilation',
     tooltipBody:
-      'OFF: Raw PDF page is preserved exactly as rendered - no morphology, no stroke expansion, no dilation, no erosion. ' +
-      'ON: Enables manual stroke thickness control. Higher = thicker text strokes.',
+      'Makes text strokes thicker or thinner. Higher = bolder text. Leave OFF to keep the original look.',
   },
   {
     key: 'sharpenAmount',
@@ -74,8 +73,7 @@ const SLIDERS: SliderConfig[] = [
     unit: '%',
     tooltipTitle: 'Sharpen',
     tooltipBody:
-      'OFF: Uses the current preset default sharpen value. ' +
-      'ON: Enables manual sharpen adjustment, overriding the preset. Higher = crisper edges but may add artifacts.',
+      'Makes edges look crisper. Higher = sharper, but too much can look harsh.',
   },
   {
     key: 'contrastEnhancement',
@@ -88,8 +86,7 @@ const SLIDERS: SliderConfig[] = [
     unit: '%',
     tooltipTitle: 'Contrast',
     tooltipBody:
-      'OFF: Uses the current preset default contrast value. ' +
-      'ON: Enables manual contrast adjustment, overriding the preset. Higher = darker strokes, better for faint text.',
+      'Darkens strokes so faint text is easier to read. Higher = stronger contrast.',
   },
   {
     key: 'denoiseAmount',
@@ -102,8 +99,7 @@ const SLIDERS: SliderConfig[] = [
     unit: '%',
     tooltipTitle: 'Denoise',
     tooltipBody:
-      'OFF: Uses the current preset default denoise value. ' +
-      'ON: Enables manual denoise adjustment, overriding the preset. Higher = cleaner but may remove fine detail.',
+      'Cleans up dust spots and background noise. Higher = cleaner, but may remove fine details.',
   },
   {
     key: 'backgroundWhiteningThreshold',
@@ -116,8 +112,7 @@ const SLIDERS: SliderConfig[] = [
     unit: '',
     tooltipTitle: 'Background Whitening',
     tooltipBody:
-      'OFF: Uses the current preset default threshold. ' +
-      'ON: Enables manual BG whitening adjustment. Pixels brighter than this value become pure white. Lower = more aggressive cleanup.',
+      'Turns light backgrounds pure white for cleaner prints. Lower = more aggressive cleanup.',
   },
 ];
 
@@ -134,22 +129,24 @@ const ToggleSwitch: React.FC<{
   enabled: boolean;
   onChange: (on: boolean) => void;
   disabled?: boolean;
-}> = ({ enabled, onChange, disabled }) => (
+  label: string;
+}> = ({ enabled, onChange, disabled, label }) => (
   <button
     type="button"
     role="switch"
     aria-checked={enabled}
+    aria-label={`${label} override`}
     disabled={disabled}
     onClick={() => onChange(!enabled)}
-    className={`relative inline-flex h-5 w-9 shrink-0 items-center rounded-full transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 ${
+    className={`relative inline-flex h-7 w-11 shrink-0 items-center rounded-full transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-soft ${
       enabled
-        ? 'bg-indigo-600'
-        : 'bg-slate-700'
+        ? 'bg-primary-strong'
+        : 'bg-elevated'
     } ${disabled ? 'opacity-40 cursor-not-allowed' : 'cursor-pointer'}`}
   >
     <span
-      className={`inline-block h-3.5 w-3.5 transform rounded-full bg-white shadow-sm transition-transform duration-200 ${
-        enabled ? 'translate-x-[18px]' : 'translate-x-[3px]'
+      className={`inline-block h-4 w-4 transform rounded-full bg-white shadow-sm transition-transform duration-200 ${
+        enabled ? 'translate-x-[22px]' : 'translate-x-[4px]'
       }`}
     />
   </button>
@@ -176,14 +173,19 @@ export const ProcessingSettingsPanel: React.FC<ProcessingSettingsPanelProps> = (
    * outdated masterParams / processingToggles. */
   const previewTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const onPreviewReprocessRef = useRef(onPreviewReprocess);
-  onPreviewReprocessRef.current = onPreviewReprocess;   // always latest
+
+  // Keep the ref in sync outside render (render must stay pure) so the
+  // debounced timer always calls the latest onPreviewReprocess.
+  useEffect(() => {
+    onPreviewReprocessRef.current = onPreviewReprocess;
+  }, [onPreviewReprocess]);
 
   const schedulePreviewReprocess = useCallback(() => {
     if (previewTimerRef.current) clearTimeout(previewTimerRef.current);
     previewTimerRef.current = setTimeout(() => {
       onPreviewReprocessRef.current();
     }, 300);
-  }, []);   // stable — reads from ref
+  }, []);   // stable Ã¢â‚¬” reads from ref
 
   useEffect(() => {
     return () => {
@@ -234,52 +236,54 @@ export const ProcessingSettingsPanel: React.FC<ProcessingSettingsPanelProps> = (
   const anyToggleOn = Object.values(toggles).some(Boolean);
 
   return (
-    <div className="rounded-2xl border border-slate-800 bg-slate-900/90 shadow-xl overflow-hidden">
+    <div className="rounded-2xl border border-surface-2 bg-surface/90 shadow-xl overflow-hidden">
       {/* -- Toggle Header -- */}
       <button
         type="button"
         onClick={() => setIsOpen(!isOpen)}
-        className="flex w-full items-center justify-between px-4 py-3 text-left hover:bg-slate-800/50 transition-colors"
+        aria-expanded={isOpen}
+        aria-controls="processing-settings-body"
+        className="flex w-full items-center justify-between px-4 py-3 text-left hover:bg-surface-2/50 transition-colors"
       >
         <div className="flex items-center gap-2.5">
-          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-amber-500/20 text-amber-400 border border-amber-500/30">
+          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-warning-strong/20 text-warning border border-warning-strong/30">
             <SlidersHorizontal className="h-4 w-4" />
           </div>
           <div>
-            <h3 className="text-xs font-bold text-white sm:text-sm">
+            <span className="block text-xs font-bold text-white sm:text-sm">
               Processing Settings
-            </h3>
-            <p className="text-[10px] text-slate-400">
+            </span>
+            <span className="block text-[10px] text-ink-muted">
               Toggle &amp; fine-tune individual parameters
-            </p>
+            </span>
           </div>
         </div>
         <div className="flex items-center gap-2">
           {isDirty && (
-            <span className="rounded-full bg-amber-500/20 px-2 py-0.5 text-[9px] font-bold text-amber-300 border border-amber-500/30">
+            <span className="rounded-full bg-warning-strong/20 px-2 py-0.5 text-[9px] font-bold text-warning-soft border border-warning-strong/30">
               Modified
             </span>
           )}
           {isOpen ? (
-            <ChevronUp className="h-4 w-4 text-slate-400" />
+            <ChevronUp className="h-4 w-4 text-ink-muted" />
           ) : (
-            <ChevronDown className="h-4 w-4 text-slate-400" />
+            <ChevronDown className="h-4 w-4 text-ink-muted" />
           )}
         </div>
       </button>
 
       {/* -- Collapsible Body -- */}
       {isOpen && (
-        <div className="border-t border-slate-800 px-4 py-4 space-y-4 animate-in fade-in slide-in-from-top-1 duration-200">
+        <div id="processing-settings-body" className="border-t border-surface-2 px-4 py-4 space-y-4 animate-in fade-in slide-in-from-top-1 duration-200">
           {/* Preset Selector */}
           <div className="flex flex-col gap-1.5">
-            <label className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider">
+            <label className="text-[10px] font-semibold text-ink-muted uppercase tracking-wider">
               Preset Base
             </label>
             <select
               value={params.preset}
               onChange={(e) => handlePresetChange(e.target.value as ProcessingParameters['preset'])}
-              className="w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-xs font-bold text-white focus:outline-none focus:border-indigo-500"
+              className="w-full rounded-lg border border-elevated bg-bg px-3 py-2 text-xs font-bold text-white focus:outline-none focus:border-primary"
             >
               {Object.entries(PRESET_LABELS).map(([value, label]) => (
                 <option key={value} value={value}>
@@ -301,19 +305,19 @@ export const ProcessingSettingsPanel: React.FC<ProcessingSettingsPanelProps> = (
                   key={slider.key}
                   className={`flex flex-col gap-2 rounded-xl border p-3 transition-colors duration-200 ${
                     isOn
-                      ? 'border-indigo-500/40 bg-indigo-950/20'
-                      : 'border-slate-800 bg-slate-950/60'
+                      ? 'border-primary/40 bg-primary-faint/20'
+                      : 'border-surface-2 bg-bg/60'
                   }`}
                 >
                   {/* Row: Icon + Label + Tooltip + Toggle */}
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-1.5">
-                      <span className={isOn ? 'text-indigo-400' : 'text-slate-500'}>
+                      <span className={isOn ? 'text-primary-soft' : 'text-ink-muted'}>
                         {slider.icon}
                       </span>
                       <span
                         className={`text-[11px] font-bold ${
-                          isOn ? 'text-white' : 'text-slate-400'
+                          isOn ? 'text-white' : 'text-ink-muted'
                         }`}
                       >
                         {slider.label}
@@ -327,13 +331,14 @@ export const ProcessingSettingsPanel: React.FC<ProcessingSettingsPanelProps> = (
 
                     <div className="flex items-center gap-2">
                       {isOn && (
-                        <span className="rounded-md bg-indigo-500/20 px-2 py-0.5 text-[11px] font-bold text-indigo-300 border border-indigo-500/30 tabular-nums">
+                        <span className="rounded-md bg-primary/20 px-2 py-0.5 text-[11px] font-bold text-primary-soft border border-primary/30 tabular-nums">
                           {value}{slider.unit}
                         </span>
                       )}
                       <ToggleSwitch
                         enabled={isOn}
                         onChange={(on) => handleToggleChange(slider.toggleKey, on)}
+                        label={slider.label}
                       />
                     </div>
                   </div>
@@ -349,27 +354,27 @@ export const ProcessingSettingsPanel: React.FC<ProcessingSettingsPanelProps> = (
                       disabled={!isOn}
                       onChange={(e) => handleSliderChange(slider.key, Number(e.target.value))}
                       className="w-full h-1.5 rounded-full appearance-none cursor-pointer
-                        bg-slate-700 accent-indigo-500
+                        bg-elevated accent-primary
                         [&::-webkit-slider-thumb]:appearance-none
                         [&::-webkit-slider-thumb]:h-3.5
                         [&::-webkit-slider-thumb]:w-3.5
                         [&::-webkit-slider-thumb]:rounded-full
-                        [&::-webkit-slider-thumb]:bg-indigo-500
+                        [&::-webkit-slider-thumb]:bg-primary
                         [&::-webkit-slider-thumb]:shadow-md
                         [&::-webkit-slider-thumb]:border-2
-                        [&::-webkit-slider-thumb]:border-indigo-300
+                        [&::-webkit-slider-thumb]:border-primary-soft
                         disabled:cursor-not-allowed"
                       style={{
                         background: isOn
-                          ? `linear-gradient(to right, #6366f1 ${pct}%, #334155 ${pct}%)`
-                          : '#334155',
+                          ? `linear-gradient(to right, var(--color-primary) ${pct}%, var(--color-elevated) ${pct}%)`
+                          : 'var(--color-elevated)',
                       }}
                     />
                   </div>
 
                   {/* OFF hint */}
                   {!isOn && (
-                    <p className="text-[9px] text-slate-600 leading-tight">
+                    <p className="text-[9px] text-ink-muted leading-tight">
                       {slider.toggleKey === 'strokeDilation'
                         ? 'OFF - Raw PDF preserved. No morphology applied.'
                         : 'OFF - Using preset default value.'}
@@ -381,7 +386,7 @@ export const ProcessingSettingsPanel: React.FC<ProcessingSettingsPanelProps> = (
           </div>
 
           {/* -- Preview note -- */}
-          <p className="text-center text-[9px] text-slate-500 italic">
+          <p className="text-center text-[9px] text-ink-muted italic">
             Preview updates only the selected page.
           </p>
 
@@ -390,7 +395,7 @@ export const ProcessingSettingsPanel: React.FC<ProcessingSettingsPanelProps> = (
             <button
               type="button"
               onClick={handleReset}
-              className="flex h-10 items-center gap-1.5 rounded-xl border border-slate-700 bg-slate-800 px-3.5 text-[11px] font-bold text-slate-300 hover:bg-slate-700 hover:text-white transition-colors"
+              className="flex h-10 items-center gap-1.5 rounded-xl border border-elevated bg-surface-2 px-3.5 text-[11px] font-bold text-ink-muted hover:bg-elevated hover:text-white transition-colors"
             >
               <RotateCcw className="h-3.5 w-3.5" />
               <span>Reset Defaults</span>
@@ -402,8 +407,8 @@ export const ProcessingSettingsPanel: React.FC<ProcessingSettingsPanelProps> = (
               disabled={isProcessing || isPreviewProcessing}
               className={`flex h-10 flex-1 items-center justify-center gap-2 rounded-xl px-4 text-xs font-bold transition-all ${
                 !isProcessing && !isPreviewProcessing
-                  ? 'bg-indigo-600 text-white hover:bg-indigo-500 shadow-lg shadow-indigo-900/30 active:scale-[0.98]'
-                  : 'bg-slate-800 text-slate-500 cursor-not-allowed border border-slate-700'
+                  ? 'bg-primary-strong text-white hover:bg-primary shadow-lg shadow-primary-faint/30 active:scale-[0.98]'
+                  : 'bg-surface-2 text-ink-muted cursor-not-allowed border border-elevated'
               }`}
             >
               {isProcessing ? (
@@ -415,7 +420,7 @@ export const ProcessingSettingsPanel: React.FC<ProcessingSettingsPanelProps> = (
                 <>
                   <RefreshCw className={`h-3.5 w-3.5 ${isPreviewProcessing ? 'animate-spin' : ''}`} />
                   <span>
-                    {isPreviewProcessing ? 'Preview...' : '\uD83D\uDD04 Re-process All Pages'}
+                    {isPreviewProcessing ? 'Preview...' : 'Re-process All Pages'}
                   </span>
                 </>
               )}
@@ -423,7 +428,7 @@ export const ProcessingSettingsPanel: React.FC<ProcessingSettingsPanelProps> = (
           </div>
 
           {!isDirty && !anyToggleOn && (
-            <p className="text-center text-[9px] text-slate-500">
+            <p className="text-center text-[9px] text-ink-muted">
               Enable a toggle above to override preset defaults, then tap &ldquo;Re-process All&rdquo; to apply to every page.
             </p>
           )}

@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useCallback, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
   Check,
   Download,
@@ -13,6 +13,7 @@ import {
 } from 'lucide-react';
 import { useInstallPrompt } from '@/lib/pwa/useInstallPrompt';
 import { AppLogo } from './AppLogo';
+import { useToast } from '@/components/shared/Toast';
 
 /**
  * Adaptive PWA card rendered ONLY at the top of the Settings drawer.
@@ -31,6 +32,16 @@ export const InstallShareCard: React.FC = () => {
   const [dismissed, setDismissed] = useState(false);
   const [showIOSGuide, setShowIOSGuide] = useState(false);
   const [copied, setCopied] = useState(false);
+  const copiedTimerRef = useRef<number | null>(null);
+  const { toast } = useToast();
+
+  // Clear the "Link copied!" reset timer when the card unmounts so we never
+  // call setState on an unmounted component (drawer closes within 2.2s).
+  useEffect(() => {
+    return () => {
+      if (copiedTimerRef.current !== null) window.clearTimeout(copiedTimerRef.current);
+    };
+  }, []);
 
   const handleInstall = useCallback(async () => {
     const outcome = await promptInstall();
@@ -38,7 +49,6 @@ export const InstallShareCard: React.FC = () => {
   }, [promptInstall]);
 
   const handleShare = useCallback(async () => {
-    if (typeof window === 'undefined') return;
     const url = window.location.origin + (process.env.NEXT_PUBLIC_BASE_PATH || '');
     const data = {
       title: 'Notes Print Optimizer',
@@ -56,11 +66,13 @@ export const InstallShareCard: React.FC = () => {
     try {
       await navigator.clipboard.writeText(url);
       setCopied(true);
-      window.setTimeout(() => setCopied(false), 2200);
+      toast('Link copied to clipboard.');
+      if (copiedTimerRef.current !== null) window.clearTimeout(copiedTimerRef.current);
+      copiedTimerRef.current = window.setTimeout(() => setCopied(false), 2200);
     } catch {
-      /* clipboard unavailable - no-op */
+      toast('Could not copy the link.', 'error');
     }
-  }, []);
+  }, [toast]);
 
   if (dismissed) return null;
 
@@ -72,7 +84,7 @@ export const InstallShareCard: React.FC = () => {
       type="button"
       onClick={() => setDismissed(true)}
       aria-label="Dismiss"
-      className="flex h-6 w-6 shrink-0 items-center justify-center rounded-md text-slate-400 transition-colors hover:bg-white/10 hover:text-white"
+      className="flex h-9 w-9 -m-1.5 shrink-0 items-center justify-center rounded-lg text-ink-muted transition-colors hover:bg-white/10 hover:text-white"
     >
       <X className="h-3.5 w-3.5" />
     </button>
@@ -81,19 +93,19 @@ export const InstallShareCard: React.FC = () => {
   /* ------------------------------- INSTALLED ------------------------------ */
   if (isInstalled) {
     return (
-      <div className="relative overflow-hidden rounded-2xl border border-emerald-500/25 bg-gradient-to-br from-emerald-950/70 via-slate-900 to-slate-950 p-4 shadow-lg">
-        <div className="pointer-events-none absolute -right-8 -top-8 h-24 w-24 rounded-full bg-emerald-500/15 blur-2xl" />
-        <div className="pointer-events-none absolute -bottom-6 -left-6 h-20 w-20 rounded-full bg-teal-500/10 blur-2xl" />
+      <div className="relative overflow-hidden rounded-2xl border border-success-strong/25 bg-gradient-to-br from-success-faint/70 via-surface to-bg p-4 shadow-lg">
+        <div className="pointer-events-none absolute -right-8 -top-8 h-24 w-24 rounded-full bg-success-strong/15 blur-2xl" />
+        <div className="pointer-events-none absolute -bottom-6 -left-6 h-20 w-20 rounded-full bg-success-strong/10 blur-2xl" />
 
         <div className="relative">
           <div className="flex items-start justify-between gap-2">
             <div className="flex items-center gap-3">
-              <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-gradient-to-br from-emerald-600 to-teal-700 shadow-md ring-1 ring-white/10">
+              <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-gradient-to-br from-success-deep to-accent-deep shadow-md ring-1 ring-white/10">
                 <AppLogo className="h-7 w-7" />
               </div>
               <div>
                 <h3 className="text-sm font-bold text-white">Share this app</h3>
-                <p className="flex items-center gap-1 text-[11px] font-medium text-emerald-300/90">
+                <p className="flex items-center gap-1 text-[11px] font-medium text-success-soft/90">
                   <Check className="h-3 w-3" /> Installed on your device
                 </p>
               </div>
@@ -101,7 +113,7 @@ export const InstallShareCard: React.FC = () => {
             {dismissButton}
           </div>
 
-          <p className="mt-3 text-xs leading-relaxed text-slate-300">
+          <p className="mt-3 text-xs leading-relaxed text-ink-muted">
             Enjoying it? Share Notes Print Optimizer with friends who want to
             save ink and paper.
           </p>
@@ -109,7 +121,7 @@ export const InstallShareCard: React.FC = () => {
           <button
             type="button"
             onClick={handleShare}
-            className="mt-3.5 flex w-full items-center justify-center gap-2 rounded-xl bg-emerald-600 px-3 py-2.5 text-xs font-bold text-white shadow-md transition-all hover:bg-emerald-500 active:scale-[0.98]"
+            className="mt-3.5 flex w-full items-center justify-center gap-2 rounded-xl bg-success-deep px-3 py-2.5 text-xs font-bold text-white shadow-md transition-all hover:bg-success-strong active:scale-[0.98]"
           >
             {copied ? <Check className="h-3.5 w-3.5" /> : <Share2 className="h-3.5 w-3.5" />}
             <span>{copied ? 'Link copied!' : 'Share App'}</span>
@@ -121,19 +133,19 @@ export const InstallShareCard: React.FC = () => {
 
   /* ----------------------------- NOT INSTALLED ---------------------------- */
   return (
-    <div className="relative overflow-hidden rounded-2xl border border-indigo-500/30 bg-gradient-to-br from-indigo-950/80 via-slate-900 to-slate-950 p-4 shadow-lg">
-      <div className="pointer-events-none absolute -right-8 -top-8 h-24 w-24 rounded-full bg-indigo-500/20 blur-2xl" />
-      <div className="pointer-events-none absolute -bottom-6 -left-6 h-20 w-20 rounded-full bg-violet-500/15 blur-2xl" />
+    <div className="relative overflow-hidden rounded-2xl border border-primary/30 bg-gradient-to-br from-primary-faint/80 via-surface to-bg p-4 shadow-lg">
+      <div className="pointer-events-none absolute -right-8 -top-8 h-24 w-24 rounded-full bg-primary/20 blur-2xl" />
+      <div className="pointer-events-none absolute -bottom-6 -left-6 h-20 w-20 rounded-full bg-accent/15 blur-2xl" />
 
       <div className="relative">
         <div className="flex items-start justify-between gap-2">
           <div className="flex items-center gap-3">
-            <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-gradient-to-br from-indigo-600 to-violet-700 shadow-md ring-1 ring-white/10">
+            <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-gradient-to-br from-primary-strong to-accent-deep shadow-md ring-1 ring-white/10">
               <AppLogo className="h-7 w-7" />
             </div>
             <div>
               <h3 className="text-sm font-bold text-white">Install App</h3>
-              <p className="text-[11px] font-medium text-indigo-300/90">
+              <p className="text-[11px] font-medium text-primary-soft/90">
                 One tap &middot; Home screen
               </p>
             </div>
@@ -141,34 +153,34 @@ export const InstallShareCard: React.FC = () => {
           {dismissButton}
         </div>
 
-        <p className="mt-3 text-xs leading-relaxed text-slate-300">
+        <p className="mt-3 text-xs leading-relaxed text-ink-muted">
           Add Notes Print Optimizer to your home screen for instant access,
           offline support and a full-screen workspace.
         </p>
 
         <div className="mt-3 flex flex-wrap gap-1.5">
-          <span className="flex items-center gap-1 rounded-full border border-slate-700/60 bg-slate-800/60 px-2 py-0.5 text-[10px] font-medium text-slate-300">
-            <Zap className="h-3 w-3 text-amber-400" /> Fast
+          <span className="flex items-center gap-1 rounded-full border border-elevated/60 bg-surface-2/60 px-2 py-0.5 text-[10px] font-medium text-ink-muted">
+            <Zap className="h-3 w-3 text-warning" /> Fast
           </span>
-          <span className="flex items-center gap-1 rounded-full border border-slate-700/60 bg-slate-800/60 px-2 py-0.5 text-[10px] font-medium text-slate-300">
-            <WifiOff className="h-3 w-3 text-sky-400" /> Offline
+          <span className="flex items-center gap-1 rounded-full border border-elevated/60 bg-surface-2/60 px-2 py-0.5 text-[10px] font-medium text-ink-muted">
+            <WifiOff className="h-3 w-3 text-primary-soft" /> Offline
           </span>
-          <span className="flex items-center gap-1 rounded-full border border-slate-700/60 bg-slate-800/60 px-2 py-0.5 text-[10px] font-medium text-slate-300">
-            <ShieldCheck className="h-3 w-3 text-emerald-400" /> Private
+          <span className="flex items-center gap-1 rounded-full border border-elevated/60 bg-surface-2/60 px-2 py-0.5 text-[10px] font-medium text-ink-muted">
+            <ShieldCheck className="h-3 w-3 text-success" /> Private
           </span>
         </div>
 
         <button
           type="button"
           onClick={handleInstall}
-          className="mt-3.5 flex w-full items-center justify-center gap-2 rounded-xl bg-indigo-600 px-3 py-2.5 text-xs font-bold text-white shadow-md transition-all hover:bg-indigo-500 active:scale-[0.98]"
+          className="mt-3.5 flex w-full items-center justify-center gap-2 rounded-xl bg-primary-strong px-3 py-2.5 text-xs font-bold text-white shadow-md transition-all hover:bg-primary active:scale-[0.98]"
         >
           {isIOS ? <Smartphone className="h-3.5 w-3.5" /> : <Download className="h-3.5 w-3.5" />}
           <span>{isIOS ? 'How to Install' : 'Install App'}</span>
         </button>
 
         {showIOSGuide && isIOS && (
-          <ol className="mt-3 space-y-1.5 border-t border-slate-700/50 pt-2.5 text-[11px] text-slate-300">
+          <ol className="mt-3 space-y-1.5 border-t border-elevated/50 pt-2.5 text-[11px] text-ink-muted">
             <li>
               1. Tap the <strong>Share</strong> button in Safari
             </li>

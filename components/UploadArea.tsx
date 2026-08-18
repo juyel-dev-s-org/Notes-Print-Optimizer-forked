@@ -1,7 +1,8 @@
 'use client';
 
 import React, { useRef, useState } from 'react';
-import { FileUp, Sparkles, ShieldCheck, FileText, Upload, HardDrive } from 'lucide-react';
+import { FileUp, Sparkles, ShieldCheck, Upload, AlertCircle } from 'lucide-react';
+import { isLikelyPdfFile, MAX_FILE_SIZE_MB, MAX_TOTAL_SIZE_MB } from '@/lib/services/UploadService';
 
 interface UploadAreaProps {
   onFilesUpload: (files: File[]) => void;
@@ -15,6 +16,7 @@ export const UploadArea: React.FC<UploadAreaProps> = ({
   isProcessing,
 }) => {
   const [isDragging, setIsDragging] = useState(false);
+  const [uploadError, setUploadError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleDragOver = (e: React.DragEvent) => {
@@ -26,18 +28,43 @@ export const UploadArea: React.FC<UploadAreaProps> = ({
     setIsDragging(false);
   };
 
-  const processFileList = (filesList: FileList | File[]) => {
+  const processFileList = async (filesList: FileList | File[]) => {
+    setUploadError(null);
     const validFiles: File[] = [];
+    const skipped: string[] = [];
+    let totalSize = 0;
+
     for (let i = 0; i < filesList.length; i++) {
       const file = filesList[i];
-      if (file.type === 'application/pdf' || file.name.endsWith('.pdf')) {
-        validFiles.push(file);
+      totalSize += file.size;
+      if (file.size > MAX_FILE_SIZE_MB * 1024 * 1024) {
+        skipped.push(`${file.name} (over ${MAX_FILE_SIZE_MB} MB)`);
+        continue;
       }
+      const looksLikePdf =
+        file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf');
+      const isPdf = looksLikePdf && (await isLikelyPdfFile(file));
+      if (!isPdf) {
+        skipped.push(file.name);
+        continue;
+      }
+      validFiles.push(file);
     }
+
+    if (totalSize > MAX_TOTAL_SIZE_MB * 1024 * 1024) {
+      setUploadError(
+        `Combined size exceeds the ${MAX_TOTAL_SIZE_MB} MB limit. Please upload fewer or smaller files.`
+      );
+      return;
+    }
+
     if (validFiles.length > 0) {
       onFilesUpload(validFiles);
-    } else {
-      alert('Please upload valid PDF files.');
+      fileInputRef.current && (fileInputRef.current.value = '');
+    }
+    if (skipped.length > 0) {
+      const skippedList = skipped.slice(0, 3).join(', ') + (skipped.length > 3 ? ` +${skipped.length - 3} more` : '');
+      setUploadError(`Skipped ${skipped.length} file(s): ${skippedList} — only valid PDFs up to ${MAX_FILE_SIZE_MB} MB are accepted.`);
     }
   };
 
@@ -55,34 +82,54 @@ export const UploadArea: React.FC<UploadAreaProps> = ({
     }
   };
 
+  const handleDropZoneKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      fileInputRef.current?.click();
+    }
+  };
+
   return (
     <div className="flex flex-col gap-4">
       {/* Touch-optimized File Drop & Pick Area */}
       <div
+        role="button"
+        tabIndex={0}
+        aria-label="Upload PDF files"
+        onKeyDown={handleDropZoneKeyDown}
         onDragOver={handleDragOver}
         onDragLeave={handleDragLeave}
         onDrop={handleDrop}
         onClick={() => fileInputRef.current?.click()}
-        className={`group relative flex min-h-[240px] lg:min-h-[300px] cursor-pointer flex-col items-center justify-center rounded-2xl lg:rounded-[20px] border-2 border-dashed p-6 lg:p-10 text-center transition-all ${
+        className={`group relative flex min-h-[240px] lg:min-h-[300px] cursor-pointer flex-col items-center justify-center overflow-hidden rounded-2xl lg:rounded-[20px] border-2 border-dashed p-6 lg:p-10 text-center transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400 ${
           isDragging
-            ? 'border-indigo-500 bg-indigo-950/40 scale-[1.01]'
-            : 'border-slate-700 bg-slate-900/90 hover:border-indigo-500 hover:bg-slate-800/80 shadow-lg lg:shadow-xl lg:hover:shadow-indigo-500/10'
+            ? 'border-indigo-400 bg-indigo-950/40 scale-[1.01] border-solid'
+            : 'border-slate-700 bg-slate-900/90 hover:border-indigo-500/70 hover:bg-slate-800/80 shadow-lg lg:shadow-xl lg:hover:shadow-indigo-500/10'
         }`}
       >
+        {/* Soft corner glow behind the icon */}
+        <div
+          aria-hidden="true"
+          className={`pointer-events-none absolute left-1/2 top-6 h-40 w-40 -translate-x-1/2 rounded-full bg-indigo-500/10 blur-3xl transition-opacity duration-300 ${
+            isDragging ? 'opacity-100' : 'opacity-60 group-hover:opacity-90'
+          }`}
+        />
+
         <input
           ref={fileInputRef}
           type="file"
           accept="application/pdf"
           multiple
+          aria-label="Upload PDF files"
           onChange={handleFileChange}
           className="hidden"
         />
 
-        <div className="flex h-16 w-16 lg:h-20 lg:w-20 items-center justify-center rounded-2xl bg-indigo-600/20 text-indigo-400 border border-indigo-500/30 group-hover:scale-110 group-hover:bg-indigo-600 group-hover:text-white transition-all shadow-md">
+        <div className="relative flex h-16 w-16 lg:h-20 lg:w-20 items-center justify-center rounded-2xl bg-gradient-to-br from-indigo-500/25 to-sky-500/15 text-indigo-400 border border-indigo-500/40 group-hover:scale-110 group-hover:from-indigo-500 group-hover:to-sky-500 group-hover:text-white transition-all duration-200 shadow-lg shadow-indigo-500/10 group-hover:shadow-indigo-500/30">
           <FileUp className="h-8 w-8 lg:h-10 lg:w-10" />
         </div>
 
-        <div className="mt-4 lg:mt-6 flex flex-col items-center gap-1.5">
+        <div className="relative mt-4 lg:mt-6 flex flex-col items-center gap-1.5">
           <h2 className="text-base font-bold text-white sm:text-lg lg:text-2xl">
             Upload Class Note PDFs
           </h2>
@@ -131,6 +178,15 @@ export const UploadArea: React.FC<UploadAreaProps> = ({
           <span>Instant Auto-Whitening</span>
         </div>
       </div>
+      {uploadError && (
+        <div
+          role="alert"
+          className="flex items-start gap-2 rounded-xl border border-red-800/70 bg-red-950/60 px-4 py-3 text-xs text-red-200"
+        >
+          <AlertCircle className="mt-0.5 h-4 w-4 shrink-0 text-red-400" />
+          <span>{uploadError}</span>
+        </div>
+      )}
     </div>
   );
 };

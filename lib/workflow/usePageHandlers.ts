@@ -11,8 +11,8 @@ import { pwOptimizerStorage } from '../optimizer/storage';
 import { memoryManager } from '../optimizer/memoryManager';
 import { CheckpointManager } from '../pipeline/checkpoint/CheckpointManager';
 import { ParameterGenerator } from '../optimizer/parameterGenerator';
-import { getProcessingEngine } from '../optimizer/engine';
 import { getPdfjsLib } from '../optimizer/pdfjsLoader';
+import { sendFeedbackToGas } from '../feedback/gasClient';
 import type {
   GridFormat,
   LayoutConfig,
@@ -112,6 +112,11 @@ export function usePageHandlers() {
    * revoked before a new one is created (prevents orphaned blob leaks).
    */
   const previewBlobUrlRef = useRef<string | null>(null);
+  const previewPdfDocRef = useRef<{ bytes: Uint8Array; doc: any } | null>(null);
+
+  /* Debounced phase-3 re-layout on exclude toggles (cancels stale compiles) */
+  const excludeLayoutTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const excludeLayoutArgsRef = useRef<{ config: LayoutConfig; excluded: Set<number> } | null>(null);
 
   useEffect(() => {
     pwOptimizerStorage.clearCache();
@@ -132,17 +137,32 @@ export function usePageHandlers() {
         }
       });
     }
-    const handleUnload = () => { pwOptimizerStorage.clearCache(); memoryManager.revokeAllBlobUrls(); };
-    window.addEventListener('beforeunload', handleUnload);
-    return () => { window.removeEventListener('beforeunload', handleUnload); handleUnload(); };
+    const handleUnload = () => {
+      pwOptimizerStorage.clearCache();
+      memoryManager.revokeAllBlobUrls();
+      if (previewPdfDocRef.current?.doc) {
+        try { previewPdfDocRef.current.doc.destroy(); } catch { /* noop */ }
+        previewPdfDocRef.current = null;
+      }
+    };
+    window.addEventListener('pagehide', handleUnload);
+    return () => { window.removeEventListener('pagehide', handleUnload); };
   }, []);
 
-  /* Cleanup preview blob on unmount */
+  /* Cleanup preview blob + pending layout debounce on unmount */
   useEffect(() => {
     return () => {
       if (previewBlobUrlRef.current) {
         memoryManager.revokeBlobUrl(previewBlobUrlRef.current);
         previewBlobUrlRef.current = null;
+      }
+      if (previewPdfDocRef.current?.doc) {
+        try { previewPdfDocRef.current.doc.destroy(); } catch { /* noop */ }
+        previewPdfDocRef.current = null;
+      }
+      if (excludeLayoutTimerRef.current) {
+        clearTimeout(excludeLayoutTimerRef.current);
+        excludeLayoutTimerRef.current = null;
       }
     };
   }, []);
@@ -184,6 +204,10 @@ export function usePageHandlers() {
     if (previewBlobUrlRef.current) {
       memoryManager.revokeBlobUrl(previewBlobUrlRef.current);
       previewBlobUrlRef.current = null;
+    }
+    if (previewPdfDocRef.current?.doc) {
+      try { previewPdfDocRef.current.doc.destroy(); } catch { /* noop */ }
+      previewPdfDocRef.current = null;
     }
     setProgressiveThumbnails(new Map());
     actions.resetWorkflow();
@@ -305,7 +329,7 @@ export function usePageHandlers() {
       const service = new OptimizationService();
       const effectiveParams = buildEffectiveParams(masterParams, processingToggles);
       const { processedPages: pages, docProfile: dProf } = await service.processDocument(
-        mergedPdfBytes.slice().buffer as ArrayBuffer, pdfId, effectiveParams.preset,
+        mergedPdfBytes.buffer.slice(mergedPdfBytes.byteOffset, mergedPdfBytes.byteOffset + mergedPdfBytes.byteLength) as ArrayBuffer, pdfId, effectiveParams.preset,
         selectedEngineVersion,
         (curr, total, action) => {
           if (signal.aborted) throw new Error('CANCELLED');
@@ -377,15 +401,23 @@ export function usePageHandlers() {
     let originalImageData: ImageData | null = null;
     let optimizedImageData: ImageData | null = null;
     let thumbCanvas: HTMLCanvasElement | null = null;
-    let pdfDoc: any = null;
 
     try {
       const effectiveParams = buildEffectiveParams(masterParams, processingToggles);
+      const { getProcessingEngine } = await import('../optimizer/engine');
       const engine = getProcessingEngine(selectedEngineVersion);
 
-      // 1. Render ONLY the selected page from the source PDF
-      const pdfjsLib = await getPdfjsLib();
-      pdfDoc = await pdfjsLib.getDocument({ data: mergedPdfBytes.slice() }).promise;
+      // 1. Render ONLY the selected page from the cached or loaded PDF
+      let pdfDoc = previewPdfDocRef.current?.bytes === mergedPdfBytes ? previewPdfDocRef.current.doc : null;
+      if (!pdfDoc) {
+        if (previewPdfDocRef.current?.doc) {
+          try { previewPdfDocRef.current.doc.destroy(); } catch { /* noop */ }
+          previewPdfDocRef.current = null;
+        }
+        const pdfjsLib = await getPdfjsLib();
+        pdfDoc = await pdfjsLib.getDocument({ data: mergedPdfBytes.slice() }).promise;
+        previewPdfDocRef.current = { bytes: mergedPdfBytes, doc: pdfDoc };
+      }
       const pdfPage = await pdfDoc.getPage(pageIndex + 1);
 
       const viewport = pdfPage.getViewport({ scale: 1.0 });
@@ -495,9 +527,6 @@ export function usePageHandlers() {
       if (thumbCanvas) memoryManager.releaseCanvas(thumbCanvas);
       originalImageData = null;
       optimizedImageData = null;
-      if (pdfDoc) {
-        try { pdfDoc.destroy(); } catch { /* noop */ }
-      }
       previewInFlightRef.current = false;
       actions.setPreviewProcessing(false);
     }
@@ -538,7 +567,7 @@ export function usePageHandlers() {
       const service = new OptimizationService();
       const effectiveParams = buildEffectiveParams(masterParams, processingToggles);
       const { processedPages: pages, docProfile: dProf } = await service.processDocument(
-        mergedPdfBytes.slice().buffer as ArrayBuffer, pdfId, effectiveParams.preset,
+        mergedPdfBytes.buffer.slice(mergedPdfBytes.byteOffset, mergedPdfBytes.byteOffset + mergedPdfBytes.byteLength) as ArrayBuffer, pdfId, effectiveParams.preset,
         selectedEngineVersion,
         (curr, total, action) => {
           if (signal.aborted) throw new Error('CANCELLED');
@@ -668,7 +697,16 @@ export function usePageHandlers() {
     actions.setExcludedPages(next);
     if (state.currentPhase === 3 && processedPages.length > 0) {
       const activePages = LayoutService.getActivePages(processedPages, next);
-      if (activePages.length > 0) setTimeout(() => compilePhase3PrintLayout(layoutConfig, next), 0);
+      if (activePages.length > 0) {
+        /* Debounce rapid toggles into a single re-layout */
+        excludeLayoutArgsRef.current = { config: layoutConfig, excluded: next };
+        if (excludeLayoutTimerRef.current) clearTimeout(excludeLayoutTimerRef.current);
+        excludeLayoutTimerRef.current = setTimeout(() => {
+          excludeLayoutTimerRef.current = null;
+          const args = excludeLayoutArgsRef.current;
+          if (args) compilePhase3PrintLayout(args.config, args.excluded);
+        }, 400);
+      }
     }
   }, [excludedPages, state.currentPhase, processedPages, layoutConfig, compilePhase3PrintLayout, actions]);
 
@@ -687,17 +725,38 @@ export function usePageHandlers() {
 
   const handleSendFeedback = useCallback(async () => {
     actions.setFeedbackSubmitted(true);
-    const url = process.env.NEXT_PUBLIC_FEEDBACK_URL ||
-      (window as unknown as Record<string, string>).__NEXT_FEEDBACK_URL;
+    const url = process.env.NEXT_PUBLIC_FEEDBACK_URL;
     if (!url) return;
     try {
-      await fetch(url, {
-        method: 'POST', mode: 'no-cors',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          rating: state.rating, feedback: state.feedbackText,
-          timestamp: new Date().toLocaleString(), source: 'Notes Print Optimizer',
-        }),
+      const text = (state.feedbackText || '').trim().slice(0, 2000);
+      if (!text) return;
+      await sendFeedbackToGas(url, {
+        version: '1.0',
+        provider: 'telegram',
+        operations: [
+          {
+            endpoint: 'sendMessage',
+            payload: {
+              text: `📮 *Feedback*\n\n${text}\n\n_Note: PDF Print Optimizer_`,
+              parse_mode: 'Markdown',
+              disable_web_page_preview: true,
+            },
+          },
+        ],
+        meta: {
+          schemaVersion: '1.0.0',
+          appVersion: '1.2.0',
+          engineVersion: 'v2.0.0-wasm',
+          payloadVersion: '1.0.0',
+          timestamp: new Date().toISOString(),
+        },
+        feedback: {
+          rating: state.rating,
+          category: 'General',
+          text,
+          attachPdfRequested: false,
+          includeDiagnostics: false,
+        },
       });
     } catch { /* feedback is best-effort */ }
   }, [actions, state.rating, state.feedbackText]);

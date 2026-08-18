@@ -67,7 +67,7 @@ export interface MenuSectionConfig {
 }
 
 /** Resolved (visible-only) models handed to the renderer. */
-export interface ResolvedMenuItem extends MenuItemConfig {}
+export type ResolvedMenuItem = MenuItemConfig;
 export interface ResolvedMenuSection {
   id: string;
   icon: string;

@@ -71,4 +71,33 @@ describe('Phase 8.6: Worker crash recovery', () => {
       failPool.destroy();
     }
   });
+
+  it('rejects queued tasks when the pool is destroyed', async () => {
+    const tasks = Array.from({ length: 5 }, (_, index) => pool.submitPixelTask({
+      pageIndex: index, buffer: new ArrayBuffer(100), width: 10, height: 10,
+      params: { invertMode: 'none', sharpenAmount: 0, bannerCropTopPct: 0, bannerCropBottomPct: 0 },
+      profile: { classification: 'LIGHT_SLIDE', darkBackgroundRatio: 0 },
+    }, 5000));
+
+    expect(pool.getStats().queueLength).toBe(1);
+
+    pool.destroy();
+
+    await expect(Promise.all(tasks)).rejects.toThrow('Pool destroyed');
+    expect(pool.getStats().queueLength).toBe(0);
+    expect(pool.getStats().pendingCount).toBe(0);
+  });
+
+  it('retires a timed-out worker so it cannot block future work', async () => {
+    const timedOut = pool.submitPixelTask({
+      pageIndex: 1, buffer: new ArrayBuffer(100), width: 10, height: 10,
+      params: { invertMode: 'none', sharpenAmount: 0, bannerCropTopPct: 0, bannerCropBottomPct: 0 },
+      profile: { classification: 'LIGHT_SLIDE', darkBackgroundRatio: 0 },
+    }, 20);
+
+    await expect(timedOut).rejects.toThrow('timed out');
+    expect(pool.getStats().pendingCount).toBe(0);
+    expect(pool.getStats().busyCount).toBe(0);
+    expect(workers.some((worker) => worker._terminated)).toBe(true);
+  });
 });

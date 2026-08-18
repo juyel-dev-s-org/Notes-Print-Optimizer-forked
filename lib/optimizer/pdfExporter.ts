@@ -5,7 +5,16 @@ import { pwOptimizerStorage } from './storage';
 import { WorkerManager } from '../workers/WorkerManager';
 import { getProcessingEngine, EngineVersion } from './engine';
 import { getPdfjsLib } from './pdfjsLoader';
+import type { PDFDocumentProxy } from 'pdfjs-dist';
 import { DocumentProfile, LayoutConfig, OptimizationMetrics, PresetMode, ProcessedPage } from './types';
+import '../workers/init';
+
+/**
+ * Cached PDF.js document keyed by the source bytes reference, so the original
+ * page can be re-rendered across previews/adjustments without re-parsing the
+ * whole PDF each time. Destroyed when bytes change or on unload.
+ */
+let cachedOriginalPdfDoc: { bytes: Uint8Array; doc: PDFDocumentProxy } | null = null;
 
 export class PdfExporter {
   /** @deprecated Use getPdfjsLib() from pdfjsLoader directly. Kept for backward compat. */
@@ -45,6 +54,16 @@ export class PdfExporter {
     throw new Error(`Failed to load optimized page ${page.pageIndex + 1}`);
   }
 
+  private static async loadPageImageDataOrBlank(page: ProcessedPage): Promise<ImageData> {
+    try {
+      return await this.loadOptimizedImageData(page);
+    } catch (err) {
+      console.warn(`[export] Failed to load optimized page ${page.pageIndex + 1}, using blank:`, err);
+      const w = page.width ?? 612, h = page.height ?? 792;
+      return new ImageData(new Uint8ClampedArray(w * h * 4).fill(255), w, h);
+    }
+  }
+
   /**
    * Loads the original (pre-optimization) page. Uses the cached originalBlob
    * when present (legacy records), otherwise lazily re-renders it from the
@@ -59,25 +78,35 @@ export class PdfExporter {
 
   private static async renderOriginalFromPdf(mergedPdfBytes: Uint8Array, pageIndex: number): Promise<ImageData> {
     const pdfjsLib = await getPdfjsLib();
-    const pdfDoc = await pdfjsLib.getDocument({ data: mergedPdfBytes.slice() }).promise;
-    try {
-      const pdfPage = await pdfDoc.getPage(pageIndex + 1);
-      const scale = Math.min(3.0, 200 / 72); /* ~200 DPI cap for inspection */
-      const viewport = pdfPage.getViewport({ scale });
-      const canvas = document.createElement('canvas');
-      canvas.width = Math.floor(viewport.width);
-      canvas.height = Math.floor(viewport.height);
-      const ctx = canvas.getContext('2d', { willReadFrequently: true })!;
-      await pdfPage.render({ canvasContext: ctx, viewport }).promise;
-      const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-      memoryManager.disposeCanvas(canvas);
-      return imageData;
-    } finally {
-      try { pdfDoc.destroy(); } catch { /* noop */ }
+    let pdfDoc = cachedOriginalPdfDoc?.bytes === mergedPdfBytes ? cachedOriginalPdfDoc.doc : null;
+    if (!pdfDoc) {
+      PdfExporter.disposeCachedOriginalPdf();
+      pdfDoc = await pdfjsLib.getDocument({ data: mergedPdfBytes.slice() }).promise;
+      cachedOriginalPdfDoc = { bytes: mergedPdfBytes, doc: pdfDoc };
     }
+    const pdfPage = await pdfDoc.getPage(pageIndex + 1);
+    const scale = Math.min(3.0, 200 / 72); /* ~200 DPI cap for inspection */
+    const viewport = pdfPage.getViewport({ scale });
+    const vw = Math.floor(viewport.width);
+    const vh = Math.floor(viewport.height);
+    const canvas = memoryManager.acquireCanvas(vw, vh);
+    const ctx = canvas.getContext('2d', { willReadFrequently: true })!;
+    await pdfPage.render({ canvasContext: ctx, viewport }).promise;
+    const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+    memoryManager.disposeCanvas(canvas);
+    return imageData;
+  }
+
+  /** Destroys the cached PDF.js document so a newer source can take its place. */
+  public static disposeCachedOriginalPdf(): void {
+    if (cachedOriginalPdfDoc?.doc) {
+      try { cachedOriginalPdfDoc.doc.destroy(); } catch { /* noop */ }
+    }
+    cachedOriginalPdfDoc = null;
   }
 
   private static async composeSheetWithWorker(
+    pages: ProcessedPage[],
     pageImageDatas: ImageData[],
     sheetIndex: number,
     totalSheets: number,
@@ -86,34 +115,51 @@ export class PdfExporter {
     const wm = WorkerManager.getInstance();
     if (wm.isWorkerSupported() && wm.isOffscreenCanvasSupported()) {
       const pool = wm.getPool();
-      if (pool.getStats().poolSize > 0) {
-        try {
-          const dims = LayoutEngine.getSheetDimensions(config.paperSize, config.orientation);
-          const mmPx = dims.dpi / 25.4;
-          const { cols, rows } = LayoutEngine.getGridDimensions(config.gridFormat);
-          const pageBuffers = pageImageDatas.map(d => d.data.buffer.slice(0));
-          const result = await pool.submitComposeTask({
-            sheetIndex, totalSheets,
-            pageBuffers, pageWidths: pageImageDatas.map(d => d.width), pageHeights: pageImageDatas.map(d => d.height),
-            dims: { widthPx: dims.widthPx, heightPx: dims.heightPx }, cols, rows,
-            marginTop: Math.round((config.outerMarginMm?.top ?? config.marginMm ?? 2) * mmPx),
-            marginLeft: Math.round((config.outerMarginMm?.left ?? config.marginMm ?? 5) * mmPx),
-            marginRight: Math.round((config.outerMarginMm?.right ?? config.marginMm ?? 3) * mmPx),
-            marginBottom: Math.round((config.outerMarginMm?.bottom ?? config.marginMm ?? 2) * mmPx),
-            marginInner: Math.round((config.innerMarginMm ?? config.spacingMm ?? 1) * mmPx),
-            showSlideBorders: config.showSlideBorders ?? true,
-            showPageNumbers: config.showPageNumbers ?? false,
-          });
-          return { jpegBuffer: result.jpegBuffer, width: result.width, height: result.height };
-        } catch {
-          /* worker compose failed — fall through to main thread */
+      const geometry = LayoutEngine.getSheetCompositionGeometry(config);
+      /* loadOptimizedImageData decodes fresh buffers owned exclusively by this
+         call, so the worker gets them zero-copy (no .slice(0) memcpy per page).
+         A view into a larger/shared buffer — never produced today, cheap to
+         guard — is copied instead so nothing we do not own is detached. */
+      const owned = new Set<Uint8ClampedArray>();
+      const pageBuffers = pageImageDatas.map((d) => {
+        const buf = d.data.buffer;
+        if (d.data.byteOffset === 0 && d.data.byteLength === buf.byteLength) {
+          owned.add(d.data);
+          return buf;
+        }
+        return buf.slice(d.data.byteOffset, d.data.byteOffset + d.data.byteLength);
+      });
+      try {
+        const result = await pool.submitComposeTask({
+          sheetIndex, totalSheets,
+          pageBuffers, pageWidths: pageImageDatas.map(d => d.width), pageHeights: pageImageDatas.map(d => d.height),
+          dims: { widthPx: geometry.dims.widthPx, heightPx: geometry.dims.heightPx }, cols: geometry.cols, rows: geometry.rows,
+          marginTop: geometry.marginTop, marginLeft: geometry.marginLeft, marginRight: geometry.marginRight,
+          marginBottom: geometry.marginBottom, marginInner: geometry.marginInner,
+          footerHeight: geometry.footerHeight, footerFontSize: geometry.footerFontSize, footerBaseline: geometry.footerBaseline,
+          showSlideBorders: config.showSlideBorders ?? true,
+          showPageNumbers: config.showPageNumbers ?? false,
+        });
+        return { jpegBuffer: result.jpegBuffer, width: result.width, height: result.height };
+      } catch {
+        /* Worker compose failed. Buffers that were transferred are now
+           detached — reload those pages from storage so the main-thread
+           fallback below can still render the sheet. */
+        if (owned.size > 0) {
+          pageImageDatas = await Promise.all(pageImageDatas.map(async (d, i) =>
+            owned.has(d.data) ? this.loadPageImageDataOrBlank(pages[i]) : d
+          ));
         }
       }
     }
     const sheetCanvas = LayoutEngine.composeSheet(pageImageDatas, sheetIndex, totalSheets, config);
+    const width = sheetCanvas.width;
+    const height = sheetCanvas.height;
     const blob = await new Promise<Blob>((res) => sheetCanvas.toBlob((b) => res(b || new Blob()), 'image/jpeg', 0.85));
+    sheetCanvas.width = 0;
+    sheetCanvas.height = 0;
     const jpegBuffer = await blob.arrayBuffer();
-    return { jpegBuffer, width: sheetCanvas.width, height: sheetCanvas.height };
+    return { jpegBuffer, width, height };
   }
 
   public static async compileSheetsAndExportPdf(activePages: ProcessedPage[], layoutConfig: LayoutConfig,
@@ -125,38 +171,33 @@ export class PdfExporter {
     const sheetPreviews: string[] = [];
     const pdfDoc = await PDFDocument.create();
 
-    let prefetchPromise: Promise<ImageData[]> | null = null;
+    const pool = WorkerManager.getInstance().getPool();
+    pool.prewarm('compose');
 
     for (let si = 0; si < totalSheets; si++) {
       if (onProgress) onProgress(si + 1, totalSheets, `Building sheet ${si + 1}/${totalSheets}...`);
 
       const chunk = activePages.slice(si * totalPerSheet, Math.min(activePages.length, (si + 1) * totalPerSheet));
 
-      if (prefetchPromise === null) {
-        prefetchPromise = Promise.all(chunk.map(p => this.loadOptimizedImageData(p)));
-      }
-      const chunkImages = await prefetchPromise;
-
-      const nextSi = si + 1;
-      const nextChunk = nextSi < totalSheets
-        ? activePages.slice(nextSi * totalPerSheet, Math.min(activePages.length, (nextSi + 1) * totalPerSheet))
-        : [];
-      prefetchPromise = nextChunk.length > 0
-        ? Promise.all(nextChunk.map(p => this.loadOptimizedImageData(p)))
-        : null;
+      const chunkImages = await Promise.all(chunk.map((p) => this.loadPageImageDataOrBlank(p)));
 
       const { jpegBuffer, width, height } = await this.composeSheetWithWorker(
-        chunkImages, si, totalSheets, layoutConfig
+        chunk, chunkImages, si, totalSheets, layoutConfig
       );
 
       const tw = Math.min(500, Math.round(width / 3)), th = Math.min(750, Math.round(height / 3));
-      const tc = document.createElement('canvas'); tc.width = tw; tc.height = th;
-      const bmp = await createImageBitmap(new Blob([jpegBuffer], { type: 'image/jpeg' }), { resizeWidth: tw, resizeHeight: th, resizeQuality: 'medium' });
-      tc.getContext('2d')!.drawImage(bmp, 0, 0);
-      bmp.close();
+      const tc = memoryManager.acquireCanvas(tw, th);
+      try {
+        const previewBlob = new Blob([jpegBuffer], { type: 'image/jpeg' });
+        const bmp = await createImageBitmap(previewBlob, { resizeWidth: tw, resizeHeight: th, resizeQuality: 'medium' });
+        const tCtx = tc.getContext('2d');
+        if (tCtx) { tCtx.drawImage(bmp, 0, 0); bmp.close(); }
+      } catch {
+        console.warn('[export] Preview generation failed for sheet', si + 1);
+      }
       const previewBlob = await new Promise<Blob>((res) => tc.toBlob((b) => res(b || new Blob()), 'image/jpeg', 0.6));
       memoryManager.disposeCanvas(tc);
-      sheetPreviews.push(memoryManager.createTrackedBlobUrl(previewBlob));
+      if (previewBlob.size > 0) sheetPreviews.push(memoryManager.createTrackedBlobUrl(previewBlob));
 
       const embedded = await pdfDoc.embedJpg(jpegBuffer);
       const pdfPage = pdfDoc.addPage([width, height]);
@@ -186,14 +227,17 @@ export class PdfExporter {
     for (let i = 0; i < processedPages.length; i++) {
       if (onProgress) onProgress(i + 1, processedPages.length);
       const optData = await this.loadOptimizedImageData(processedPages[i]);
-      const canvas = document.createElement('canvas');
-      canvas.width = optData.width; canvas.height = optData.height;
+      const canvas = memoryManager.acquireCanvas(optData.width, optData.height);
       const ctx = canvas.getContext('2d', { willReadFrequently: true });
-      if (ctx) { ctx.putImageData(optData, 0, 0);
-        const jpegBlob = await new Promise<Blob>((res) => canvas.toBlob((b) => res(b || new Blob()), 'image/jpeg', quality));
-        const embedded = await pdfDoc.embedJpg(await jpegBlob.arrayBuffer());
-        const pdfPage = pdfDoc.addPage([canvas.width, canvas.height]);
-        pdfPage.drawImage(embedded, { x: 0, y: 0, width: canvas.width, height: canvas.height }); }
+      if (ctx) {
+        ctx.putImageData(optData, 0, 0);
+        const jpegBlob = await new Promise<Blob | null>((res) => canvas.toBlob((b) => res(b), 'image/jpeg', quality));
+        if (jpegBlob && jpegBlob.size > 0) {
+          const embedded = await pdfDoc.embedJpg(await jpegBlob.arrayBuffer());
+          const pdfPage = pdfDoc.addPage([canvas.width, canvas.height]);
+          pdfPage.drawImage(embedded, { x: 0, y: 0, width: canvas.width, height: canvas.height });
+        }
+      }
       memoryManager.disposeCanvas(canvas);
       await memoryManager.yieldToUI();
     }

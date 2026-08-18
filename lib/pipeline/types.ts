@@ -17,5 +17,13 @@ export function computeScheduleProfile(device: DeviceProfile): ScheduleProfile {
 
 export function detectDeviceProfile(): DeviceProfile {
   const nav = typeof navigator !== 'undefined' ? navigator : undefined;
-  return { cores: nav?.hardwareConcurrency || 4, memoryGB: (nav as any)?.deviceMemory || 4, isMobile: typeof window !== 'undefined' ? /Android|iPhone|iPod|BlackBerry|IEMobile|Opera Mini/i.test(nav?.userAgent || '') : false, isTablet: typeof window !== 'undefined' ? /iPad|Android(?!.*Mobile)/i.test(nav?.userAgent || '') : false, supportsWASM: typeof WebAssembly !== 'undefined', supportsOffscreenCanvas: typeof OffscreenCanvas !== 'undefined', maxRenderDim: 2400 };
+  return {
+    cores: nav?.hardwareConcurrency || 4,
+    memoryGB: nav?.deviceMemory || 4,
+    isMobile: typeof window !== 'undefined' ? /Android|iPhone|iPod|BlackBerry|IEMobile|Opera Mini/i.test(nav?.userAgent || '') : false,
+    isTablet: typeof window !== 'undefined' ? /iPad|Android(?!.*Mobile)/i.test(nav?.userAgent || '') : false,
+    supportsWASM: typeof WebAssembly !== 'undefined',
+    supportsOffscreenCanvas: typeof OffscreenCanvas !== 'undefined',
+    maxRenderDim: 2400,
+  };
 }

@@ -21,6 +21,11 @@ pub fn classify_colors(hsv: &[f32], pixel_count: u32) -> Vec<u8> {
 }
 
 #[wasm_bindgen]
+pub fn classify_fused(rgba: &[u8], pixel_count: u32) -> Vec<u8> {
+    classify::classify_fused(rgba, pixel_count as usize)
+}
+
+#[wasm_bindgen]
 pub fn connected_components(mask: &[u8], width: u32, height: u32) -> Vec<i32> {
     connected::connected_components(mask, width as usize, height as usize)
 }
@@ -46,13 +51,18 @@ pub fn unsharp_mask(data: &mut [u8], width: u32, height: u32, amt: f64) {
 }
 
 #[wasm_bindgen]
+pub fn unsharp_mask_bw(data: &mut [u8], width: u32, height: u32, amt: f64) {
+    sharpen::unsharp_mask_bw(data, width as usize, height as usize, amt);
+}
+
+#[wasm_bindgen]
 pub fn ink_coverage(data: &[u8], pixel_count: u32, threshold: u8) -> f64 {
     ink::ink_coverage(data, pixel_count as usize, threshold)
 }
 
 #[wasm_bindgen]
 pub fn process_page(
-    rgba: &[u8],
+    rgba: Vec<u8>,
     width: u32,
     height: u32,
     invert_mode_smart: bool,

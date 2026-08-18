@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useCallback, useMemo, useRef, useState } from 'react';
-import { AnimatePresence, motion } from 'motion/react';
+import { AnimatePresence, MotionConfig, motion } from 'motion/react';
 import { ChevronDown, ExternalLink, Loader2 } from 'lucide-react';
 import { clearAppCaches, menuRegistry } from '@/lib/menu';
 import type { ContentId, MenuItemConfig, ResolvedMenuSection } from '@/lib/menu';
@@ -9,6 +9,7 @@ import { getMenuIcon } from './icons';
 import { ContentModal } from './ContentModal';
 import { FeedbackModal } from './FeedbackModal';
 import { InstallShareCard } from '@/components/InstallShareCard';
+import { useToast } from '@/components/shared/Toast';
 
 interface SettingsDrawerProps {
   /** Escape hatch for app-level actions declared in config (e.g. 'goto-merge'). */
@@ -29,21 +30,15 @@ export const SettingsDrawer: React.FC<SettingsDrawerProps> = ({ onAppAction }) =
   const [openSection, setOpenSection] = useState<string | null>(null);
   const [contentModal, setContentModal] = useState<ContentId | null>(null);
   const [feedbackOpen, setFeedbackOpen] = useState(false);
-  const [notice, setNotice] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
   const headerRefs = useRef<Array<HTMLButtonElement | null>>([]);
-  const noticeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const toggleSection = useCallback((id: string) => {
     setOpenSection((prev) => (prev === id ? null : id));
   }, []);
 
-  const showNotice = useCallback((message: string) => {
-    setNotice(message);
-    if (noticeTimer.current) clearTimeout(noticeTimer.current);
-    noticeTimer.current = setTimeout(() => setNotice(null), 2600);
-  }, []);
+  const { toast } = useToast();
 
   /** Keyboard navigation between accordion headers. */
   const onHeaderKeyDown = useCallback(
@@ -77,10 +72,10 @@ export const SettingsDrawer: React.FC<SettingsDrawerProps> = ({ onAppAction }) =
         case 'clear-cache':
           setBusy(true);
           try {
-            const message = await clearAppCaches();
-            showNotice(message);
+            const result = await clearAppCaches();
+            toast(result.message, result.ok ? 'success' : 'error');
           } catch {
-            showNotice('Could not clear cache.');
+            toast('Could not clear cache.', 'error');
           } finally {
             setBusy(false);
           }
@@ -94,7 +89,7 @@ export const SettingsDrawer: React.FC<SettingsDrawerProps> = ({ onAppAction }) =
           break;
       }
     },
-    [onAppAction, showNotice]
+    [onAppAction, toast]
   );
 
   const renderItem = (item: MenuItemConfig) => {
@@ -103,26 +98,26 @@ export const SettingsDrawer: React.FC<SettingsDrawerProps> = ({ onAppAction }) =
 
     const inner = (
       <>
-        <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-slate-700/60 bg-slate-800/60">
-          <Icon className="h-4 w-4 text-indigo-300" />
+        <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-elevated/60 bg-surface-2/60">
+          <Icon className="h-4 w-4 text-primary-soft" />
         </span>
         <span className="min-w-0 flex-1 text-left">
           <span className="flex items-center gap-1.5">
-            <span className={`truncate text-xs font-semibold ${disabled ? 'text-slate-500' : 'text-slate-100'}`}>
+            <span className={`truncate text-xs font-semibold ${disabled ? 'text-ink-muted' : 'text-ink'}`}>
               {item.title}
             </span>
             {item.badge && (
-              <span className="shrink-0 rounded-full border border-indigo-500/30 bg-indigo-500/15 px-1.5 py-px text-[9px] font-bold uppercase tracking-wide text-indigo-300">
+              <span className="shrink-0 rounded-full border border-primary/30 bg-primary/15 px-1.5 py-px text-[9px] font-bold uppercase tracking-wide text-primary-soft">
                 {item.badge}
               </span>
             )}
           </span>
           {item.description && (
-            <span className="block truncate text-[10px] text-slate-500">{item.description}</span>
+            <span className="block truncate text-[10px] text-ink-muted">{item.description}</span>
           )}
         </span>
         {item.action.type === 'link' && item.action.external && (
-          <ExternalLink className="h-3.5 w-3.5 shrink-0 text-slate-500" />
+          <ExternalLink className="h-3.5 w-3.5 shrink-0 text-ink-muted" />
         )}
       </>
     );
@@ -131,7 +126,7 @@ export const SettingsDrawer: React.FC<SettingsDrawerProps> = ({ onAppAction }) =
       'flex w-full items-center gap-2.5 rounded-lg px-2 py-2 transition-colors ' +
       (disabled
         ? 'cursor-not-allowed opacity-60'
-        : 'hover:bg-slate-800/70 focus-visible:outline focus-visible:outline-2 focus-visible:outline-indigo-500');
+        : 'hover:bg-surface-2/70 focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary');
 
     if (item.action.type === 'link' && !disabled) {
       return (
@@ -161,24 +156,10 @@ export const SettingsDrawer: React.FC<SettingsDrawerProps> = ({ onAppAction }) =
   };
 
   return (
-    <div className="space-y-2">
+    <MotionConfig reducedMotion="user">
+      <div className="space-y-2">
       {/* PWA install/share card - install when not installed, share once installed */}
       <InstallShareCard />
-
-      {/* Transient notice (e.g. cache cleared) */}
-      <AnimatePresence>
-        {notice && (
-          <motion.div
-            initial={{ opacity: 0, y: -6 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -6 }}
-            role="status"
-            className="rounded-lg border border-emerald-500/30 bg-emerald-950/40 px-3 py-2 text-[11px] font-medium text-emerald-300"
-          >
-            {notice}
-          </motion.div>
-        )}
-      </AnimatePresence>
 
       {/* Accordion sections */}
       {sections.map((section, sIdx) => {
@@ -188,7 +169,7 @@ export const SettingsDrawer: React.FC<SettingsDrawerProps> = ({ onAppAction }) =
         const panelId = `menu-panel-${section.id}`;
 
         return (
-          <div key={section.id} className="overflow-hidden rounded-xl border border-slate-800 bg-slate-950/40">
+          <div key={section.id} className="overflow-hidden rounded-xl border border-surface-2 bg-bg/40">
             <button
               ref={(el) => { headerRefs.current[sIdx] = el; }}
               id={headerId}
@@ -197,17 +178,17 @@ export const SettingsDrawer: React.FC<SettingsDrawerProps> = ({ onAppAction }) =
               aria-controls={panelId}
               onClick={() => toggleSection(section.id)}
               onKeyDown={(e) => onHeaderKeyDown(e, sIdx)}
-              className="flex w-full items-center gap-2.5 px-3 py-2.5 text-left transition-colors hover:bg-slate-800/50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-indigo-500"
+              className="flex w-full items-center gap-2.5 px-3 py-2.5 text-left transition-colors hover:bg-surface-2/50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary"
             >
-              <SectionIcon className="h-4 w-4 shrink-0 text-indigo-400" />
-              <span className="flex-1 text-xs font-bold uppercase tracking-wide text-slate-200">
+              <SectionIcon className="h-4 w-4 shrink-0 text-primary-soft" />
+              <span className="flex-1 text-xs font-bold uppercase tracking-wide text-ink">
                 {section.title}
               </span>
-              <span className="text-[10px] font-medium text-slate-500">{section.items.length}</span>
+              <span className="text-[10px] font-medium text-ink-muted">{section.items.length}</span>
               <motion.span
                 animate={{ rotate: isOpen ? 180 : 0 }}
                 transition={{ duration: 0.18 }}
-                className="text-slate-400"
+                className="text-ink-muted"
               >
                 <ChevronDown className="h-4 w-4" />
               </motion.span>
@@ -237,9 +218,9 @@ export const SettingsDrawer: React.FC<SettingsDrawerProps> = ({ onAppAction }) =
 
       {/* Busy indicator for async actions */}
       {busy && (
-        <div className="flex items-center justify-center gap-2 py-1 text-[11px] text-slate-400">
+        <div role="status" className="flex items-center justify-center gap-2 py-1 text-[11px] text-ink-muted">
           <Loader2 className="h-3.5 w-3.5 animate-spin" />
-          <span>Working…</span>
+          <span>Working&hellip;</span>
         </div>
       )}
 
@@ -250,6 +231,7 @@ export const SettingsDrawer: React.FC<SettingsDrawerProps> = ({ onAppAction }) =
         )}
         {feedbackOpen && <FeedbackModal key="feedback" onClose={() => setFeedbackOpen(false)} />}
       </AnimatePresence>
-    </div>
+      </div>
+    </MotionConfig>
   );
 };

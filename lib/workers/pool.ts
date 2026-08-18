@@ -36,6 +36,7 @@ export class WorkerPool {
   }
 
   private spawnWorker(type: WorkerType): WorkerInfo | null {
+    if (this.destroyed) return null;
     /* Enforce pool size limit per worker type */
     if (this.countByType(type) >= MAX_WORKERS_PER_TYPE) return null;
 
@@ -73,6 +74,7 @@ export class WorkerPool {
     if (msg.type === 'ERROR') {
       if (entry.retriesLeft > 0) {
         entry.retriesLeft--;
+        this.scheduleTimeout(entry);
         this.taskQueue.unshift(entry);
         this.dispatchNext();
         return;
@@ -94,13 +96,6 @@ export class WorkerPool {
         width: msg.width,
         height: msg.height,
       });
-    } else if (msg.type === 'PAGE_RENDERED') {
-      entry.resolve({
-        pageIndex: msg.pageIndex,
-        buffer: msg.buffer,
-        width: msg.width,
-        height: msg.height,
-      });
     }
 
     this.dispatchNext();
@@ -113,18 +108,16 @@ export class WorkerPool {
       this.pending.delete(taskId);
       if (entry.retriesLeft > 0) {
         entry.retriesLeft--;
+        this.scheduleTimeout(entry);
         this.taskQueue.unshift(entry);
       } else {
         entry.reject(new Error('Worker crashed'));
       }
     }
 
-    info.healthy = false;
-    const idx = this.workers.indexOf(info);
-    if (idx !== -1) {
-      try { info.worker.terminate(); } catch (error) { console.warn('[WorkerPool] Non-fatal error:', error); }
-      this.workers.splice(idx, 1);
-    }
+    this.retireWorker(info);
+
+    if (this.destroyed) return;
 
     const replacement = this.spawnWorker(info.type);
     if (replacement) {
@@ -137,12 +130,17 @@ export class WorkerPool {
 
     while (this.taskQueue.length > 0) {
       const entry = this.taskQueue[0];
-      const worker = this.findIdleWorker(entry.type as unknown as WorkerType);
+      const worker = this.findIdleWorker(this.taskTypeToWorkerType(entry.type as TaskEntry['type']));
       if (!worker) break;
 
       this.taskQueue.shift();
       this.sendTask(worker, entry);
     }
+  }
+
+  /** Maps task types (PROCESS_PIXEL/COMPOSE_SHEET) to the worker types the factory understands (pixel/compose). */
+  private taskTypeToWorkerType(type: TaskEntry['type']): WorkerType {
+    return type === 'PROCESS_PIXEL' ? 'pixel' : 'compose';
   }
 
   private findIdleWorker(type: WorkerType): WorkerInfo | null {
@@ -161,14 +159,13 @@ export class WorkerPool {
     info.taskId = entry.taskId;
     this.pending.set(entry.taskId, entry);
 
-    const msg = entry.type === 'PROCESS_PIXEL'
-      ? { type: 'PROCESS_PIXEL' as const, task: entry as unknown as PixelTask }
-      : entry.type === 'COMPOSE_SHEET'
-      ? { type: 'COMPOSE_SHEET' as const, task: entry as unknown as ComposeTask }
-      : null;
+    const msg = this.buildMessage(entry);
 
     if (!msg) {
       entry.reject(new Error(`Unknown task type: ${entry.type}`));
+      this.pending.delete(entry.taskId);
+      info.busy = false;
+      info.taskId = null;
       return;
     }
 
@@ -182,7 +179,64 @@ export class WorkerPool {
       }
     }
 
-    info.worker.postMessage(msg, transferables);
+    try {
+      info.worker.postMessage(msg, transferables);
+    } catch (e) {
+      // postMessage can throw DataCloneError if buffer is detached (e.g., after a retry attempt)
+      entry.reject(e instanceof Error ? e : new Error('postMessage failed'));
+      this.pending.delete(entry.taskId);
+      info.busy = false;
+      info.taskId = null;
+      this.dispatchNext();
+    }
+  }
+
+  /** Builds a structured-clone-safe message: the TaskEntry carries resolve/reject
+      closures and must never be postMessage'd to a worker. */
+  private buildMessage(entry: TaskEntry): WorkerRequest | null {
+    if (entry.type === 'PROCESS_PIXEL') {
+      const task = entry as TaskEntry & PixelTask;
+      return {
+        type: 'PROCESS_PIXEL' as const,
+        task: {
+          taskId: task.taskId,
+          pageIndex: task.pageIndex,
+          buffer: task.buffer,
+          width: task.width,
+          height: task.height,
+          params: task.params,
+          profile: task.profile,
+        } satisfies PixelTask,
+      };
+    }
+    if (entry.type === 'COMPOSE_SHEET') {
+      const task = entry as TaskEntry & ComposeTask;
+      return {
+        type: 'COMPOSE_SHEET' as const,
+        task: {
+          taskId: task.taskId,
+          sheetIndex: task.sheetIndex,
+          totalSheets: task.totalSheets,
+          pageBuffers: task.pageBuffers,
+          pageWidths: task.pageWidths,
+          pageHeights: task.pageHeights,
+          cols: task.cols,
+          rows: task.rows,
+          dims: task.dims,
+          marginTop: task.marginTop,
+          marginLeft: task.marginLeft,
+          marginRight: task.marginRight,
+          marginBottom: task.marginBottom,
+          marginInner: task.marginInner,
+          footerHeight: task.footerHeight,
+          footerFontSize: task.footerFontSize,
+          footerBaseline: task.footerBaseline,
+          showSlideBorders: task.showSlideBorders,
+          showPageNumbers: task.showPageNumbers,
+        } satisfies ComposeTask,
+      };
+    }
+    return null;
   }
 
   private setupHealthCheck(): void {
@@ -194,17 +248,12 @@ export class WorkerPool {
 
         /* Reclaim idle workers after timeout (frees memory) */
         if (now - info.lastPong > IDLE_RECLAIM_MS && this.countByType(info.type) > 1) {
-          try { info.worker.terminate(); } catch (error) { console.warn('[WorkerPool] Non-fatal error:', error); }
-          const idx = this.workers.indexOf(info);
-          if (idx !== -1) this.workers.splice(idx, 1);
+          this.retireWorker(info);
           continue;
         }
 
         if (now - info.lastPong > HEALTH_CHECK_INTERVAL_MS + PING_TIMEOUT_MS) {
-          info.healthy = false;
-          try { info.worker.terminate(); } catch (error) { console.warn('[WorkerPool] Non-fatal error:', error); }
-          const idx = this.workers.indexOf(info);
-          if (idx !== -1) this.workers.splice(idx, 1);
+          this.retireWorker(info);
           this.spawnWorker(info.type);
         } else {
           try { info.worker.postMessage({ type: 'PING' }); } catch (error) { console.warn('[WorkerPool] Non-fatal error:', error); }
@@ -231,10 +280,12 @@ export class WorkerPool {
         ...task,
       } as TaskEntry & T;
 
-      const clear = this.scheduleTimeout(entry);
-      entry.reject = (reason: Error) => { clear(); reject(reason); };
-      entry.resolve = (val: any) => { clear(); resolve(val); };
+      const rawReject = reject;
+      const rawResolve = resolve;
+      entry.reject = (reason: Error) => { this.clearTaskTimeout(entry); rawReject(reason); };
+      entry.resolve = (val: any) => { this.clearTaskTimeout(entry); rawResolve(val); };
 
+      this.scheduleTimeout(entry);
       this.taskQueue.push(entry);
       this.setupHealthCheck();
       this.dispatchNext();
@@ -252,16 +303,48 @@ export class WorkerPool {
     return this.submitTask<PixelTask>(task, 'PROCESS_PIXEL', timeout);
   }
 
-  private scheduleTimeout(entry: TaskEntry): () => void {
-    const timer = setTimeout(() => {
+  /**
+   * Spawns a single idle worker of the given type ahead of time so the first
+   * task does not pay the spawn + lazy-init cost. No-op when the factory
+   * cannot create a worker (unregistered URL, unsupported environment).
+   */
+  prewarm(type: WorkerType): void {
+    if (this.destroyed) return;
+    if (this.countByType(type) === 0) {
+      this.spawnWorker(type);
+    }
+  }
+
+  private scheduleTimeout(entry: TaskEntry): void {
+    this.clearTaskTimeout(entry);
+    entry.timerId = setTimeout(() => {
+      entry.timerId = null;
       const idx = this.taskQueue.indexOf(entry);
-      if (idx !== -1) this.taskQueue.splice(idx, 1);
+      if (idx !== -1) {
+        /* Queued task that could not be dispatched (no worker available) must reject,
+           otherwise its promise stays pending forever (submitPixelTask/submitComposeTask hang). */
+        this.taskQueue.splice(idx, 1);
+        entry.reject(new Error(`Task ${entry.type} timed out after ${entry.timeout}ms (no worker available)`));
+        return;
+      }
       if (this.pending.get(entry.taskId) === entry) {
         this.pending.delete(entry.taskId);
+        const worker = this.workers.find((info) => info.taskId === entry.taskId);
+        if (worker) {
+          this.retireWorker(worker);
+          this.spawnWorker(worker.type);
+        }
         entry.reject(new Error(`Task ${entry.type} timed out after ${entry.timeout}ms`));
+        this.dispatchNext();
       }
     }, entry.timeout);
-    return () => clearTimeout(timer);
+  }
+
+  private clearTaskTimeout(entry: TaskEntry): void {
+    if (entry.timerId) {
+      clearTimeout(entry.timerId);
+      entry.timerId = null;
+    }
   }
 
   submitComposeTask(task: Omit<ComposeTask, 'taskId'>, timeout = DEFAULT_TIMEOUT_MS): Promise<{
@@ -290,14 +373,35 @@ export class WorkerPool {
       clearInterval(this.healthTimer);
       this.healthTimer = null;
     }
-    for (const info of this.workers) {
-      try { info.worker.postMessage({ type: 'TERMINATE' }); info.worker.terminate(); } catch (error) { console.warn('[WorkerPool] Non-fatal error:', error); }
+    for (const entry of this.taskQueue) {
+      this.clearTaskTimeout(entry);
+      entry.reject(new Error('Pool destroyed'));
     }
-    this.workers = [];
     this.taskQueue = [];
     for (const entry of this.pending.values()) {
+      this.clearTaskTimeout(entry);
       entry.reject(new Error('Pool destroyed'));
     }
     this.pending.clear();
+    for (const info of [...this.workers]) {
+      this.retireWorker(info, true);
+    }
+  }
+
+  /** Remove a worker without allowing stale callbacks to revive the pool. */
+  private retireWorker(info: WorkerInfo, sendTerminate = false): void {
+    info.healthy = false;
+    info.busy = false;
+    info.taskId = null;
+    info.worker.onmessage = null;
+    info.worker.onerror = null;
+    const idx = this.workers.indexOf(info);
+    if (idx !== -1) this.workers.splice(idx, 1);
+    try {
+      if (sendTerminate) info.worker.postMessage({ type: 'TERMINATE' });
+      info.worker.terminate();
+    } catch (error) {
+      console.warn('[WorkerPool] Non-fatal error:', error);
+    }
   }
 }

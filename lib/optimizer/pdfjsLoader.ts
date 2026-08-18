@@ -27,9 +27,12 @@ export async function getPdfjsLib(): Promise<PdfjsModule> {
     try {
       const pdfjsLib = await import('pdfjs-dist');
 
-      /* Configure worker — use CDN since static export can't serve it locally */
+      /* Self-hosted worker served from the app origin (same version as the
+         bundled pdfjs-dist). No CDN dependency: works offline and avoids a
+         supply-chain surface. The file lives in public/vendor/. */
+      const basePath = process.env.NEXT_PUBLIC_BASE_PATH || '';
       pdfjsLib.GlobalWorkerOptions.workerSrc =
-        'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.10.38/pdf.worker.min.mjs';
+        `${basePath}/vendor/pdf.worker.min.mjs`;
 
       cached = pdfjsLib;
       return pdfjsLib;

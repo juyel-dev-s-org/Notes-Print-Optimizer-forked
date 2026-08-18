@@ -19,13 +19,21 @@ Source: `tests/benchmarks/phase0Baseline.bench.ts` (runs in CI).
 
 | Phase | ms / page | Share |
 |---|---|---|
-| analyze | 13.2 | 9% |
-| **processPage (pixel kernel)** | **123.9** | **85%** |
-| inkCoverage (before + after) | 7.9 | 5% |
-| **CPU total** | **145.0** | 100% |
+| analyze | 24.6 | 11% |
+| **processPage (pixel kernel)** | **194.1** | **84%** |
+| inkCoverage (before + after) | 12.6 | 5% |
+| **CPU total** | **231.3** | 100% |
 
-- Throughput (CPU only): **~6.9 pages/sec**
-- Runner: GitHub Actions CI (Node 20, vitest)
+- Throughput (CPU only): **~4.3 pages/sec**
+- Runner: Windows 11 / Node 20 / vitest (jsdom)
+
+### Post-optimization (combined CC pass + white-pixel fast path + Uint32 composite)
+
+| Metric | Before | After | Improvement |
+|---|---|---|---|
+| process_ms_per_page | ~380 | ~194 | **49% faster** |
+| pages_per_sec_cpu | ~2.3 | ~4.3 | **87% higher** |
+| CC traversals per page | 8 (7 channels + noise) | 1 | **87% fewer** |
 
 ### Key finding
 
@@ -120,3 +128,75 @@ numbers are inflated by contention. Both measured via `?bench=1&engine=...`.
 - Phase 4: WASM JS fallback must match JS reference kernels (11/11 parity tests pass ✅).
 - Phase 5: Large document (300-page) processing must not exceed 512MB peak heap.
 - Phase 8: >85% test coverage.
+
+---
+
+## Sharpen Optimization (2026-08)
+
+Goal: reduce the #1 cost inside `processPage`. Intra-kernel profiling (1600x900 dark
+slide, exact toggle-difference method) showed sharpen = 73% of kernel time
+(42.4ms of 58.0ms); mask+CC 23.1%, dilate 3.8%, composite ~0%.
+
+### JS kernels (`lib/kernels/sharpen.ts`)
+
+Variant shootout (`tests/benchmarks/sharpenShootout.bench.ts`, 1600x900):
+
+| Variant | ms/call | Notes |
+|---|---|---|
+| B full-copy | 28.7-29.1 | baseline correct |
+| A rolling-2row (old) | 20.2-27.3 | **BUG: off-by-one (loaded row y+2 as current)** |
+| C rolling-3row | 19.2-21.7 | correct + fastest |
+| D full-copy+locals | 27.8-30.0 | |
+| E float32 rolling | 50.4 | |
+| F rolling-3row+hoisted | 60.2-62.8 | |
+
+- **Fix applied**: `applyUnsharpMask` rewritten as rolling 3-row (variant C).
+  Removes the full-image copy AND fixes the off-by-one so output now matches the
+  mathematical reference (parity test added to `tests/unit/pixelKernels.test.ts`).
+- JS was ~24-42ms/kernel on 1MPx; variant C keeps the speed of the buggy rolling
+  version while producing correct output.
+
+### Rust WASM (`wasm/src/sharpen.rs`)
+
+Native `cargo test --release speed_variants` (1600x900, x86):
+
+| Variant | ms/call | vs full-copy |
+|---|---|---|
+| **full-copy (`to_vec`)** | **55.9** | 1.00x |
+| rolling-3row | 66.4 | 0.84x |
+| unrolled (3-channel) | 124.4 | 0.45x |
+| separable two-pass | 114.3 | 0.49x |
+
+- In Rust the full-image copy wins: `memcpy` is cheap, per-row rolling rotation and
+  extra passes add more cost than the copy saves (opposite of JS).
+- **Decision**: Rust `unsharp_mask` stays full-copy (was already fastest + correct).
+  Added a range-safety guard (`height/width < 3`) plus a unit test.
+
+### Browser end-to-end (`tests/benchmarks/browserPhases.spec.ts`, wasm=true, hw=8, 10 pages)
+
+Fresh run before vs after wasm rebuild (same `PW_DARK_SLIDE`, real pdf.js render):
+
+| Phase | V2 before | V2 after | V1 before | V1 after* |
+|---|---|---|---|---|
+| render | 42.5ms | ~35-43ms | 61.6ms | 123-139ms |
+| process | 602.1ms | **338-348ms** | 720.9ms | 777-812ms |
+| thumb | 8.1ms | — | 31.7ms | ~55ms |
+| persist | 28.8ms | — | 47.8ms | ~177ms |
+| pages/sec | 1.42 | **2.16-2.28** | 3.97 | ~2.9 |
+
+\* V1 runs noisy (render/persist inflated by machine load / parallel contention);
+V2 is the stable signal.
+
+- **V2 process improved ~44%** (602 → ~340ms) after rebuilding the WASM binary.
+  Committed `npo_wasm_bg.wasm` was ~26KB; rebuilt is ~30.6KB. Cargo.toml already had
+  `lto/opt-level="z"/codegen-units=1` but the committed binary predated an effective
+  optimized build, so the served module was slower.
+- **Manual WASM build pipeline** (wasm-pack blocked by machine policy):
+  `cargo build --target wasm32-unknown-unknown --release` →
+  `wasm-bindgen --target web --out-dir pkg target/wasm32-unknown-unknown/release/npo_wasm.wasm` →
+  copy `pkg/npo_wasm_bg.wasm` + `pkg/npo_wasm.js` to `public/wasm/`.
+- `wasm/src/process.rs` compile fixes for rustc 1.97: inner `//!` doc comments after
+  items (E0753 → `//`) and `CC_BUFFERS.with` borrow-checker (E0499 → destructure guard).
+- Full verification: 211 vitest tests pass (incl. JS/Rust sharpen parity),
+  `tsc --noEmit` clean, eslint clean.
+

@@ -13,7 +13,7 @@ export async function sendFeedbackToGas(
   endpointUrl: string,
   payload: FeedbackPayload
 ): Promise<SendFeedbackResult> {
-  if (!endpointUrl || !endpointUrl.startsWith('http')) {
+  if (!endpointUrl || !endpointUrl.startsWith('https://')) {
     return {
       success: false,
       error: 'Invalid Google Apps Script Web App URL provided.',
