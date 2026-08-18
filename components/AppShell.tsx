@@ -6,6 +6,7 @@ import { ProcessingModal } from '@/components/ProcessingModal';
 import { PlatformUIOrchestrator } from '@/components/views/PlatformUIOrchestrator';
 import { usePageHandlers } from '@/lib/workflow/usePageHandlers';
 import { useMonitor } from '@/lib/monitoring/useMonitor';
+import { ToastProvider } from '@/components/shared/Toast';
 import type { WorkflowState, WorkflowActions, WorkflowHandlers, ResumeSession } from '@/components/views/types';
 import { RefreshCw, X } from 'lucide-react';
 
@@ -143,7 +144,8 @@ export default function AppShell() {
   }), [resumeInfo]);
 
   return (
-    <div className="min-h-screen bg-slate-950 app-shell-bg text-slate-100 font-sans flex flex-col pb-safe">
+    <ToastProvider>
+      <div className="min-h-screen bg-bg app-shell-bg text-ink font-sans flex flex-col pb-safe">
       <a href="#main-content" className="skip-link">Skip to main content</a>
       <Header
         currentPhase={state.currentPhase}
@@ -154,21 +156,21 @@ export default function AppShell() {
       />
       <ProcessingModal progress={state.progress} onCancel={handleCancelProcessing} progressiveThumbnails={progressiveThumbnails} />
       {swUpdateAvailable && (
-        <div className="bg-indigo-950/90 border-b border-indigo-700 text-indigo-200 text-xs py-2 px-4 flex items-center justify-between font-medium shadow-md">
+        <div className="bg-primary-faint/90 border-b border-primary-deep text-indigo-200 text-xs py-2 px-4 flex items-center justify-between font-medium shadow-md">
           <div className="flex items-center gap-2">
-            <RefreshCw className="w-3.5 h-3.5 text-indigo-400 animate-spin" />
+            <RefreshCw className="w-3.5 h-3.5 text-primary-soft animate-spin" />
             <span>A new version of Notes Print Optimizer is available.</span>
           </div>
           <div className="flex items-center gap-2">
             <button
               onClick={() => window.location.reload()}
-              className="bg-indigo-600 hover:bg-indigo-500 text-white px-2.5 py-1 rounded text-xs font-semibold transition"
+              className="bg-primary-strong hover:bg-primary text-white px-2.5 py-1 rounded text-xs font-semibold transition"
             >
               Update Now
             </button>
             <button
               onClick={() => setSwUpdateAvailable(false)}
-              className="p-1 hover:text-white text-indigo-300 transition"
+              className="p-1 hover:text-white text-primary-soft transition"
               aria-label="Dismiss update alert"
             >
               <X className="w-3.5 h-3.5" />
@@ -196,18 +198,19 @@ export default function AppShell() {
           resume={resumeSession}
         />
       </main>
-      <footer className="border-t border-slate-800/60 px-4 py-6 text-center text-[11px] text-slate-400">
+      <footer className="border-t border-surface-2/60 px-4 py-6 text-center text-[11px] text-ink-muted">
         <div className="mx-auto flex max-w-md flex-col items-center gap-1.5">
-          <p className="font-medium text-slate-400">&copy; 2026 Juyel Hossain</p>
+          <p className="font-medium text-ink-muted">&copy; 2026 Juyel Hossain</p>
           <p>Juyel Source License v1.0</p>
           <a
             href="mailto:myself.juyel.dev@gmail.com"
-            className="text-indigo-400 transition-colors duration-150 hover:text-indigo-300 hover:underline"
+            className="text-primary-soft transition-colors duration-150 hover:text-primary-soft hover:underline"
           >
             myself.juyel.dev@gmail.com
           </a>
         </div>
       </footer>
-    </div>
+      </div>
+    </ToastProvider>
   );
 }

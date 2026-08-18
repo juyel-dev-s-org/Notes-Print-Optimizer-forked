@@ -1,17 +1,22 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
   AlertCircle,
+  Bug,
   Check,
   Code,
   Copy,
   Info,
   Loader2,
+  MessageCircle,
   Paperclip,
+  Printer,
+  Rocket,
   Send,
   ShieldCheck,
   Star,
+  X,
 } from 'lucide-react';
 import { EngineVersion } from '@/lib/optimizer/engine';
 import { LayoutConfig, OptimizationMetrics } from '@/lib/optimizer/types';
@@ -78,12 +83,24 @@ export const FeedbackSection: React.FC<FeedbackSectionProps> = ({
   const [payloadPreview, setPayloadPreview] = useState<string>('');
   const [telegramPreview, setTelegramPreview] = useState<string>('');
   const [copiedGas, setCopiedGas] = useState<boolean>(false);
+  const devModalCloseRef = useRef<HTMLButtonElement>(null);
 
-  const categories: { id: FeedbackCategory; label: string; icon: string }[] = [
-    { id: 'General', label: 'General', icon: '💬' },
-    { id: 'Bug', label: 'Bug Report', icon: '🐞' },
-    { id: 'Print Quality', label: 'Print Quality', icon: '🖨️' },
-    { id: 'Feature Request', label: 'Feature Request', icon: '🚀' },
+  // Focus the close button when the dev modal opens; close on Escape.
+  useEffect(() => {
+    if (!showDeveloperModal) return;
+    devModalCloseRef.current?.focus();
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setShowDeveloperModal(false);
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [showDeveloperModal]);
+
+  const categories: { id: FeedbackCategory; label: string; icon: React.ReactNode }[] = [
+    { id: 'General', label: 'General', icon: <MessageCircle className="h-4 w-4" /> },
+    { id: 'Bug', label: 'Bug Report', icon: <Bug className="h-4 w-4" /> },
+    { id: 'Print Quality', label: 'Print Quality', icon: <Printer className="h-4 w-4" /> },
+    { id: 'Feature Request', label: 'Feature Request', icon: <Rocket className="h-4 w-4" /> },
   ];
 
   const ratingLabels: Record<number, string> = {
@@ -210,14 +227,14 @@ export const FeedbackSection: React.FC<FeedbackSectionProps> = ({
   };
 
   return (
-    <div className="flex flex-col gap-4 rounded-2xl border border-slate-800 bg-slate-900/90 p-5 shadow-2xl w-full text-left">
+    <div className="flex flex-col gap-4 rounded-2xl border border-surface-2 bg-surface/90 p-5 shadow-2xl w-full text-left">
       {/* Header */}
-      <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+      <div className="flex items-center justify-between border-b border-surface-2 pb-3">
         <div className="flex items-center gap-2">
-          <Star className="h-5 w-5 text-amber-400 fill-amber-400" />
+          <Star className="h-5 w-5 text-warning fill-warning" />
           <h3 className="text-sm font-bold text-white">Rate Your Experience & Feedback</h3>
         </div>
-        <div className="flex items-center gap-1.5 text-[11px] font-semibold text-emerald-400 bg-emerald-950/60 border border-emerald-500/30 px-2.5 py-1 rounded-full">
+        <div className="flex items-center gap-1.5 text-[11px] font-semibold text-success bg-success-faint/60 border border-success-strong/30 px-2.5 py-1 rounded-full">
           <ShieldCheck className="h-3.5 w-3.5" />
           <span>Privacy-First</span>
         </div>
@@ -227,7 +244,7 @@ export const FeedbackSection: React.FC<FeedbackSectionProps> = ({
         <form onSubmit={handleSubmit} className="flex flex-col gap-4">
           {/* Star Rating Bar */}
           <div className="flex flex-col gap-1.5">
-            <label className="text-xs font-semibold text-slate-300">Overall Rating</label>
+            <label className="text-xs font-semibold text-ink-muted">Overall Rating</label>
             <div className="flex items-center gap-3">
               <div className="flex items-center gap-1">
                 {[1, 2, 3, 4, 5].map((star) => (
@@ -237,19 +254,21 @@ export const FeedbackSection: React.FC<FeedbackSectionProps> = ({
                     onMouseEnter={() => setHoverRating(star)}
                     onMouseLeave={() => setHoverRating(0)}
                     onClick={() => setRating(star)}
-                    className="p-1 text-amber-400 transition-transform hover:scale-110 cursor-pointer"
+                    aria-label={`Rate ${star} out of 5 stars`}
+                    aria-pressed={rating === star}
+                    className="p-1.5 -m-1.5 text-warning transition-transform hover:scale-110 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-warning/70 rounded-md"
                   >
                     <Star
                       className={`h-7 w-7 transition-colors ${
                         star <= (hoverRating || rating)
-                          ? 'fill-amber-400 text-amber-400'
-                          : 'text-slate-700'
+                          ? 'fill-warning text-warning'
+                          : 'text-elevated'
                       }`}
                     />
                   </button>
                 ))}
               </div>
-              <span className="text-xs font-bold text-amber-400 bg-amber-950/50 border border-amber-500/30 px-2.5 py-1 rounded-md">
+              <span className="text-xs font-bold text-warning bg-amber-950/50 border border-amber-500/30 px-2.5 py-1 rounded-md">
                 {ratingLabels[hoverRating || rating]}
               </span>
             </div>
@@ -257,20 +276,23 @@ export const FeedbackSection: React.FC<FeedbackSectionProps> = ({
 
           {/* Feedback Category Pills */}
           <div className="flex flex-col gap-1.5">
-            <label className="text-xs font-semibold text-slate-300">Category</label>
+            <label className="text-xs font-semibold text-ink-muted">Category</label>
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
               {categories.map((cat) => (
                 <button
                   key={cat.id}
                   type="button"
                   onClick={() => setCategory(cat.id)}
-                  className={`flex items-center justify-center gap-1.5 py-2 px-3 rounded-xl border text-xs font-medium transition-all ${
+                  aria-pressed={category === cat.id}
+                  className={`flex items-center justify-center gap-1.5 py-2.5 px-3 rounded-xl border text-xs font-medium transition-all ${
                     category === cat.id
-                      ? 'bg-indigo-600/30 border-indigo-500 text-white font-bold shadow-sm'
-                      : 'bg-slate-950/80 border-slate-800 text-slate-400 hover:text-slate-200 hover:border-slate-700'
+                      ? 'bg-primary-strong/30 border-primary text-white font-bold shadow-sm'
+                      : 'bg-bg/80 border-surface-2 text-ink-muted hover:text-ink hover:border-elevated'
                   }`}
                 >
-                  <span>{cat.icon}</span>
+                  <span className={category === cat.id ? 'text-primary-soft' : 'text-ink-faint'}>
+                    {cat.icon}
+                  </span>
                   <span>{cat.label}</span>
                 </button>
               ))}
@@ -279,18 +301,18 @@ export const FeedbackSection: React.FC<FeedbackSectionProps> = ({
 
           {/* Comment Textarea */}
           <div className="flex flex-col gap-1.5">
-            <label className="text-xs font-semibold text-slate-300">Your Feedback / Issue Description</label>
+            <label className="text-xs font-semibold text-ink-muted">Your Feedback / Issue Description</label>
             <textarea
               rows={3}
               value={feedbackText}
               onChange={(e) => setFeedbackText(e.target.value)}
               placeholder="Describe your experience, print quality, or suggest a new feature..."
-              className="w-full rounded-xl border border-slate-800 bg-slate-950 p-3 text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-indigo-500 transition-colors"
+              className="w-full rounded-xl border border-surface-2 bg-bg p-3 text-xs text-ink placeholder-ink-faint focus:outline-none focus:border-primary transition-colors"
             />
           </div>
 
           {/* Privacy & Diagnostics Controls */}
-          <div className="flex flex-col gap-2 rounded-xl bg-slate-950/70 border border-slate-800/80 p-3">
+          <div className="flex flex-col gap-2 rounded-xl bg-bg/70 border border-surface-2/80 p-3">
             {/* Attach PDF Checkbox */}
             <label className="flex items-start gap-2.5 cursor-pointer">
               <input
@@ -298,17 +320,17 @@ export const FeedbackSection: React.FC<FeedbackSectionProps> = ({
                 checked={attachPdf}
                 onChange={(e) => setAttachPdf(e.target.checked)}
                 disabled={!finalPrintPdfBlob}
-                className="mt-0.5 h-4 w-4 rounded border-slate-700 bg-slate-900 text-indigo-600 focus:ring-indigo-500 disabled:opacity-50"
+                className="mt-0.5 h-4 w-4 rounded border-elevated bg-surface text-primary-strong focus:ring-primary disabled:opacity-50"
               />
               <div className="flex flex-col text-xs">
-                <div className="flex items-center gap-1.5 font-medium text-slate-200">
-                  <Paperclip className="h-3.5 w-3.5 text-indigo-400" />
+                <div className="flex items-center gap-1.5 font-medium text-ink">
+                  <Paperclip className="h-3.5 w-3.5 text-primary-soft" />
                   <span>Attach Processed PDF (Optional)</span>
                   {!finalPrintPdfBlob && (
-                    <span className="text-[10px] text-amber-400/80">(Available after generating PDF)</span>
+                    <span className="text-[10px] text-warning/80">(Available after generating PDF)</span>
                   )}
                 </div>
-                <span className="text-[11px] text-slate-400">
+                <span className="text-[11px] text-ink-muted">
                   Includes your generated output PDF to help debug layout or rendering glitches.
                 </span>
               </div>
@@ -320,14 +342,14 @@ export const FeedbackSection: React.FC<FeedbackSectionProps> = ({
                 type="checkbox"
                 checked={includeDiagnostics}
                 onChange={(e) => setIncludeDiagnostics(e.target.checked)}
-                className="mt-0.5 h-4 w-4 rounded border-slate-700 bg-slate-900 text-indigo-600 focus:ring-indigo-500"
+                className="mt-0.5 h-4 w-4 rounded border-elevated bg-surface text-primary-strong focus:ring-primary"
               />
               <div className="flex flex-col text-xs">
-                <div className="flex items-center gap-1.5 font-medium text-slate-200">
+                <div className="flex items-center gap-1.5 font-medium text-ink">
                   <Info className="h-3.5 w-3.5 text-blue-400" />
                   <span>Include Diagnostic Information</span>
                 </div>
-                <span className="text-[11px] text-slate-400">
+                <span className="text-[11px] text-ink-muted">
                   Sends non-sensitive OS, browser version, page counts, and layout settings for troubleshooting.
                 </span>
               </div>
@@ -337,7 +359,7 @@ export const FeedbackSection: React.FC<FeedbackSectionProps> = ({
           {/* Error Alert */}
           {errorMessage && (
             <div className="flex items-center gap-2 rounded-xl bg-red-950/80 border border-red-800/80 p-3 text-xs text-red-300">
-              <AlertCircle className="h-4 w-4 shrink-0 text-red-400" />
+              <AlertCircle className="h-4 w-4 shrink-0 text-danger" />
               <span>{errorMessage}</span>
             </div>
           )}
@@ -347,7 +369,7 @@ export const FeedbackSection: React.FC<FeedbackSectionProps> = ({
             <button
               type="submit"
               disabled={isSending}
-              className="flex h-11 w-full flex-1 items-center justify-center gap-2 rounded-xl bg-indigo-600 px-5 text-xs font-bold text-white shadow-lg hover:bg-indigo-500 disabled:opacity-50 transition-all cursor-pointer"
+              className="flex h-11 w-full flex-1 items-center justify-center gap-2 rounded-xl bg-primary-strong px-5 text-xs font-bold text-white shadow-lg hover:bg-primary disabled:opacity-50 transition-all cursor-pointer"
             >
               {isSending ? (
                 <>
@@ -361,25 +383,28 @@ export const FeedbackSection: React.FC<FeedbackSectionProps> = ({
                 </>
               )}
             </button>
+          </div>
 
+          <p className="text-center text-[10px] text-ink-faint">
+            Developer?{' '}
             <button
               type="button"
               onClick={handleOpenPreviewModal}
-              className="flex h-11 w-full sm:w-auto items-center justify-center gap-1.5 rounded-xl border border-slate-800 bg-slate-950 px-4 text-xs font-semibold text-slate-300 hover:bg-slate-800 hover:text-white transition-all cursor-pointer"
+              className="font-semibold text-ink-muted underline decoration-ink-faint underline-offset-2 hover:text-primary-soft transition-colors cursor-pointer"
             >
-              <Code className="h-4 w-4 text-slate-400" />
-              <span>Payload & Script Info</span>
-            </button>
-          </div>
+              Inspect the payload &amp; script
+            </button>{' '}
+            to see exactly what gets sent.
+          </p>
         </form>
       ) : (
         /* Success Card */
-        <div className="flex flex-col items-center gap-3 rounded-xl bg-emerald-950/60 border border-emerald-500/30 p-6 text-center">
-          <div className="flex h-12 w-12 items-center justify-center rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/40">
+        <div className="flex flex-col items-center gap-3 rounded-xl bg-success-faint/60 border border-success-strong/30 p-6 text-center">
+          <div className="flex h-12 w-12 items-center justify-center rounded-full bg-success-strong/20 text-success border border-success-strong/40">
             <Check className="h-6 w-6" />
           </div>
-          <h4 className="text-sm font-bold text-emerald-200">Thank you for your feedback! ❤️</h4>
-          <p className="text-xs text-emerald-300/80 max-w-md">
+          <h4 className="text-sm font-bold text-emerald-200">Thank you for your feedback!</h4>
+          <p className="text-xs text-success-soft/80 max-w-md">
             Your rating and diagnostics have been sent to our Telegram channel. Your feedback directly helps us improve PW Notes Print Optimizer.
           </p>
           <button
@@ -388,7 +413,7 @@ export const FeedbackSection: React.FC<FeedbackSectionProps> = ({
               setIsSubmitted(false);
               setFeedbackText('');
             }}
-            className="mt-2 text-xs font-semibold text-slate-400 hover:text-white underline cursor-pointer"
+            className="mt-2 text-xs font-semibold text-ink-muted hover:text-white underline cursor-pointer"
           >
             Send another response
           </button>
@@ -397,32 +422,39 @@ export const FeedbackSection: React.FC<FeedbackSectionProps> = ({
 
       {/* Developer Modal / Payload Preview & GAS Code */}
       {showDeveloperModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
-          <div className="flex flex-col w-full max-w-3xl max-h-[90vh] rounded-2xl border border-slate-800 bg-slate-900 shadow-2xl overflow-hidden text-slate-200">
+        <div
+          role="dialog"
+          aria-modal="true"
+          aria-label="Feedback payload and Apps Script preview"
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4"
+        >
+          <div className="flex flex-col w-full max-w-3xl max-h-[90vh] rounded-2xl border border-surface-2 bg-surface shadow-2xl overflow-hidden text-ink">
             {/* Modal Header */}
-            <div className="flex items-center justify-between border-b border-slate-800 p-4">
+            <div className="flex items-center justify-between border-b border-surface-2 p-4">
               <div className="flex items-center gap-2">
-                <Code className="h-5 w-5 text-indigo-400" />
+                <Code className="h-5 w-5 text-primary-soft" />
                 <h3 className="text-sm font-bold text-white">Feedback Architecture & Apps Script Setup</h3>
               </div>
               <button
+                ref={devModalCloseRef}
                 type="button"
                 onClick={() => setShowDeveloperModal(false)}
-                className="text-slate-400 hover:text-white p-1 rounded-lg hover:bg-slate-800 cursor-pointer"
+                aria-label="Close dialog"
+                className="flex h-9 w-9 items-center justify-center rounded-lg text-ink-muted hover:text-white hover:bg-surface-2 cursor-pointer"
               >
-                ✕
+                <X className="h-4 w-4" />
               </button>
             </div>
 
             {/* Tabs */}
-            <div className="flex border-b border-slate-800 bg-slate-950/60 px-4">
+            <div className="flex border-b border-surface-2 bg-bg/60 px-4">
               <button
                 type="button"
                 onClick={() => setActiveTab('payload')}
                 className={`py-3 px-4 text-xs font-semibold border-b-2 transition-all cursor-pointer ${
                   activeTab === 'payload'
-                    ? 'border-indigo-500 text-indigo-400'
-                    : 'border-transparent text-slate-400 hover:text-slate-200'
+                    ? 'border-primary text-primary-soft'
+                    : 'border-transparent text-ink-muted hover:text-ink'
                 }`}
               >
                 1. Payload JSON Preview
@@ -432,8 +464,8 @@ export const FeedbackSection: React.FC<FeedbackSectionProps> = ({
                 onClick={() => setActiveTab('telegram')}
                 className={`py-3 px-4 text-xs font-semibold border-b-2 transition-all cursor-pointer ${
                   activeTab === 'telegram'
-                    ? 'border-indigo-500 text-indigo-400'
-                    : 'border-transparent text-slate-400 hover:text-slate-200'
+                    ? 'border-primary text-primary-soft'
+                    : 'border-transparent text-ink-muted hover:text-ink'
                 }`}
               >
                 2. Telegram Message Preview
@@ -443,8 +475,8 @@ export const FeedbackSection: React.FC<FeedbackSectionProps> = ({
                 onClick={() => setActiveTab('gas')}
                 className={`py-3 px-4 text-xs font-semibold border-b-2 transition-all cursor-pointer ${
                   activeTab === 'gas'
-                    ? 'border-indigo-500 text-indigo-400'
-                    : 'border-transparent text-slate-400 hover:text-slate-200'
+                    ? 'border-primary text-primary-soft'
+                    : 'border-transparent text-ink-muted hover:text-ink'
                 }`}
               >
                 3. Google Apps Script Code
@@ -455,10 +487,10 @@ export const FeedbackSection: React.FC<FeedbackSectionProps> = ({
             <div className="flex-1 overflow-y-auto p-4 font-mono text-xs">
               {activeTab === 'payload' && (
                 <div className="flex flex-col gap-2">
-                  <p className="font-sans text-xs text-slate-400 mb-2">
+                  <p className="font-sans text-xs text-ink-muted mb-2">
                     This structured, versioned JSON payload is generated client-side by the web app and sent to Google Apps Script.
                   </p>
-                  <pre className="rounded-xl bg-slate-950 p-4 border border-slate-800 text-slate-300 overflow-x-auto whitespace-pre-wrap">
+                  <pre className="rounded-xl bg-bg p-4 border border-surface-2 text-ink-muted overflow-x-auto whitespace-pre-wrap">
                     {payloadPreview}
                   </pre>
                 </div>
@@ -466,10 +498,10 @@ export const FeedbackSection: React.FC<FeedbackSectionProps> = ({
 
               {activeTab === 'telegram' && (
                 <div className="flex flex-col gap-2">
-                  <p className="font-sans text-xs text-slate-400 mb-2">
+                  <p className="font-sans text-xs text-ink-muted mb-2">
                     This Telegram Markdown message is formatted entirely by the web application logic:
                   </p>
-                  <pre className="rounded-xl bg-slate-950 p-4 border border-slate-800 text-emerald-300 overflow-x-auto whitespace-pre-wrap font-mono">
+                  <pre className="rounded-xl bg-bg p-4 border border-surface-2 text-success-soft overflow-x-auto whitespace-pre-wrap font-mono">
                     {telegramPreview}
                   </pre>
                 </div>
@@ -477,21 +509,21 @@ export const FeedbackSection: React.FC<FeedbackSectionProps> = ({
 
               {activeTab === 'gas' && (
                 <div className="flex flex-col gap-3 font-sans">
-                  <div className="flex items-center justify-between rounded-xl bg-indigo-950/50 border border-indigo-500/30 p-3">
+                  <div className="flex items-center justify-between rounded-xl bg-primary-faint/50 border border-primary/30 p-3">
                     <span className="text-xs text-indigo-200">
                       Copy this lightweight, zero-dependency Apps Script code into your Google Apps Script editor.
                     </span>
                     <button
                       type="button"
                       onClick={handleCopyGasCode}
-                      className="flex items-center gap-1.5 rounded-lg bg-indigo-600 px-3 py-1.5 text-xs font-bold text-white hover:bg-indigo-500 cursor-pointer shrink-0"
+                      className="flex items-center gap-1.5 rounded-lg bg-primary-strong px-3 py-1.5 text-xs font-bold text-white hover:bg-primary cursor-pointer shrink-0"
                     >
                       {copiedGas ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
                       <span>{copiedGas ? 'Copied!' : 'Copy GAS Code'}</span>
                     </button>
                   </div>
 
-                  <pre className="rounded-xl bg-slate-950 p-4 border border-slate-800 text-slate-300 font-mono text-[11px] overflow-x-auto whitespace-pre-wrap max-h-96">
+                  <pre className="rounded-xl bg-bg p-4 border border-surface-2 text-ink-muted font-mono text-[11px] overflow-x-auto whitespace-pre-wrap max-h-96">
                     {GOOGLE_APPS_SCRIPT_CODE}
                   </pre>
                 </div>
@@ -499,11 +531,11 @@ export const FeedbackSection: React.FC<FeedbackSectionProps> = ({
             </div>
 
             {/* Modal Footer */}
-            <div className="border-t border-slate-800 p-3 bg-slate-950/80 flex justify-end">
+            <div className="border-t border-surface-2 p-3 bg-bg/80 flex justify-end">
               <button
                 type="button"
                 onClick={() => setShowDeveloperModal(false)}
-                className="rounded-xl bg-slate-800 px-4 py-2 text-xs font-semibold text-white hover:bg-slate-700 cursor-pointer"
+                className="rounded-xl bg-surface-2 px-4 py-2 text-xs font-semibold text-white hover:bg-elevated cursor-pointer"
               >
                 Close
               </button>

@@ -46,35 +46,47 @@ const LazyPageCard: React.FC<{
       ref={cardRef}
       className={`group relative flex flex-col rounded-xl border transition-all overflow-hidden ${
         isExcluded
-          ? 'border-slate-800 bg-slate-900/40 opacity-40'
+          ? 'border-surface-2 bg-surface/40 opacity-40'
           : isSelected
-          ? 'border-indigo-500 bg-indigo-950/60 ring-2 ring-indigo-500 shadow-md'
-          : 'border-slate-800 bg-slate-900 hover:border-slate-700 hover:shadow-md'
+          ? 'border-primary bg-primary-faint/60 ring-2 ring-primary shadow-md'
+          : 'border-surface-2 bg-surface hover:border-elevated hover:shadow-md'
       }`}
     >
       {/* Card Header & Checkbox */}
-      <div className="flex items-center justify-between px-2.5 py-2 bg-slate-800/80 border-b border-slate-700/60 text-xs">
-        <span className="font-bold text-slate-200">Page {idx + 1}</span>
+      <div className="flex items-center justify-between px-2.5 py-2 bg-surface-2/80 border-b border-elevated/60 text-xs">
+        <span className="font-bold text-ink">Page {idx + 1}</span>
 
         {/* Exclude Checkbox with enlarged touch area */}
         <button
           type="button"
           onClick={() => onToggleExcludePage(idx)}
-          className="flex h-7 w-7 items-center justify-center rounded-md text-indigo-400 hover:bg-slate-700/60 active:scale-95 transition-transform"
+          aria-pressed={isExcluded}
+          aria-label={isExcluded ? `Include page ${idx + 1}` : `Exclude page ${idx + 1}`}
+          className="flex h-9 w-9 items-center justify-center rounded-md text-primary-soft hover:bg-elevated/60 active:scale-95 transition-transform"
           title={isExcluded ? 'Include page' : 'Exclude page'}
         >
           {isExcluded ? (
-            <Square className="h-4 w-4 text-slate-500" />
+            <Square className="h-4 w-4 text-ink-faint" />
           ) : (
-            <CheckSquare className="h-4 w-4 text-indigo-400 fill-indigo-500/20" />
+            <CheckSquare className="h-4 w-4 text-primary-soft fill-primary/20" />
           )}
         </button>
       </div>
 
       {/* Thumbnail Image with IntersectionObserver lazy loading */}
       <div
+        role="button"
+        tabIndex={0}
+        aria-pressed={isSelected}
+        aria-label={`Inspect page ${idx + 1}`}
         onClick={() => onSelectPage(idx)}
-        className="relative h-32 sm:h-36 w-full cursor-pointer overflow-hidden bg-slate-950 flex items-center justify-center p-1.5"
+        onKeyDown={(e) => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            onSelectPage(idx);
+          }
+        }}
+        className="relative h-32 sm:h-36 w-full cursor-pointer overflow-hidden bg-bg flex items-center justify-center p-1.5"
       >
         {isVisible ? (
           /* eslint-disable-next-line @next/next/no-img-element */
@@ -84,22 +96,22 @@ const LazyPageCard: React.FC<{
             className="max-h-full max-w-full object-contain shadow-sm"
           />
         ) : (
-          <div className="h-full w-full bg-slate-800/60 animate-pulse rounded-md" />
+          <div className="h-full w-full bg-surface-2/60 animate-pulse rounded-md" />
         )}
 
         {/* Hover / Tap overlay button */}
-        <div className="absolute inset-0 bg-slate-950/70 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-1 text-white backdrop-blur-2xs">
-          <Eye className="h-4 w-4 text-indigo-400" />
+        <div aria-hidden="true" className="pointer-events-none absolute inset-0 bg-bg/70 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-1 text-white backdrop-blur-2xs">
+          <Eye className="h-4 w-4 text-primary-soft" />
           <span className="text-[11px] font-bold">Inspect</span>
         </div>
       </div>
 
       {/* Card Footer Badges */}
-      <div className="flex items-center justify-between p-2 text-[10px] bg-slate-900 border-t border-slate-800">
-        <span className="truncate rounded-sm bg-slate-800 px-1.5 py-0.5 font-medium text-slate-300 max-w-[80px]">
+      <div className="flex items-center justify-between p-2 text-[10px] bg-surface border-t border-surface-2">
+        <span className="truncate rounded-sm bg-surface-2 px-1.5 py-0.5 font-medium text-ink-muted max-w-[80px]">
           {page.profile.classification.replace('_', ' ')}
         </span>
-        <span className="font-bold text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-1.5 py-0.5 rounded-sm">
+        <span className="font-bold text-success bg-success-strong/10 border border-success-strong/20 px-1.5 py-0.5 rounded-sm">
           -{inkSaved}% Ink
         </span>
       </div>
@@ -118,18 +130,18 @@ export const PageGrid: React.FC<PageGridProps> = ({
   const activeCount = pages.length - excludedPages.size;
 
   return (
-    <div className="flex flex-col gap-3 rounded-2xl border border-slate-800 bg-slate-900 p-4 shadow-xl">
-      <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-800 pb-3">
+    <div className="flex flex-col gap-3 rounded-2xl border border-surface-2 bg-surface p-4 shadow-xl">
+      <div className="flex flex-wrap items-center justify-between gap-2 border-b border-surface-2 pb-3">
         <div>
           <div className="flex items-center gap-1.5">
             <h3 className="text-sm font-bold text-white">Document Page Thumbnails</h3>
             <InfoTooltip
               title="Selective Page Exclusion"
-              content="Uncheck promo slides, chapter covers, or break slides commonly found in PW PDF packages to avoid printing unnecessary pages."
+              content="Skip pages you don't need to print â€” like promo slides, chapter covers, or breaks."
               position="right"
             />
           </div>
-          <p className="text-xs text-slate-400">
+          <p className="text-xs text-ink-muted">
             Tap a page to inspect before/after in split-view comparator. Uncheck to exclude.
           </p>
         </div>
@@ -140,20 +152,20 @@ export const PageGrid: React.FC<PageGridProps> = ({
               <button
                 type="button"
                 onClick={() => onToggleExcludeAll(false)}
-                className="rounded-lg bg-slate-800 px-2 py-1 text-[11px] font-bold text-slate-300 hover:bg-slate-700"
+                className="rounded-lg bg-surface-2 px-2 py-1 text-[11px] font-bold text-ink-muted hover:bg-elevated"
               >
                 Include All
               </button>
               <button
                 type="button"
                 onClick={() => onToggleExcludeAll(true)}
-                className="rounded-lg bg-slate-800 px-2 py-1 text-[11px] font-bold text-slate-400 hover:bg-slate-700"
+                className="rounded-lg bg-surface-2 px-2 py-1 text-[11px] font-bold text-ink-muted hover:bg-elevated"
               >
                 Exclude All
               </button>
             </div>
           )}
-          <span className="rounded-full bg-indigo-500/20 px-3 py-1 text-xs font-bold text-indigo-300 border border-indigo-500/30">
+          <span className="rounded-full bg-primary/20 px-3 py-1 text-xs font-bold text-primary-soft border border-primary/30">
             {activeCount} of {pages.length} Pages
           </span>
         </div>

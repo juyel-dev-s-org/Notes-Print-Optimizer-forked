@@ -1,4 +1,4 @@
-const VERSION = 'v6';
+const VERSION = 'v7';
 const CACHE = `pw-optimizer-${VERSION}`;
 const STATIC_CACHE = `pw-optimizer-static-${VERSION}`;
 const DYNAMIC_CACHE = `pw-optimizer-dynamic-${VERSION}`;
@@ -14,6 +14,7 @@ const PRECACHE_URLS = [
   `${BASE}/icon-192.png`,
   `${BASE}/icon-512.png`,
   `${BASE}/icon-maskable.png`,
+  `${BASE}/icon-maskable.svg`,
   `${BASE}/vendor/pdf.worker.min.mjs`,
   `${BASE}/vendor/pdf.min.mjs`,
   `${BASE}/wasm/npo_wasm.js`,

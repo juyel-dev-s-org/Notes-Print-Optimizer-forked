@@ -15,6 +15,7 @@ import { InfoTooltip } from '@/components/InfoTooltip';
 import {
   Download,
   ArrowLeft,
+  ArrowRight,
   CheckCircle2,
   RotateCcw,
   Check,
@@ -22,6 +23,9 @@ import {
 } from 'lucide-react';
 import { PhaseErrorBoundary } from '@/components/shared/PhaseErrorBoundary';
 import { CardSkeleton } from '@/components/shared/LoadingSkeleton';
+import { EmptyPhaseState } from '@/components/shared/EmptyPhaseState';
+import { GridFormatPicker } from '@/components/GridFormatPicker';
+import { buildExcludedSet } from '@/lib/workflow/phaseUtils';
 
 const FullPdfViewerPreview = dynamic(() => import('@/components/preview/FullPdfViewerPreview').then(m => m.FullPdfViewerPreview), {
   loading: () => <CardSkeleton />,
@@ -102,17 +106,15 @@ export const DesktopWorkflowUI: React.FC<WorkflowUIProps> = ({ state, actions, h
   } = handlers;
 
   const onToggleExcludeAll = (exclude: boolean) => {
-    const next = new Set<number>();
-    if (exclude) state.processedPages.forEach((_, idx) => next.add(idx));
-    setExcludedPages(next);
+    setExcludedPages(buildExcludedSet(state.processedPages.length, exclude));
   };
 
   return (
     <div className="flex flex-col gap-6 pb-12 w-full max-w-full">
       {/* Platform Badge Indicator */}
-      <div className="flex items-center justify-between px-1 text-[10px] text-slate-400 font-mono">
-        <span className="flex items-center gap-1.5 bg-slate-900/80 border border-slate-800 px-3 py-1 rounded-full">
-          <Monitor className="h-3.5 w-3.5 text-indigo-400" />
+      <div className="flex items-center justify-between px-1 text-[10px] text-ink-muted font-mono">
+        <span className="flex items-center gap-1.5 bg-surface/80 border border-surface-2 px-3 py-1 rounded-full">
+          <Monitor className="h-3.5 w-3.5 text-primary-soft" />
           Desktop / Laptop Viewport
         </span>
         <span>Expanded Multi-Column Dashboard</span>
@@ -134,18 +136,18 @@ export const DesktopWorkflowUI: React.FC<WorkflowUIProps> = ({ state, actions, h
           {uploadedItems.length === 0 && !isProcessing && <FeatureStrip />}
 
           {uploadedItems.length > 0 && (
-            <div className="flex flex-col gap-4 rounded-2xl border border-slate-800 bg-slate-900/90 p-5 shadow-xl">
-              <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+            <div className="flex flex-col gap-4 rounded-2xl border border-surface-2 bg-surface/90 p-5 shadow-xl">
+              <div className="flex items-center justify-between border-b border-surface-2 pb-3">
                 <div>
                   <h3 className="text-sm font-bold text-white">
                     PDF Document Sequence ({uploadedItems.length} File{uploadedItems.length > 1 ? 's' : ''})
                   </h3>
-                  <p className="text-xs text-slate-400">
+                  <p className="text-xs text-ink-muted">
                     Arrange files in lecture chronological order before processing.
                   </p>
                 </div>
-                <span className="rounded-full bg-indigo-500/20 px-3 py-1 text-xs font-bold text-indigo-300 border border-indigo-500/30">
-                  Stage 1 of 4
+                <span className="rounded-full bg-primary/20 px-3 py-1 text-xs font-bold text-primary-soft border border-primary/30">
+                  Step 1 of 4
                 </span>
               </div>
 
@@ -171,14 +173,14 @@ export const DesktopWorkflowUI: React.FC<WorkflowUIProps> = ({ state, actions, h
               <PageSequencePreview pageUrls={mergedPageDataUrls} />
 
               {/* Desktop Phase 1 Action Bar */}
-              <div className="flex items-center justify-between gap-3 pt-3 border-t border-slate-800">
+              <div className="flex items-center justify-between gap-3 pt-3 border-t border-surface-2">
                 <button
                   type="button"
                   onClick={onDownloadMerged}
                   disabled={!mergedPdfBlob}
-                  className="inline-flex items-center gap-1.5 rounded-xl border border-slate-700 bg-slate-800/80 px-4 py-2.5 text-xs font-bold text-slate-200 hover:bg-slate-700 transition-colors disabled:opacity-40"
+                  className="inline-flex items-center gap-1.5 rounded-xl border border-elevated bg-surface-2/80 px-4 py-2.5 text-xs font-bold text-ink hover:bg-elevated transition-colors disabled:opacity-40"
                 >
-                  <Download className="h-4 w-4 text-slate-400" />
+                  <Download className="h-4 w-4 text-ink-muted" />
                   <span>Download Merged PDF</span>
                 </button>
 
@@ -186,9 +188,10 @@ export const DesktopWorkflowUI: React.FC<WorkflowUIProps> = ({ state, actions, h
                   type="button"
                   onClick={onProceedToPhase2}
                   disabled={!mergedPdfBytes || isProcessing}
-                  className="inline-flex h-12 items-center gap-2 rounded-xl bg-indigo-600 px-6 text-sm font-bold text-white shadow-lg hover:bg-indigo-500 transition-colors disabled:opacity-50"
+                  className="inline-flex h-12 items-center gap-2 rounded-xl bg-primary-strong px-6 text-sm font-bold text-white shadow-lg hover:bg-primary transition-colors disabled:opacity-50"
                 >
-                  <span>Proceed to Optimize →</span>
+                  <span>Proceed to Optimize</span>
+                  <ArrowRight className="h-4 w-4" aria-hidden="true" />
                 </button>
               </div>
             </div>
@@ -198,24 +201,25 @@ export const DesktopWorkflowUI: React.FC<WorkflowUIProps> = ({ state, actions, h
       )}
 
       {/* PHASE 2: ANALYZE & OPTIMIZE */}
-      {currentPhase === 2 && processedPages.length > 0 && (
-        <PhaseErrorBoundary phaseName="Analyze & Optimize">
+      {currentPhase === 2 &&
+        (processedPages.length > 0 ? (
+          <PhaseErrorBoundary phaseName="Analyze & Optimize">
         <div className="flex flex-col gap-5 animate-in fade-in duration-200">
-          <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-emerald-500/30 bg-emerald-950/40 p-4 shadow-lg">
+          <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-success-strong/30 bg-success-faint/40 p-4 shadow-lg">
             <div className="flex items-center gap-3 min-w-0">
-              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-emerald-600 text-slate-950 font-bold shadow-md">
+              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-success-deep text-bg font-bold shadow-md">
                 <CheckCircle2 className="h-6 w-6" />
               </div>
               <div className="min-w-0">
-                <h3 className="text-sm font-bold text-emerald-300">Dark Backgrounds Stripped</h3>
-                <p className="text-xs text-slate-300 truncate">
+                <h3 className="text-sm font-bold text-success-soft">Dark Backgrounds Stripped</h3>
+                <p className="text-xs text-ink-muted truncate">
                   Stripped dark slides & sharpened ink strokes across {processedPages.length} pages.
                 </p>
               </div>
             </div>
 
             <div className="flex items-center gap-2 shrink-0">
-              <span className="rounded-lg bg-emerald-500/20 px-3 py-1 text-xs font-bold text-emerald-300 border border-emerald-500/30">
+              <span className="rounded-lg bg-success-strong/20 px-3 py-1 text-xs font-bold text-success-soft border border-success-strong/30">
                 ~82% Ink Saved
               </span>
             </div>
@@ -247,11 +251,11 @@ export const DesktopWorkflowUI: React.FC<WorkflowUIProps> = ({ state, actions, h
             onToggleExcludeAll={onToggleExcludeAll}
           />
 
-          <div className="flex items-center justify-between rounded-2xl border border-slate-800 bg-slate-900/90 p-4 shadow-xl">
+          <div className="flex items-center justify-between rounded-2xl border border-surface-2 bg-surface/90 p-4 shadow-xl">
             <button
               type="button"
               onClick={() => setCurrentPhase(1)}
-              className="inline-flex items-center gap-1.5 rounded-xl border border-slate-700 bg-slate-800 px-4 py-2.5 text-xs font-bold text-slate-300 hover:bg-slate-700 hover:text-white transition-colors"
+              className="inline-flex items-center gap-1.5 rounded-xl border border-elevated bg-surface-2 px-4 py-2.5 text-xs font-bold text-ink-muted hover:bg-elevated hover:text-white transition-colors"
             >
               <ArrowLeft className="h-4 w-4" />
               <span>Back to Merge</span>
@@ -261,96 +265,70 @@ export const DesktopWorkflowUI: React.FC<WorkflowUIProps> = ({ state, actions, h
               type="button"
               onClick={onProceedToPhase3}
               disabled={isProcessing}
-              className="inline-flex h-12 items-center gap-2 rounded-xl bg-indigo-600 px-6 text-sm font-bold text-white shadow-lg hover:bg-indigo-500 transition-colors"
+              className="inline-flex h-12 items-center gap-2 rounded-xl bg-primary-strong px-6 text-sm font-bold text-white shadow-lg hover:bg-primary transition-colors"
             >
-              <span>Choose Grid Layout →</span>
+              <span>Choose Grid Layout</span>
+              <ArrowRight className="h-4 w-4" aria-hidden="true" />
             </button>
           </div>
         </div>
         </PhaseErrorBoundary>
-      )}
+        ) : (
+          <EmptyPhaseState
+            title="No pages to optimize yet"
+            message="Upload and process your PDF first â€” then you can fine-tune ink savings here."
+            onBack={() => setCurrentPhase(1)}
+            backLabel="Back to Upload"
+          />
+        ))}
 
       {/* PHASE 3: LAYOUT & GENERATE */}
-      {currentPhase === 3 && (
+      {currentPhase === 3 &&
+        (processedPages.length > 0 ? (
         <PhaseErrorBoundary phaseName="Layout & Generate">
         <div className="flex flex-col gap-5 animate-in fade-in duration-200">
-          <div className="flex flex-col gap-4 rounded-2xl border border-slate-800 bg-slate-900/90 p-5 shadow-xl">
-            <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+          <div className="flex flex-col gap-4 rounded-2xl border border-surface-2 bg-surface/90 p-5 shadow-xl">
+            <div className="flex items-center justify-between border-b border-surface-2 pb-3">
               <div>
                 <div className="flex items-center gap-1.5">
                   <h3 className="text-sm font-bold text-white">N-Up Grid Layout & Format</h3>
                   <InfoTooltip
                     title="PW Grid Layout Benefits"
-                    content="Combines multiple slides onto a single sheet to reduce paper thickness and printing costs."
+                    content="Put several slides on one sheet to save paper and printing cost."
                     position="right"
                   />
                 </div>
-                <p className="text-xs text-slate-400">
+                <p className="text-xs text-ink-muted">
                   Select page density per printed A4 sheet. 4-Up (2x2) saves 75% paper with high legibility.
                 </p>
               </div>
-              <span className="rounded-full bg-indigo-500/20 px-3 py-1 text-xs font-bold text-indigo-300 border border-indigo-500/30">
-                Stage 3 of 4
+              <span className="rounded-full bg-primary/20 px-3 py-1 text-xs font-bold text-primary-soft border border-primary/30">
+                Step 3 of 4
               </span>
             </div>
 
-            <div className="grid grid-cols-6 gap-3">
-              {[
-                { format: '2x2', label: '4-Up (2x2)', desc: '4 pages per sheet', recommended: true, pwTip: 'PW Recommended: High legibility math & physics.' },
-                { format: '1x2', label: '2-Up (1x2)', desc: '2 pages per sheet', recommended: false, pwTip: 'High detail layout for circuit diagrams.' },
-                { format: '2x3', label: '6-Up (2x3)', desc: '6 pages per sheet', recommended: false, pwTip: 'Formula revision layout.' },
-                { format: '2x4', label: '8-Up (2x4)', desc: '8 pages per sheet', recommended: false, pwTip: 'Compact cheatsheet layout.' },
-                { format: '2x5', label: '10-Up (2x5)', desc: '10 pages per sheet', recommended: false, pwTip: 'Ultra-compact notes layout.' },
-                { format: '1x1', label: '1-Up (1x1)', desc: '1 page per sheet', recommended: false, pwTip: 'Original full-page layout.' },
-              ].map((item) => {
-                const isSelected = layoutConfig.gridFormat === item.format || (item.format === '2x2' && layoutConfig.gridFormat === '4up');
-                return (
-                  <div
-                    key={item.format}
-                    role="button"
-                    tabIndex={0}
-                    onClick={() => onSelectLayoutFormat(item.format as any)}
-                    className={`relative flex flex-col justify-between rounded-xl border p-3 text-left transition-all cursor-pointer ${
-                      isSelected
-                        ? 'border-indigo-500 bg-indigo-950/60 ring-2 ring-indigo-500 shadow-md'
-                        : 'border-slate-800 bg-slate-950/60 hover:border-slate-700'
-                    }`}
-                  >
-                    <div>
-                      {item.recommended && (
-                        <span className="mb-1 inline-block rounded-xs bg-indigo-600 px-1.5 py-0.5 text-[9px] font-bold text-white shadow-xs">
-                          RECOMMENDED
-                        </span>
-                      )}
-                      <h4 className="text-xs font-bold text-white">{item.label}</h4>
-                      <p className="text-[11px] text-slate-400 mt-0.5">{item.desc}</p>
-                    </div>
+            <GridFormatPicker
+              gridFormat={layoutConfig.gridFormat}
+              columns={6}
+              onSelect={onSelectLayoutFormat}
+            />
 
-                    <div className="mt-3 flex items-center justify-between border-t border-slate-800 pt-2 text-[10px] font-semibold text-slate-400">
-                      <span>{item.format}</span>
-                      {isSelected && <Check className="h-3.5 w-3.5 text-indigo-400" />}
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-
-            <div className="flex flex-wrap items-center justify-between gap-3 pt-3 border-t border-slate-800 text-xs">
+            <div className="flex flex-wrap items-center justify-between gap-3 pt-3 border-t border-surface-2 text-xs">
               <button
                 type="button"
                 onClick={onToggleOrientation}
-                className="flex h-10 items-center gap-1.5 rounded-xl border border-slate-700 bg-slate-800 px-3 font-semibold text-slate-200 hover:bg-slate-700"
+                className="flex h-10 items-center gap-1.5 rounded-xl border border-elevated bg-surface-2 px-3 font-semibold text-ink hover:bg-elevated"
               >
-                <span>Orientation: <strong className="text-indigo-300">{layoutConfig.orientation}</strong></span>
+                <span>Orientation: <strong className="text-primary-soft">{layoutConfig.orientation}</strong></span>
               </button>
 
-              <div className="flex items-center gap-4 font-medium text-slate-300">
+              <div className="flex items-center gap-4 font-medium text-ink-muted">
                 <label className="flex items-center gap-2 cursor-pointer select-none">
                   <input
                     type="checkbox"
                     checked={layoutConfig.showSlideBorders}
                     onChange={onToggleBorders}
-                    className="h-4 w-4 rounded-xs border-slate-700 text-indigo-600"
+                    className="h-4 w-4 rounded-xs border-elevated text-primary-strong"
                   />
                   <span>Slide Borders</span>
                 </label>
@@ -360,7 +338,7 @@ export const DesktopWorkflowUI: React.FC<WorkflowUIProps> = ({ state, actions, h
                     type="checkbox"
                     checked={layoutConfig.showPageNumbers}
                     onChange={onTogglePageNumbers}
-                    className="h-4 w-4 rounded-xs border-slate-700 text-indigo-600"
+                    className="h-4 w-4 rounded-xs border-elevated text-primary-strong"
                   />
                   <span>Page Numbers</span>
                 </label>
@@ -381,8 +359,8 @@ export const DesktopWorkflowUI: React.FC<WorkflowUIProps> = ({ state, actions, h
             disabled={!layoutDirty || isProcessing}
             className={`flex-1 flex items-center justify-center gap-2 rounded-xl px-5 py-3 text-sm font-bold transition-all ${
               layoutDirty && !isProcessing
-                ? 'bg-indigo-600 text-white hover:bg-indigo-500 shadow-lg shadow-indigo-900/30 active:scale-[0.98]'
-                : 'bg-slate-800 text-slate-500 cursor-not-allowed border border-slate-700'
+                ? 'bg-primary-strong text-white hover:bg-primary shadow-lg shadow-primary-faint/30 active:scale-[0.98]'
+                : 'bg-surface-2 text-ink-faint cursor-not-allowed border border-elevated'
             }`}
           >
             {isProcessing ? (
@@ -398,12 +376,12 @@ export const DesktopWorkflowUI: React.FC<WorkflowUIProps> = ({ state, actions, h
             ) : (
               <>
                 <Check className="h-4 w-4 opacity-40" />
-                Layout Applied ✓
+                Layout Applied
               </>
             )}
           </button>
           {layoutDirty && !isProcessing && (
-            <span className="text-[10px] text-amber-400 font-medium">● Unsaved changes</span>
+            <span className="text-[10px] text-warning font-medium">â— Unsaved changes</span>
           )}
         </div>
 
@@ -415,11 +393,11 @@ export const DesktopWorkflowUI: React.FC<WorkflowUIProps> = ({ state, actions, h
             />
           )}
 
-          <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-slate-800 bg-slate-900/90 p-4 shadow-xl">
+          <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-surface-2 bg-surface/90 p-4 shadow-xl">
             <button
               type="button"
               onClick={() => setCurrentPhase(2)}
-              className="inline-flex items-center gap-1.5 rounded-xl border border-slate-700 bg-slate-800 px-4 py-2.5 text-xs font-bold text-slate-300 hover:bg-slate-700 hover:text-white transition-colors"
+              className="inline-flex items-center gap-1.5 rounded-xl border border-elevated bg-surface-2 px-4 py-2.5 text-xs font-bold text-ink-muted hover:bg-elevated hover:text-white transition-colors"
             >
               <ArrowLeft className="h-4 w-4" />
               <span>Back to Optimize</span>
@@ -430,7 +408,7 @@ export const DesktopWorkflowUI: React.FC<WorkflowUIProps> = ({ state, actions, h
                 type="button"
                 onClick={onDownloadFinalPrintPdf}
                 disabled={!finalPrintPdfBlob}
-                className="inline-flex h-12 items-center gap-2 rounded-xl bg-indigo-600 px-6 text-sm font-bold text-white shadow-lg hover:bg-indigo-500 transition-colors disabled:opacity-50"
+                className="inline-flex h-12 items-center gap-2 rounded-xl bg-primary-strong px-6 text-sm font-bold text-white shadow-lg hover:bg-primary transition-colors disabled:opacity-50"
               >
                 <Download className="h-4 w-4" />
                 <span>Download Final Print PDF</span>
@@ -439,36 +417,45 @@ export const DesktopWorkflowUI: React.FC<WorkflowUIProps> = ({ state, actions, h
               <button
                 type="button"
                 onClick={onProceedToPhase4}
-                className="inline-flex h-12 items-center gap-1 rounded-xl bg-slate-800 px-4 text-xs font-bold text-slate-200 hover:bg-slate-700 transition-colors"
+                className="inline-flex h-12 items-center gap-1 rounded-xl bg-surface-2 px-4 text-xs font-bold text-ink hover:bg-elevated transition-colors"
               >
-                <span>Finish →</span>
+                <span>Finish</span>
+                <ArrowRight className="h-4 w-4" aria-hidden="true" />
               </button>
             </div>
           </div>
         </div>
         </PhaseErrorBoundary>
-      )}
+        ) : (
+          <EmptyPhaseState
+            title="Nothing to lay out yet"
+            message="Optimize your PDF first so we can arrange the pages onto print sheets."
+            onBack={() => setCurrentPhase(1)}
+            backLabel="Back to Upload"
+          />
+        ))}
 
       {/* PHASE 4: DONE */}
-      {currentPhase === 4 && (
+      {currentPhase === 4 &&
+        (finalPrintPdfBlob ? (
         <PhaseErrorBoundary phaseName="Complete">
         <div className="flex flex-col items-center gap-5 text-center animate-in fade-in duration-200 max-w-xl mx-auto">
-          <div className="flex flex-col items-center gap-3 rounded-2xl border border-emerald-500/30 bg-slate-900/90 p-8 shadow-xl w-full">
-            <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
+          <div className="flex flex-col items-center gap-3 rounded-2xl border border-success-strong/30 bg-surface/90 p-8 shadow-xl w-full">
+            <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-success-strong/20 text-success border border-success-strong/30">
               <CheckCircle2 className="h-10 w-10" />
             </div>
 
             <h2 className="text-xl font-bold text-white mt-1">Your PDF is Print-Ready!</h2>
-            <p className="text-xs text-slate-300 max-w-md leading-relaxed">
+            <p className="text-xs text-ink-muted max-w-md leading-relaxed">
               Your Physics Wallah class notes have been stripped of dark backgrounds, sharpened, and formatted for paper-saving printouts.
             </p>
 
             {finalMetrics && (
               <div className="mt-2 flex items-center gap-2 text-xs font-bold">
-                <span className="rounded-lg bg-emerald-500/20 px-3 py-1 text-emerald-300 border border-emerald-500/30">
+                <span className="rounded-lg bg-success-strong/20 px-3 py-1 text-success-soft border border-success-strong/30">
                   Paper Saved: ~75%
                 </span>
-                <span className="rounded-lg bg-indigo-500/20 px-3 py-1 text-indigo-300 border border-indigo-500/30">
+                <span className="rounded-lg bg-primary/20 px-3 py-1 text-primary-soft border border-primary/30">
                   Ink Saved: ~{finalMetrics.inkSavedPct}%
                 </span>
               </div>
@@ -478,7 +465,7 @@ export const DesktopWorkflowUI: React.FC<WorkflowUIProps> = ({ state, actions, h
               <button
                 type="button"
                 onClick={onDownloadFinalPrintPdf}
-                className="mt-4 flex h-12 w-full max-w-xs items-center justify-center gap-2 rounded-xl bg-indigo-600 px-6 text-sm font-bold text-white shadow-lg hover:bg-indigo-500 transition-all"
+                className="mt-4 flex h-12 w-full max-w-xs items-center justify-center gap-2 rounded-xl bg-primary-strong px-6 text-sm font-bold text-white shadow-lg hover:bg-primary transition-all"
               >
                 <Download className="h-4 w-4" />
                 <span>Download Print PDF Again</span>
@@ -510,14 +497,21 @@ export const DesktopWorkflowUI: React.FC<WorkflowUIProps> = ({ state, actions, h
           <button
             type="button"
             onClick={onResetWorkflow}
-            className="flex h-12 items-center gap-2 rounded-xl border border-slate-700 bg-slate-800/80 px-6 text-xs font-bold text-slate-200 hover:bg-slate-700 shadow-md"
+            className="flex h-12 items-center gap-2 rounded-xl border border-elevated bg-surface-2/80 px-6 text-xs font-bold text-ink hover:bg-elevated shadow-md"
           >
             <RotateCcw className="h-4 w-4" />
             <span>Optimize Another PDF</span>
           </button>
         </div>
         </PhaseErrorBoundary>
-      )}
+        ) : (
+          <EmptyPhaseState
+            title="Nothing here yet"
+            message="Generate your print-ready PDF first â€” your summary and feedback form will appear here."
+            onBack={() => setCurrentPhase(3)}
+            backLabel="Back to Layout"
+          />
+        ))}
     </div>
   );
 };

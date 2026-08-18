@@ -1,5 +1,12 @@
 import type { Metadata, Viewport } from 'next';
+import { Plus_Jakarta_Sans } from 'next/font/google';
 import './globals.css';
+
+const jakarta = Plus_Jakarta_Sans({
+  subsets: ['latin'],
+  variable: '--font-jakarta',
+  display: 'swap',
+});
 
 const basePath = process.env.NEXT_PUBLIC_BASE_PATH || '';
 const siteUrl = `https://juyel-dev.github.io${basePath}`;
@@ -46,7 +53,7 @@ export const metadata: Metadata = {
     other: [
       {
         rel: 'mask-icon',
-        color: '#4f46e5',
+        color: '#243BFF',
         url: `${basePath}/icon-maskable.svg`,
       },
     ],
@@ -85,7 +92,10 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en" className="h-full bg-slate-950 text-slate-100 antialiased">
+    <html
+      lang="en"
+      className={`${jakarta.variable} h-full bg-bg text-ink antialiased`}
+    >
       <head>
         <meta
           httpEquiv="Content-Security-Policy"
@@ -98,7 +108,7 @@ export default function RootLayout({
         />
       </head>
       <body
-        className="min-h-full flex flex-col font-sans bg-slate-950 text-slate-100 selection:bg-indigo-500 selection:text-white"
+        className="min-h-full flex flex-col font-sans bg-bg text-ink selection:bg-primary selection:text-white"
         suppressHydrationWarning
       >
         {children}

@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useRef, useEffect } from 'react';
-import { ZoomIn, ZoomOut, RotateCcw, Droplet, CheckCircle2 } from 'lucide-react';
+import { ZoomIn, ZoomOut, RotateCcw, Droplet, CheckCircle2, ChevronLeft, ChevronRight, ArrowRight } from 'lucide-react';
 import { ProcessedPage } from '@/lib/optimizer/types';
 import { memoryManager } from '@/lib/optimizer/memoryManager';
 
@@ -18,14 +18,13 @@ export const BeforeAfterSlider: React.FC<BeforeAfterSliderProps> = ({ page, merg
   const [zoom, setZoom] = useState(1);
   const [origUrl, setOrigUrl] = useState<string>('');
   const [optUrl, setOptUrl] = useState<string>('');
-  const [isLoadingImages, setIsLoadingImages] = useState<boolean>(true);
   const containerRef = useRef<HTMLDivElement>(null);
+  const createdUrlsRef = useRef<string[]>([]);
 
   useEffect(() => {
     let isCancelled = false;
 
     const loadImages = async () => {
-      setIsLoadingImages(true);
       try {
         const { PdfExporter } = await import('@/lib/optimizer/pdfExporter');
         const optimizedImageData = await PdfExporter.loadOptimizedImageData(page);
@@ -46,9 +45,12 @@ export const BeforeAfterSlider: React.FC<BeforeAfterSliderProps> = ({ page, merg
         if (!isCancelled) {
           const origBlob = await new Promise<Blob>((res) => origCanvas.toBlob((b) => res(b || new Blob()), 'image/jpeg', 0.6));
           const optBlob = await new Promise<Blob>((res) => optCanvas.toBlob((b) => res(b || new Blob()), 'image/jpeg', 0.6));
-          setOrigUrl(URL.createObjectURL(origBlob));
-          setOptUrl(URL.createObjectURL(optBlob));
-          setIsLoadingImages(false);
+          // Revoke URLs from the previous page before replacing them.
+          createdUrlsRef.current.forEach((u) => URL.revokeObjectURL(u));
+          const nextUrls = [URL.createObjectURL(origBlob), URL.createObjectURL(optBlob)];
+          createdUrlsRef.current = nextUrls;
+          setOrigUrl(nextUrls[0]);
+          setOptUrl(nextUrls[1]);
         }
 
         memoryManager.disposeCanvas(origCanvas);
@@ -58,7 +60,6 @@ export const BeforeAfterSlider: React.FC<BeforeAfterSliderProps> = ({ page, merg
         if (!isCancelled) {
           setOrigUrl(page.thumbnailDataUrl);
           setOptUrl(page.thumbnailDataUrl);
-          setIsLoadingImages(false);
         }
       }
     };
@@ -67,6 +68,8 @@ export const BeforeAfterSlider: React.FC<BeforeAfterSliderProps> = ({ page, merg
 
     return () => {
       isCancelled = true;
+      createdUrlsRef.current.forEach((u) => URL.revokeObjectURL(u));
+      createdUrlsRef.current = [];
     };
   }, [page, mergedPdfBytes]);
 
@@ -76,6 +79,22 @@ export const BeforeAfterSlider: React.FC<BeforeAfterSliderProps> = ({ page, merg
     const x = clientX - rect.left;
     const pct = Math.max(0, Math.min(100, (x / rect.width) * 100));
     setSliderPos(pct);
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'ArrowLeft') {
+      e.preventDefault();
+      setSliderPos((p) => Math.max(0, p - 5));
+    } else if (e.key === 'ArrowRight') {
+      e.preventDefault();
+      setSliderPos((p) => Math.min(100, p + 5));
+    } else if (e.key === 'Home') {
+      e.preventDefault();
+      setSliderPos(0);
+    } else if (e.key === 'End') {
+      e.preventDefault();
+      setSliderPos(100);
+    }
   };
 
   const handleMouseDown = (e: React.MouseEvent) => {
@@ -101,40 +120,41 @@ export const BeforeAfterSlider: React.FC<BeforeAfterSliderProps> = ({ page, merg
   const inkSaved = Math.max(0, Math.round(page.inkCoverageBeforePct - page.inkCoverageAfterPct));
 
   return (
-    <div className="flex flex-col gap-3 rounded-2xl border border-slate-800 bg-slate-900 p-4 shadow-xl">
+    <div className="flex flex-col gap-3 rounded-2xl border border-surface-2 bg-surface p-4 shadow-xl">
       {/* Top Header & Controls */}
-      <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-800 pb-3">
+      <div className="flex flex-wrap items-center justify-between gap-2 border-b border-surface-2 pb-3">
         <div className="flex items-center gap-2">
-          <span className="rounded-md bg-indigo-500/20 px-2.5 py-1 text-xs font-bold text-indigo-300 border border-indigo-500/30">
+          <span className="rounded-md bg-primary/20 px-2.5 py-1 text-xs font-bold text-primary-soft border border-primary/30">
             Page {page.pageIndex + 1}
           </span>
-          <span className="rounded-md bg-slate-800 px-2 py-0.5 text-xs font-semibold text-slate-300">
+          <span className="rounded-md bg-surface-2 px-2 py-0.5 text-xs font-semibold text-ink-muted">
             {page.profile.classification.replace('_', ' ')}
           </span>
         </div>
 
         {/* Ink Saved Metric */}
         <div className="flex flex-wrap items-center gap-2.5 text-xs">
-          <div className="flex items-center gap-1 font-medium text-slate-400">
-            <Droplet className="h-3.5 w-3.5 text-slate-500" />
-            <span>Before: <strong className="text-slate-200">{page.inkCoverageBeforePct}% Ink</strong></span>
+          <div className="flex items-center gap-1 font-medium text-ink-muted">
+            <Droplet className="h-3.5 w-3.5 text-ink-faint" />
+            <span>Before: <strong className="text-ink">{page.inkCoverageBeforePct}% Ink</strong></span>
           </div>
-          <span className="text-slate-600">→</span>
-          <div className="flex items-center gap-1.5 font-semibold text-emerald-400">
-            <CheckCircle2 className="h-3.5 w-3.5 text-emerald-400" />
+          <ArrowRight className="h-3.5 w-3.5 text-ink-faint" aria-hidden="true" />
+          <div className="flex items-center gap-1.5 font-semibold text-success">
+            <CheckCircle2 className="h-3.5 w-3.5 text-success" />
             <span>Optimized: <strong>{page.inkCoverageAfterPct}% Ink</strong></span>
-            <span className="rounded-full bg-emerald-500/20 px-2 py-0.5 text-[11px] font-bold text-emerald-300 border border-emerald-500/30">
+            <span className="rounded-full bg-success-strong/20 px-2 py-0.5 text-[11px] font-bold text-success-soft border border-success-strong/30">
               -{inkSaved}% Saved
             </span>
           </div>
         </div>
 
         {/* Zoom Controls */}
-        <div className="flex items-center gap-1">
+        <div className="flex items-center gap-1.5">
           <button
             type="button"
             onClick={() => setZoom((z) => Math.min(2.5, z + 0.25))}
-            className="flex h-9 w-9 items-center justify-center rounded-lg bg-slate-800 text-slate-300 hover:bg-slate-700 hover:text-white"
+            aria-label="Zoom in"
+            className="flex h-10 w-10 items-center justify-center rounded-lg bg-surface-2 text-ink-muted hover:bg-elevated hover:text-white"
             title="Zoom In"
           >
             <ZoomIn className="h-4 w-4" />
@@ -142,7 +162,8 @@ export const BeforeAfterSlider: React.FC<BeforeAfterSliderProps> = ({ page, merg
           <button
             type="button"
             onClick={() => setZoom((z) => Math.max(0.75, z - 0.25))}
-            className="flex h-9 w-9 items-center justify-center rounded-lg bg-slate-800 text-slate-300 hover:bg-slate-700 hover:text-white"
+            aria-label="Zoom out"
+            className="flex h-10 w-10 items-center justify-center rounded-lg bg-surface-2 text-ink-muted hover:bg-elevated hover:text-white"
             title="Zoom Out"
           >
             <ZoomOut className="h-4 w-4" />
@@ -150,7 +171,8 @@ export const BeforeAfterSlider: React.FC<BeforeAfterSliderProps> = ({ page, merg
           <button
             type="button"
             onClick={() => { setZoom(1); setSliderPos(50); }}
-            className="flex h-9 w-9 items-center justify-center rounded-lg bg-slate-800 text-slate-300 hover:bg-slate-700 hover:text-white"
+            aria-label="Reset zoom"
+            className="flex h-10 w-10 items-center justify-center rounded-lg bg-surface-2 text-ink-muted hover:bg-elevated hover:text-white"
             title="Reset Zoom"
           >
             <RotateCcw className="h-4 w-4" />
@@ -161,7 +183,14 @@ export const BeforeAfterSlider: React.FC<BeforeAfterSliderProps> = ({ page, merg
       {/* Interactive Split View Container with touch-action */}
       <div
         ref={containerRef}
-        className="relative h-[360px] sm:h-[480px] w-full cursor-col-resize select-none-touch overflow-hidden rounded-xl border border-slate-800 bg-slate-950 flex items-center justify-center p-3 shadow-inner"
+        role="slider"
+        tabIndex={0}
+        aria-label="Before after comparison slider"
+        aria-valuemin={0}
+        aria-valuemax={100}
+        aria-valuenow={Math.round(sliderPos)}
+        aria-valuetext={`${Math.round(sliderPos)} percent optimized visible`}
+        className="relative h-[360px] sm:h-[480px] w-full cursor-col-resize select-none-touch overflow-hidden rounded-xl border border-surface-2 bg-bg flex items-center justify-center p-3 shadow-inner focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-soft"
         onMouseDown={handleMouseDown}
         onMouseUp={handleMouseUp}
         onMouseLeave={handleMouseUp}
@@ -169,6 +198,7 @@ export const BeforeAfterSlider: React.FC<BeforeAfterSliderProps> = ({ page, merg
         onTouchStart={handleTouchStart}
         onTouchEnd={handleMouseUp}
         onTouchMove={handleTouchMove}
+        onKeyDown={handleKeyDown}
       >
         {/* Optimized Image (Base Layer - Right Side) */}
         {optUrl && (
@@ -201,27 +231,27 @@ export const BeforeAfterSlider: React.FC<BeforeAfterSliderProps> = ({ page, merg
 
         {/* Vertical Divider Handle Line */}
         <div
-          className="absolute bottom-0 top-0 z-10 w-0.5 bg-indigo-500 shadow-md shadow-indigo-500/50"
+          className="absolute bottom-0 top-0 z-10 w-0.5 bg-primary shadow-md shadow-primary/50"
           style={{ left: `${sliderPos}%` }}
         >
-          <div className="absolute top-1/2 -translate-x-1/2 -translate-y-1/2 rounded-full bg-indigo-600 p-2 text-white shadow-lg ring-2 ring-white/80 active:scale-110 transition-transform">
-            <div className="flex items-center gap-1 text-[10px] font-bold">
-              <span>◄</span>
-              <span>►</span>
+          <div className="absolute top-1/2 -translate-x-1/2 -translate-y-1/2 rounded-full bg-primary-strong p-2 text-white shadow-lg ring-2 ring-white/80 active:scale-110 transition-transform">
+            <div className="flex items-center gap-0.5 text-[10px] font-bold">
+              <ChevronLeft className="h-3 w-3" aria-hidden="true" />
+              <ChevronRight className="h-3 w-3" aria-hidden="true" />
             </div>
           </div>
         </div>
 
         {/* Side Labels */}
-        <div className="pointer-events-none absolute left-3 top-3 rounded-md bg-slate-900/90 px-2.5 py-1 text-xs font-semibold text-slate-300 border border-slate-800 backdrop-blur-xs">
+        <div className="pointer-events-none absolute left-3 top-3 rounded-md bg-surface/90 px-2.5 py-1 text-xs font-semibold text-ink-muted border border-surface-2 backdrop-blur-xs">
           Original Raw
         </div>
-        <div className="pointer-events-none absolute right-3 top-3 rounded-md bg-emerald-950/90 px-2.5 py-1 text-xs font-semibold text-emerald-300 border border-emerald-800/80 backdrop-blur-xs">
+        <div className="pointer-events-none absolute right-3 top-3 rounded-md bg-success-faint/90 px-2.5 py-1 text-xs font-semibold text-success-soft border border-success-deep/80 backdrop-blur-xs">
           Optimized Print
         </div>
       </div>
 
-      <p className="text-center text-xs text-slate-400">
+      <p className="text-center text-xs text-ink-muted">
         Swipe or drag the slider left & right to compare raw dark slide vs whitening print output.
       </p>
     </div>
