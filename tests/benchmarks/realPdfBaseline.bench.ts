@@ -1,8 +1,8 @@
 /**
  * Real-world baseline: committed fixture PDFs rendered + processed in Node
- * with the exact engine recipe (render at scale 1.8 -> analyze -> preset ->
- * JS pixel pipeline). This is the JS-side reference baseline; the WASM-side
- * browser baseline lives in realPdfBaseline.spec.ts.
+ * with the exact engine recipe (applyEngineRecipe: render@1.8 -> classify ->
+ * preset -> JS pixel pipeline). This is the JS-side reference baseline; the
+ * WASM-side browser baseline lives in realPdfBaseline.spec.ts.
  *
  * Runs as part of `npm run bench` (vitest bench) — report numbers feed
  * ENGINEERING_ASSESSMENT.md.
@@ -10,10 +10,8 @@
 import { describe, it } from 'vitest';
 import { readFileSync } from 'fs';
 import { join } from 'path';
-import { renderPdfPage, loadPdfDocument } from '../fixtures/pdfRender';
-import { analyzeImageData } from '../../lib/optimizer/analysis';
-import { ParameterGenerator } from '../../lib/optimizer/parameterGenerator';
-import { processPage } from '../../lib/kernels/processPage';
+import { openPdfDocument, renderPdfPageOpen } from '../fixtures/pdfRender';
+import { applyEngineRecipe, countInk } from '../fixtures/pdfMetrics';
 
 const FIXTURES_DIR = join(__dirname, '..', 'fixtures', 'pdf');
 const RENDER_SCALE = 1.8;
@@ -23,9 +21,8 @@ const FIXTURE_NAMES = ['text', 'image', 'scanned', 'mixed'] as const;
 describe('real-PDF baseline (Node, JS pipeline)', () => {
   it('per-fixture: render/analyze/process/ink/output-size', async () => {
     for (const name of FIXTURE_NAMES) {
-      const bytes = new Uint8Array(readFileSync(join(FIXTURES_DIR, `${name}.pdf`)));
       const t0 = performance.now();
-      const doc = await loadPdfDocument(bytes);
+      const doc = await openPdfDocument(new Uint8Array(readFileSync(join(FIXTURES_DIR, `${name}.pdf`))));
       const loadMs = performance.now() - t0;
 
       let renderMs = 0, analyzeMs = 0, processMs = 0;
@@ -34,29 +31,18 @@ describe('real-PDF baseline (Node, JS pipeline)', () => {
 
       for (let pi = 0; pi < doc.numPages; pi++) {
         const t1 = performance.now();
-        const imageData = await renderPdfPage(bytes, pi, RENDER_SCALE);
+        const imageData = await renderPdfPageOpen(doc, pi, RENDER_SCALE);
         renderMs += performance.now() - t1;
 
         const t2 = performance.now();
-        const profile = analyzeImageData(imageData, pi);
+        const recipe = applyEngineRecipe(imageData, pi);
         analyzeMs += performance.now() - t2;
-        classifications.add(profile.classification);
-
-        const preset: 'PW_DARK_SLIDE' | 'LIGHT_HANDWRITTEN' =
-          profile.classification === 'DARK_SLIDE' ? 'PW_DARK_SLIDE' : 'LIGHT_HANDWRITTEN';
-        const params = ParameterGenerator.getPresetParameters(preset);
+        classifications.add(recipe.profile.classification);
 
         const t3 = performance.now();
-        const result = processPage(
-          imageData.data,
-          imageData.width,
-          imageData.height,
-          params,
-          { classification: profile.classification, darkBackgroundRatio: profile.darkBackgroundRatio }
-        );
+        const out = new Uint8Array(recipe.result.buffer);
         processMs += performance.now() - t3;
 
-        const out = new Uint8Array(result.buffer);
         outBytes += out.byteLength;
         inkBeforeSum += countInk(imageData.data);
         inkAfterSum += countInk(out);
@@ -71,11 +57,3 @@ describe('real-PDF baseline (Node, JS pipeline)', () => {
     }
   }, 600000);
 });
-
-function countInk(rgba: Uint8Array | Uint8ClampedArray): number {
-  let dark = 0;
-  for (let i = 0; i < rgba.length; i += 4) {
-    if (rgba[i] < 128) dark++;
-  }
-  return Math.round((dark / (rgba.length / 4)) * 10000) / 100;
-}

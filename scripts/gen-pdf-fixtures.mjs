@@ -115,7 +115,7 @@ function paintDiagramSlide(rand) {
   return canvas.toBuffer('image/jpeg', 88);
 }
 
-function paintPhotoSlide(rand) {
+function paintPhotoSlide() {
   const w = 960, h = 540;
   const canvas = createCanvas(w, h);
   const ctx = canvas.getContext('2d');
@@ -154,7 +154,7 @@ function paintScannedPage(rand) {
     const sy = 50 + rand() * (h - 100);
     const len = 14 + rand() * 26;
     const slant = (rand() - 0.5) * 0.8;
-    const width = 2 + (rand() * 2) | 0;
+    const width = 2 + ((rand() * 2) | 0);
     for (let t = 0; t < len; t++) {
       const x = (sx + t + slant * t) | 0;
       const y = (sy + t * 0.35) | 0;
@@ -239,7 +239,7 @@ async function buildTextPdf() {
 async function buildImagePdf() {
   const doc = await PDFDocument.create();
   const font = await doc.embedFont(StandardFonts.Helvetica);
-  const variants = [paintDarkSlide(lcg(101)), paintLightSlide(lcg(202)), paintDiagramSlide(lcg(303)), paintPhotoSlide(lcg(404))];
+  const variants = [paintDarkSlide(lcg(101)), paintLightSlide(lcg(202)), paintDiagramSlide(lcg(303)), paintPhotoSlide()];
   const titles = ['Dark raster slide', 'Light raster slide', 'Diagram raster slide', 'Photo-style raster slide'];
   for (let i = 0; i < variants.length; i++) {
     const page = doc.addPage([960, 540]);

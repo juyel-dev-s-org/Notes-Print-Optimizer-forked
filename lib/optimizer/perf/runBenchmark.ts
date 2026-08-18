@@ -134,6 +134,14 @@ export async function runEngineOnPdf(
   }
 }
 
+/** Shared console report for both benchmark globals. */
+function logBenchReport(tag: string, report: FullBenchmarkReport): void {
+  console.log(`%c[NPO ${tag}] Full pipeline report`, 'color:#34d399;font-weight:bold');
+  console.log(`  engine=${report.engineId} wasm=${report.wasmLoaded ? 'ON' : 'OFF(js)'} pages=${report.totalPages} total=${report.totalMs.toFixed(0)}ms pps=${report.pagesPerSecond.toFixed(2)}`);
+  console.log(`  per-page avg: render=${report.perPageAvg.renderMs.toFixed(1)}ms analyze=${report.perPageAvg.analyzeMs.toFixed(1)}ms process=${report.perPageAvg.processMs.toFixed(1)}ms thumb=${report.perPageAvg.thumbnailMs.toFixed(1)}ms persist=${report.perPageAvg.persistMs.toFixed(1)}ms`);
+  console.log(`[NPO ${tag}]`, report);
+}
+
 /** Expose window.__npoBenchmark and auto-run on ?bench=1. */
 export function installGlobalBenchmark(): void {
   if (typeof window === 'undefined') return;
@@ -157,10 +165,7 @@ export function installGlobalBenchmark(): void {
         pageCount: opts?.pageCount,
         engineVersion: opts?.engineVersion as EngineVersion | undefined,
       });
-      console.log('%c[NPO Phase-0 Benchmark] Full pipeline report', 'color:#818cf8;font-weight:bold');
-      console.log(`  engine=${report.engineId} wasm=${report.wasmLoaded ? 'ON' : 'OFF(js)'} pages=${report.totalPages} total=${report.totalMs.toFixed(0)}ms pps=${report.pagesPerSecond.toFixed(2)}`);
-      console.log(`  per-page avg: render=${report.perPageAvg.renderMs.toFixed(1)}ms analyze=${report.perPageAvg.analyzeMs.toFixed(1)}ms process=${report.perPageAvg.processMs.toFixed(1)}ms thumb=${report.perPageAvg.thumbnailMs.toFixed(1)}ms persist=${report.perPageAvg.persistMs.toFixed(1)}ms`);
-      console.log('[NPO Benchmark]', report);
+      logBenchReport('Phase-0 Benchmark', report);
       return report;
     };
   }
@@ -171,10 +176,7 @@ export function installGlobalBenchmark(): void {
       const report = await runEngineOnPdf(pdfBuffer, {
         engineVersion: opts?.engineVersion as EngineVersion | undefined,
       });
-      console.log('%c[NPO Real-PDF Benchmark] Full pipeline report', 'color:#34d399;font-weight:bold');
-      console.log(`  engine=${report.engineId} wasm=${report.wasmLoaded ? 'ON' : 'OFF(js)'} pages=${report.totalPages} total=${report.totalMs.toFixed(0)}ms pps=${report.pagesPerSecond.toFixed(2)}`);
-      console.log(`  per-page avg: render=${report.perPageAvg.renderMs.toFixed(1)}ms analyze=${report.perPageAvg.analyzeMs.toFixed(1)}ms process=${report.perPageAvg.processMs.toFixed(1)}ms thumb=${report.perPageAvg.thumbnailMs.toFixed(1)}ms persist=${report.perPageAvg.persistMs.toFixed(1)}ms`);
-      console.log('[NPO Real-PDF Benchmark]', report);
+      logBenchReport('Real-PDF Benchmark', report);
       return report;
     };
   }

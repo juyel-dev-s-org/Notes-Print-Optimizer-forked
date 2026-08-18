@@ -7,36 +7,15 @@
  * real WASM. Timings are reported per fixture; no cross-run comparisons.
  */
 import { test } from '@playwright/test';
+import { FIXTURE_NAMES } from './benchTypes';
 
-interface NpoBenchResult {
-  engineId: string;
-  engineVersion: string;
-  wasmLoaded: boolean;
-  totalPages: number;
-  totalMs: number;
-  pagesPerSecond: number;
-  perPageAvg: {
-    renderMs: number;
-    analyzeMs: number;
-    processMs: number;
-    thumbnailMs: number;
-    persistMs: number;
-  };
-  environment: { hardwareConcurrency: number; isMobile: boolean; devicePixelRatio: number };
-}
-
-declare global {
-  interface Window {
-    __npoProcessPdf?: (pdfBuffer: ArrayBuffer, opts?: { engineVersion?: string }) => Promise<NpoBenchResult>;
-  }
-}
-
-const FIXTURES: Array<{ name: string; expectPages: number }> = [
-  { name: 'text.pdf', expectPages: 6 },
-  { name: 'image.pdf', expectPages: 4 },
-  { name: 'scanned.pdf', expectPages: 4 },
-  { name: 'mixed.pdf', expectPages: 4 },
-];
+const EXPECTED_PAGES: Record<(typeof FIXTURE_NAMES)[number], number> = {
+  'text.pdf': 6,
+  'image.pdf': 4,
+  'scanned.pdf': 4,
+  'mixed.pdf': 4,
+};
+const FIXTURES = FIXTURE_NAMES.map((name) => ({ name, expectPages: EXPECTED_PAGES[name] }));
 
 test('Real-PDF fixtures through the real engine (WASM)', async ({ page }) => {
   test.setTimeout(300_000);

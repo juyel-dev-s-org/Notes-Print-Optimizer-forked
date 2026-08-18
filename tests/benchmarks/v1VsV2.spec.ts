@@ -11,60 +11,17 @@
  * real content AND the memory delta is acceptable for the target device.
  */
 import { test } from '@playwright/test';
-import { readFileSync, writeFileSync } from 'fs';
 import { join } from 'path';
-import { PDFDocument } from 'pdf-lib';
-
-interface NpoBenchResult {
-  engineId: string;
-  engineVersion: string;
-  wasmLoaded: boolean;
-  totalPages: number;
-  totalMs: number;
-  pagesPerSecond: number;
-  perPageAvg: {
-    renderMs: number;
-    analyzeMs: number;
-    processMs: number;
-    thumbnailMs: number;
-    persistMs: number;
-  };
-  environment: { hardwareConcurrency: number; isMobile: boolean; devicePixelRatio: number };
-}
-
-declare global {
-  interface Window {
-    __npoProcessPdf?: (pdfBuffer: ArrayBuffer, opts?: { engineVersion?: string }) => Promise<NpoBenchResult>;
-    gc?: () => void;
-  }
-}
-
-const FIXTURES_DIR = join(__dirname, '..', 'fixtures', 'pdf');
-const OUT_FIXTURES_DIR = join(__dirname, '..', '..', 'out', 'fixtures', 'pdf');
-const FIXTURE_NAMES = ['text.pdf', 'image.pdf', 'scanned.pdf', 'mixed.pdf'];
+import { buildFixtureDeck } from './benchTypes';
 
 const ENGINES = ['v1', 'pw-pixel-v2'] as const;
-
-interface EngineRound {
-  engine: string;
-  ms: number;
-  peakMB: number;
-  retainedMB: number;
-  pps: number;
-}
 
 test('V1 vs V2 paired A/B on the real 18-page deck', async ({ page }) => {
   test.setTimeout(300_000);
 
   /* Assemble the 18-page deck (6+4+4+4) next to the served fixtures. */
-  const deck = await PDFDocument.create();
-  for (const name of FIXTURE_NAMES) {
-    const src = await PDFDocument.load(readFileSync(join(FIXTURES_DIR, name)));
-    const pages = await deck.copyPages(src, src.getPageIndices());
-    for (const p of pages) deck.addPage(p);
-  }
-  const deckBytes = await deck.save();
-  writeFileSync(join(OUT_FIXTURES_DIR, 'deck-18.pdf'), deckBytes);
+  const deckPath = join(__dirname, '..', '..', 'out', 'fixtures', 'pdf', 'deck-18.pdf');
+  const deckPages = await buildFixtureDeck(deckPath);
 
   await page.goto('/');
   await page.waitForFunction(() => typeof window.__npoProcessPdf === 'function');
@@ -111,7 +68,7 @@ test('V1 vs V2 paired A/B on the real 18-page deck', async ({ page }) => {
       );
 
       if (!res.wasm) throw new Error(`${engine}: WASM not loaded — A/B must run on the WASM path`);
-      if (res.pages !== 18) throw new Error(`${engine}: expected 18 pages, got ${res.pages}`);
+      if (res.pages !== deckPages) throw new Error(`${engine}: expected ${deckPages} pages, got ${res.pages}`);
 
       const a = acc.get(engine)!;
       a.ms += res.ms;
