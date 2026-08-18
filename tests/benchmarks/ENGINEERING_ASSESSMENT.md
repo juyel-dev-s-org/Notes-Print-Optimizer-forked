@@ -445,10 +445,18 @@ Browser, real engine V2 + WASM (per page, all phases incl. thumbnail/persist):
 
 | fixture    | render | analyze | process | thumb | persist | total/page | pps  |
 |------------|--------|---------|---------|-------|---------|------------|------|
-| text.pdf   | 30.3   | 1.6     | 31.4    | 8.8   | 13.6    | 120.0 ms   | 8.33 |
-| image.pdf  | 22.9   | 1.1     | 18.9    | 7.4   | 11.9    | 90.5 ms    | 11.06|
-| scanned.pdf| 23.5   | 4.4     | 9.2     | 4.7   | 19.4    | 91.0 ms    | 10.98|
-| mixed.pdf  | 37.2   | 1.4     | 41.6    | 2.4   | 9.5     | 120.8 ms   | 8.28 |
+| text.pdf   | 24.1   | 1.8     | 26.7    | 6.8   | 17.4    | 76.8 ms    | 9.80 |
+| image.pdf  | 24.2   | 1.3     | 13.5    | 7.4   | 8.6     | 55.1 ms    | 13.52|
+| scanned.pdf| 15.8   | 0.8     | 6.5     | 5.3   | 10.3    | 38.7 ms    | 17.27|
+| mixed.pdf  | 23.3   | 1.3     | 24.1    | 5.1   | 9.3     | 63.1 ms    | 12.52|
+
+> **Re-established 2026-08-18 at clean HEAD `cf4c0fd`** (serial run,
+> `--workers=1` — parallel full-suite runs contaminate timings: scanned
+> degrades 11x under sibling-worker load). Earlier same-session run
+> (c191866 era): text 120.0 / image 90.5 / scanned 91.0 / mixed 120.8 —
+> the ~1.5-2.3x spread across sessions is the established machine-load
+> variance (2.5x); the relative phase structure is stable (process
+> dominates text/mixed, render+persist dominate scanned).
 
 These replace synthetic-only evidence for production acceptance; WASM
 process is ~1.8-6x faster than the Node JS pipeline (mixed.pdf 155.2 → 41.6,
