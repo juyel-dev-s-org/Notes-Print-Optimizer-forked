@@ -488,8 +488,12 @@ not more kernel math.
    (0/5.76M diff), measured same-window A/B: process −18.1%
    (155→127 ms/page), 100-page total −13.7% (21.1→18.2 s), pps
    4.74→5.49. Expected projection beat: idle 100p now ~18 s.
-2. **Remove `.slice(0)` copies in `composeSheetWithWorker`** by transferring
-   buffers (pdfExporter.ts:109).
+2. ~~**Remove `.slice(0)` copies in `composeSheetWithWorker`**~~ — **DONE (committed with this report).** Owned page buffers are
+   now transferred to the compose worker zero-copy (pool.ts already
+   transfers `pageBuffers`); the main-thread fallback reloads detached
+   pages from storage instead of reading detached arrays. Node unit
+   tests exercise the fallback path; worker contract unchanged
+   (full-length, offset-0 buffers, same as the old slices).
 
 **CHANGE NEXT** (after the above is merged and re-benchmarked)
 3. Fused single-pass HSV+classify in the per-kernel WASM path (1.46x,

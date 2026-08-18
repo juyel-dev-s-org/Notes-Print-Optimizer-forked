@@ -54,6 +54,16 @@ export class PdfExporter {
     throw new Error(`Failed to load optimized page ${page.pageIndex + 1}`);
   }
 
+  private static async loadPageImageDataOrBlank(page: ProcessedPage): Promise<ImageData> {
+    try {
+      return await this.loadOptimizedImageData(page);
+    } catch (err) {
+      console.warn(`[export] Failed to load optimized page ${page.pageIndex + 1}, using blank:`, err);
+      const w = page.width ?? 612, h = page.height ?? 792;
+      return new ImageData(new Uint8ClampedArray(w * h * 4).fill(255), w, h);
+    }
+  }
+
   /**
    * Loads the original (pre-optimization) page. Uses the cached originalBlob
    * when present (legacy records), otherwise lazily re-renders it from the
@@ -96,6 +106,7 @@ export class PdfExporter {
   }
 
   private static async composeSheetWithWorker(
+    pages: ProcessedPage[],
     pageImageDatas: ImageData[],
     sheetIndex: number,
     totalSheets: number,
@@ -104,23 +115,42 @@ export class PdfExporter {
     const wm = WorkerManager.getInstance();
     if (wm.isWorkerSupported() && wm.isOffscreenCanvasSupported()) {
       const pool = wm.getPool();
-      try {
-          const geometry = LayoutEngine.getSheetCompositionGeometry(config);
-          const pageBuffers = pageImageDatas.map(d => d.data.buffer.slice(0));
-          const result = await pool.submitComposeTask({
-            sheetIndex, totalSheets,
-            pageBuffers, pageWidths: pageImageDatas.map(d => d.width), pageHeights: pageImageDatas.map(d => d.height),
-            dims: { widthPx: geometry.dims.widthPx, heightPx: geometry.dims.heightPx }, cols: geometry.cols, rows: geometry.rows,
-            marginTop: geometry.marginTop, marginLeft: geometry.marginLeft, marginRight: geometry.marginRight,
-            marginBottom: geometry.marginBottom, marginInner: geometry.marginInner,
-            footerHeight: geometry.footerHeight, footerFontSize: geometry.footerFontSize, footerBaseline: geometry.footerBaseline,
-            showSlideBorders: config.showSlideBorders ?? true,
-            showPageNumbers: config.showPageNumbers ?? false,
-          });
-          return { jpegBuffer: result.jpegBuffer, width: result.width, height: result.height };
-        } catch {
-          /* worker compose failed — fall through to main thread */
+      const geometry = LayoutEngine.getSheetCompositionGeometry(config);
+      /* loadOptimizedImageData decodes fresh buffers owned exclusively by this
+         call, so the worker gets them zero-copy (no .slice(0) memcpy per page).
+         A view into a larger/shared buffer — never produced today, cheap to
+         guard — is copied instead so nothing we do not own is detached. */
+      const owned = new Set<Uint8ClampedArray>();
+      const pageBuffers = pageImageDatas.map((d) => {
+        const buf = d.data.buffer;
+        if (d.data.byteOffset === 0 && d.data.byteLength === buf.byteLength) {
+          owned.add(d.data);
+          return buf;
         }
+        return buf.slice(d.data.byteOffset, d.data.byteOffset + d.data.byteLength);
+      });
+      try {
+        const result = await pool.submitComposeTask({
+          sheetIndex, totalSheets,
+          pageBuffers, pageWidths: pageImageDatas.map(d => d.width), pageHeights: pageImageDatas.map(d => d.height),
+          dims: { widthPx: geometry.dims.widthPx, heightPx: geometry.dims.heightPx }, cols: geometry.cols, rows: geometry.rows,
+          marginTop: geometry.marginTop, marginLeft: geometry.marginLeft, marginRight: geometry.marginRight,
+          marginBottom: geometry.marginBottom, marginInner: geometry.marginInner,
+          footerHeight: geometry.footerHeight, footerFontSize: geometry.footerFontSize, footerBaseline: geometry.footerBaseline,
+          showSlideBorders: config.showSlideBorders ?? true,
+          showPageNumbers: config.showPageNumbers ?? false,
+        });
+        return { jpegBuffer: result.jpegBuffer, width: result.width, height: result.height };
+      } catch {
+        /* Worker compose failed. Buffers that were transferred are now
+           detached — reload those pages from storage so the main-thread
+           fallback below can still render the sheet. */
+        if (owned.size > 0) {
+          pageImageDatas = await Promise.all(pageImageDatas.map(async (d, i) =>
+            owned.has(d.data) ? this.loadPageImageDataOrBlank(pages[i]) : d
+          ));
+        }
+      }
     }
     const sheetCanvas = LayoutEngine.composeSheet(pageImageDatas, sheetIndex, totalSheets, config);
     const width = sheetCanvas.width;
@@ -149,18 +179,10 @@ export class PdfExporter {
 
       const chunk = activePages.slice(si * totalPerSheet, Math.min(activePages.length, (si + 1) * totalPerSheet));
 
-      const chunkImages = await Promise.all(chunk.map(async (p) => {
-        try {
-          return await this.loadOptimizedImageData(p);
-        } catch (err) {
-          console.warn(`[export] Failed to load optimized page ${p.pageIndex + 1}, using blank:`, err);
-          const w = p.width ?? 612, h = p.height ?? 792;
-          return new ImageData(new Uint8ClampedArray(w * h * 4).fill(255), w, h);
-        }
-      }));
+      const chunkImages = await Promise.all(chunk.map((p) => this.loadPageImageDataOrBlank(p)));
 
       const { jpegBuffer, width, height } = await this.composeSheetWithWorker(
-        chunkImages, si, totalSheets, layoutConfig
+        chunk, chunkImages, si, totalSheets, layoutConfig
       );
 
       const tw = Math.min(500, Math.round(width / 3)), th = Math.min(750, Math.round(height / 3));
