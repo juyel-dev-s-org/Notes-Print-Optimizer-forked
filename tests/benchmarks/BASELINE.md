@@ -1,6 +1,45 @@
-# Benchmark Baseline
+# Benchmark Baseline — Agent Document
 
-This file records the performance metrics for the optimizer pipeline across re-architecture phases.
+> **AGENT-ONLY DOCUMENT.** Raw performance data for AI agents. All numbers
+> are measurements, not claims. When optimizing, read this file FIRST, then
+> re-measure before/after on the same machine state — never trust intuition
+> over a paired A/B.
+
+## How to use this file
+
+| Need | Go to |
+|---|---|
+| Per-phase cost breakdown (CPU) | "Phase 0 — Performance Baseline" |
+| Engine V1 vs V2 comparison | "Engine comparison (20 pages…)" |
+| Kernel-level JS numbers | "Kernel Benchmarks (JS fallback…)" |
+| WASM targets vs JS | "WASM Performance Targets" |
+| Sharpen optimization evidence | "Sharpen Optimization (2026-08)" |
+
+## Re-measure commands
+
+| Benchmark | Command |
+|---|---|
+| CPU per-page pipeline (CI guard) | `npm run test:bench` (phase0Baseline.bench.ts) |
+| Browser full-pipeline (real pdf.js render) | open app with `?bench=1` (+ `&pages=N`, `&engine=v1\|v2`) or `window.__npoBenchmark()` |
+| Sharpen variant shootout | `tests/benchmarks/sharpenShootout.bench.ts` |
+| Browser end-to-end phases | `tests/benchmarks/browserPhases.spec.ts` (wasm=true) |
+| Real-PDF baselines | `tests/benchmarks/realPdfBaseline.bench.ts` / `.spec.ts` |
+| Paired A/B gates | `tests/benchmarks/v1VsV2.spec.ts`, `abWasm.spec.ts` |
+
+## Measurement discipline (binding)
+
+1. **Always benchmark on AC power / best-performance mode** — power state
+   moves results ~3x (4.6 pps charging vs 1.5 pps battery saver, same code).
+2. **Run serial, `--workers=1`** — parallel full-suite runs contaminate
+   timings (scanned fixture degraded 11x under sibling-worker load).
+3. Machine-load variance is ~2.5x across sessions. Comparisons are only
+   valid within the same load window (paired A/B, alternating order).
+4. Merge an optimization only on a meaningful end-to-end improvement with
+   no regression in the paired A/B (see ENGINEERING_ASSESSMENT.md §8).
+5. All numbers below were produced by the committed binaries (WASM =
+   `public/wasm/npo_wasm_bg.wasm`, 30,606 B).
+
+---
 
 ## Environment
 - Node.js: 20.x / 22.x

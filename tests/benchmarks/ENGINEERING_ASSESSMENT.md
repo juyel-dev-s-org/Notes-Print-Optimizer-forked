@@ -1,3 +1,43 @@
+# Engineering Assessment — Agent Document (50 Q&A, 2026-08-18)
+
+> **AGENT-ONLY DOCUMENT.** Complete engineering assessment of the optimizer
+> pipeline. Every claim below is backed by a measurement; cite this file
+> when making engine/performance decisions. Do not repeat claims without
+> the evidence here.
+
+## How to use this file
+
+| Need | Section |
+|---|---|
+| Current baseline, bottlenecks, warm/cold | §1 (Q1–Q5) |
+| HSV/classify internals (fused, integer, RGB) | §2 (Q6–Q13) |
+| Unsharp mask (1-channel proof + speedup) | §3 (Q14–Q18) |
+| WASM / SIMD / overhead reality | §4 (Q19–Q24) |
+| PDF engine choice (MuPDF/PDFium/pdf.js + AGPL) | §5 (Q25–Q33) |
+| Workers, OffscreenCanvas, copies, GC | §6 (Q34–Q40) |
+| Golden tests, fixtures, determinism | §7 (Q41–Q44) |
+| ROI ranking + projections (measured deltas) | §8 (Q45–Q49) |
+| Final recommendation (KEEP / CHANGE / DO NOT) | §9 |
+
+## Binding decision rules (from this assessment)
+
+1. **0-diff golden policy**: any optimization must keep byte-level goldens at
+   0 differences and the full suite green.
+2. **Paired A/B gate**: merge only on meaningful end-to-end improvement
+   with no regression, measured same-window on the real 18-page fixture deck.
+3. **V2 is the production engine** — V1 as default was measured 2.4x slower
+   + ~11x memory on real PDFs (Q34, Q47 note, §8 rank 5). Re-verifying it is
+   allowed; defaulting to it is not.
+4. **Keep pdf.js** (Apache-2.0). MuPDF = AGPL exposure for a closed-source,
+   network-deployed app (Q28–Q30); PDFium has no viable browser build (Q31).
+5. **No SharedArrayBuffer** — COOP/COEP headers are impossible on GitHub
+   Pages (Q39–Q40).
+6. **Do not trust synthetic-only evidence** for engine decisions — real PDF
+   fixtures exposed V1's synthetic advantage as false (Q43, "V1 vs V2 —
+   measured, V1-as-default dropped").
+
+---
+
 # Engineering Assessment — Answers to All 50 Questions (2026-08-18)
 
 Every answer is backed by a measurement taken this session on this machine
