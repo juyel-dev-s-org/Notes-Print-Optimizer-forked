@@ -42,7 +42,8 @@ export type PresetMode =
   | 'PW_DARK_SLIDE'
   | 'LIGHT_HANDWRITTEN'
   | 'INK_SAVER_EXTREME'
-  | 'DIAGRAM_HIGH_CONTRAST';
+  | 'DIAGRAM_HIGH_CONTRAST'
+  | 'PRINT_ENHANCE';
 
 export interface ProcessingParameters {
   preset: PresetMode;
@@ -59,6 +60,8 @@ export interface ProcessingParameters {
   outputQuality: number; // JPEG quality 0.5 - 1.0
   strokeEnhancement?: 'none' | 'normal' | 'strong';
   dilationKernelSize?: number; // 0=off, 3=light, 5=medium, 7=heavy (overrides strokeEnhancement)
+  /** Print-enhance intensity for faded notes (0-100). Only read when preset is PRINT_ENHANCE. */
+  enhanceIntensity?: number;
 }
 
 export type GridFormat = '1x1' | '2x1' | '1x2' | '2x2' | '2x3' | '2x4' | '2x5' | '3x3' | 'original' | '2up' | '4up' | '6up' | '8up' | '10up';
