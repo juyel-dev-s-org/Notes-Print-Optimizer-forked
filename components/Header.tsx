@@ -91,6 +91,9 @@ export const Header: React.FC<HeaderProps> = ({
       if (name === 'goto-merge') {
         setIsMenuOpen(false);
         if (onNavigatePhase) onNavigatePhase(1);
+      } else if (name === 'goto-enhance') {
+        setIsMenuOpen(false);
+        if (onNavigatePhase) onNavigatePhase(2);
       }
     },
     [onNavigatePhase],

@@ -84,6 +84,9 @@ function buildEffectiveParams(
     ? masterParams.backgroundWhiteningThreshold
     : presetDefaults.backgroundWhiteningThreshold;
 
+  // Print-enhance intensity (only for PRINT_ENHANCE preset)
+  effective.enhanceIntensity = masterParams.enhanceIntensity ?? presetDefaults.enhanceIntensity ?? 50;
+
   return effective;
 }
 

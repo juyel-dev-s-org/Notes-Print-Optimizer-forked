@@ -159,4 +159,10 @@ export const jsKernels: IWasmKernels = {
     }
     return Number(((nw / sm) * 100).toFixed(1));
   },
+
+  enhanceFaded(data: Uint8ClampedArray, width: number, height: number, intensity: number, binarizeThreshold: number): void {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const { enhanceFadedDocument: _enhance } = require('../kernels/enhance');
+    _enhance(data, width, height, { intensity, binarizeThreshold });
+  },
 };

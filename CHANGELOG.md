@@ -7,6 +7,19 @@
 
 ## [Unreleased]
 
+### Added
+
+- **Print Enhance — Faded Notes** tool: auto-levels contrast stretch that
+  maps faint handwriting / scanned module pages on white paper to high-
+  contrast print-ready images (paper stains → pure white, faint ink → near-
+  black, hue preserved). New preset `PRINT_ENHANCE` (`lib/kernels/enhance.ts`,
+  `lib/optimizer/parameterGenerator.ts:PRINT_ENHANCE`) with single **Enhance
+  Strength** slider (0–100, Subtle/Standard/Strong) and **Pure Black Ink
+  (Xerox Dark)** toggle (binarize). Accessible from `Tools → Enhance for
+  Print` (`lib/menu/menu.config.ts:tools.enhance`, `Header.tsx:goto-enhance`)
+  and the Optimize → Processing Settings panel (`ProcessingSettingsPanel.tsx`).
+  JS kernel + WASM hook (`lib/wasm/types.ts:enhanceFaded`, `kernels/enhance.ts`).
+
 ### Fixed
 
 - **Settings/Info modals rendered inside the drawer** instead of the
