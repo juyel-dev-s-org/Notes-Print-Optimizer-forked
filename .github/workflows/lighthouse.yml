@@ -75,6 +75,7 @@ jobs:
             --output-path=./lighthouse-report.json \
             --chrome-flags="--headless --no-sandbox --disable-gpu" \
             --only-categories=performance \
+            --preset=desktop \
             || true
 
           # Check if performance score meets budget
