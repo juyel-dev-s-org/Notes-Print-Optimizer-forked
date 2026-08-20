@@ -1,6 +1,7 @@
 'use client';
 
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { X } from 'lucide-react';
 import { MotionConfig, motion } from 'motion/react';
 
@@ -14,11 +15,18 @@ interface ModalProps {
 /**
  * Shared accessible modal shell used by the Settings & Information Center.
  * Supports Escape to close, backdrop click, focus on open and body scroll lock.
+ *
+ * Rendered via a portal to `document.body`: the drawer ancestor keeps an
+ * animation fill-mode transform (`animate-slide-in-left`, `both`) which would
+ * otherwise turn this `position: fixed` modal into a containing block and
+ * trap it inside the drawer. Portaling escapes that ancestor entirely.
  */
 export const Modal: React.FC<ModalProps> = ({ title, subtitle, onClose, children }) => {
   const closeRef = useRef<HTMLButtonElement>(null);
+  const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
+    setMounted(true);
     const onKey = (e: KeyboardEvent) => {
       if (e.key === 'Escape') onClose();
     };
@@ -32,7 +40,9 @@ export const Modal: React.FC<ModalProps> = ({ title, subtitle, onClose, children
     };
   }, [onClose]);
 
-  return (
+  if (!mounted) return null;
+
+  return createPortal(
     <div className="fixed inset-0 z-[60] flex items-end justify-center sm:items-center sm:p-4">
       <div
         className="absolute inset-0 bg-slate-950/80 backdrop-blur-sm"
@@ -68,6 +78,7 @@ export const Modal: React.FC<ModalProps> = ({ title, subtitle, onClose, children
         <div className="flex-1 overflow-y-auto p-4">{children}</div>
         </motion.div>
       </MotionConfig>
-    </div>
+    </div>,
+    document.body,
   );
 };
