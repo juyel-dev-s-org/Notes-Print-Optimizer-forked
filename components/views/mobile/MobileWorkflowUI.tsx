@@ -6,6 +6,8 @@ import { WorkflowUIProps } from '../types';
 import { UploadArea } from '@/components/UploadArea';
 import { LandingHero } from '@/components/LandingHero';
 import { FeatureStrip } from '@/components/FeatureStrip';
+import { ToolsBox } from '@/components/tools/ToolsBox';
+import { EnhanceToolView } from '@/components/enhance/EnhanceToolView';
 import { FileSequencePanel } from '@/components/FileSequencePanel';
 import { BeforeAfterSlider } from '@/components/BeforeAfterSlider';
 import { PageGrid } from '@/components/PageGrid';
@@ -42,7 +44,24 @@ const ProcessingSettingsPanel = dynamic(() => import('@/components/ProcessingSet
   loading: () => <CardSkeleton />,
 });
 
-export const MobileWorkflowUI: React.FC<WorkflowUIProps> = ({ state, actions, handlers }) => {
+export const MobileWorkflowUI: React.FC<WorkflowUIProps> = ({ state, actions, handlers, toolMode, onToolModeChange }) => {
+  // Enhance Light PDF tool (mobile). Rendered in place of the workflow
+  // when selected from the landing tools box; back arrow restores dark-print.
+  if (toolMode === 'enhance') {
+    return (
+      <div className="flex flex-col gap-4 pb-20 w-full max-w-full">
+        <div className="flex items-center justify-between px-1 text-[10px] text-ink-muted font-mono">
+          <span className="flex items-center gap-1 bg-surface/80 border border-surface-2 px-2 py-0.5 rounded-full">
+            <Smartphone className="h-3 w-3 text-primary-soft" />
+            Mobile UI Viewport
+          </span>
+          <span>Tools · Enhance</span>
+        </div>
+        <EnhanceToolView onBack={() => onToolModeChange?.('dark-print')} />
+      </div>
+    );
+  }
+
   const {
     currentPhase,
     isProcessing,
@@ -125,11 +144,21 @@ export const MobileWorkflowUI: React.FC<WorkflowUIProps> = ({ state, actions, ha
         <div className="flex flex-col gap-4 animate-in fade-in duration-200">
           <LandingHero />
 
-          <UploadArea
-            onFilesUpload={onFilesUpload}
-            onLoadSample={onLoadSample}
-            isProcessing={isProcessing}
+          <ToolsBox
+            onSelectDarkPrint={() => {
+              onToolModeChange?.('dark-print');
+              document.getElementById('upload-area')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }}
+            onSelectEnhance={() => onToolModeChange?.('enhance')}
           />
+
+          <div id="upload-area" className="scroll-mt-4">
+            <UploadArea
+              onFilesUpload={onFilesUpload}
+              onLoadSample={onLoadSample}
+              isProcessing={isProcessing}
+            />
+          </div>
 
           {uploadedItems.length === 0 && !isProcessing && <FeatureStrip />}
 

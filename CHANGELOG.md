@@ -7,6 +7,21 @@
 
 ## [Unreleased]
 
+### Added
+
+- **Enhance Light PDF tool** (mobile): self-contained flow
+  (upload → enhance → export) for faint, light-background PDFs —
+  handwritten/scan/photographed notes. Tunable Darken / Contrast / Sharpen
+  sliders, Clean Background and Grayscale toggles, per-page before/after
+  preview, and print-ready PDF export. Engine lives in `lib/enhance/`
+  (pure deterministic kernels `enhanceKernels.ts`, reducer, processor,
+  exporter) with unit tests (21 new); the dark→print flow is untouched.
+- **Premium mobile landing "Aurora Dark"**: brand-gradient tools box
+  (`#243BFF→#5B35FF→#A12CFF`) with two tool cards (Dark Notes → Print,
+  Enhance Light PDF); upgraded hero (gradient headline, ambient glows,
+  glass stat chips). Tools box is mobile-only (`md:hidden`); tablet and
+  desktop layouts unchanged.
+
 ### Fixed
 
 - **Settings/Info modals rendered inside the drawer** instead of the
