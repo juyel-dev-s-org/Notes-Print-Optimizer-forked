@@ -4,7 +4,6 @@ export { ensureCC, getCCLabels, getCCQueue, shrinkCC, releaseCC } from './connec
 export { stripDecorativeFills, removeNoise } from './noise';
 export { applyMaskDilation } from './maskOps';
 export { applyUnsharpMask } from './sharpen';
-export { enhanceFadedDocument, enhanceOptionsFromIntensity } from './enhance';
 export { calculateInkCoverage } from './inkCoverage';
 export { detectBanners } from './bannerDetection';
 export { setWasmHooks, setWasmKernelsHooks, clearWasmKernelsHooks, processPage, createImageDataFromBuffer } from './processPage';

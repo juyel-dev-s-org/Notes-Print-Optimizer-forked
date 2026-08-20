@@ -120,7 +120,6 @@ const PRESET_LABELS: Record<string, string> = {
   AUTO_ADAPTIVE: 'Auto Adaptive',
   PW_DARK_SLIDE: 'Dark Slide',
   LIGHT_HANDWRITTEN: 'Light Handwritten',
-  PRINT_ENHANCE: 'Print Enhance — Faded Notes',
   INK_SAVER_EXTREME: 'Ink Saver Extreme',
   DIAGRAM_HIGH_CONTRAST: 'Diagram Hi-Contrast',
 };
@@ -223,28 +222,6 @@ export const ProcessingSettingsPanel: React.FC<ProcessingSettingsPanelProps> = (
     [params, onParamsChange, schedulePreviewReprocess],
   );
 
-  const isEnhance = params.preset === 'PRINT_ENHANCE';
-  const enhanceIntensity = params.enhanceIntensity ?? 50;
-  const enhancePureBlack = (params.binaizationThreshold ?? 0) > 0;
-
-  const handleEnhanceIntensityChange = useCallback(
-    (value: number) => {
-      onParamsChange({ ...params, enhanceIntensity: value });
-      setIsDirty(true);
-      schedulePreviewReprocess();
-    },
-    [params, onParamsChange, schedulePreviewReprocess],
-  );
-
-  const handleEnhancePureBlackChange = useCallback(
-    (on: boolean) => {
-      onParamsChange({ ...params, binaizationThreshold: on ? 175 : 0 });
-      setIsDirty(true);
-      schedulePreviewReprocess();
-    },
-    [params, onParamsChange, schedulePreviewReprocess],
-  );
-
   const handleReset = useCallback(() => {
     onResetSettings();
     setIsDirty(false);
@@ -316,61 +293,7 @@ export const ProcessingSettingsPanel: React.FC<ProcessingSettingsPanelProps> = (
             </select>
           </div>
 
-          {/* -- Enhance card (only for PRINT_ENHANCE) — single intensity + pure-black toggle, no slider clutter -- */}
-          {isEnhance && (
-            <div className="rounded-xl border border-primary/30 bg-primary-faint/10 p-3 space-y-3">
-              <div className="flex items-center gap-1.5">
-                <Sparkles className="h-3.5 w-3.5 text-primary-soft" />
-                <span className="text-[11px] font-bold text-white">Enhance Strength</span>
-                <InfoTooltip
-                  title="Enhance Strength"
-                  content="Auto-levels: stretches faint ink to near-black and paper stains to white. Higher = stronger. Use Pure Black for Xerox-dark B/W."
-                  position="top"
-                />
-                <span className="ml-auto rounded-md bg-primary/20 px-2 py-0.5 text-[11px] font-bold text-primary-soft border border-primary/30 tabular-nums">
-                  {enhanceIntensity}%
-                </span>
-              </div>
-              <input
-                type="range"
-                min={0}
-                max={100}
-                step={5}
-                value={enhanceIntensity}
-                onChange={(e) => handleEnhanceIntensityChange(Number(e.target.value))}
-                aria-label="Enhance strength"
-                className="w-full h-1.5 rounded-full appearance-none cursor-pointer bg-elevated accent-primary
-                  [&::-webkit-slider-thumb]:appearance-none
-                  [&::-webkit-slider-thumb]:h-3.5
-                  [&::-webkit-slider-thumb]:w-3.5
-                  [&::-webkit-slider-thumb]:rounded-full
-                  [&::-webkit-slider-thumb]:bg-primary
-                  [&::-webkit-slider-thumb]:shadow-md
-                  [&::-webkit-slider-thumb]:border-2
-                  [&::-webkit-slider-thumb]:border-primary-soft"
-                style={{
-                  background: `linear-gradient(to right, var(--color-primary) ${enhanceIntensity}%, var(--color-elevated) ${enhanceIntensity}%)`,
-                }}
-              />
-              <div className="flex justify-between text-[9px] font-semibold text-ink-muted">
-                <span>Subtle</span><span>Standard</span><span>Strong</span>
-              </div>
-              <div className="flex items-center justify-between rounded-lg border border-surface-2 bg-bg/60 px-3 py-2">
-                <div className="flex items-center gap-1.5">
-                  <Contrast className={`h-3.5 w-3.5 ${enhancePureBlack ? 'text-primary-soft' : 'text-ink-muted'}`} />
-                  <span className={`text-[11px] font-bold ${enhancePureBlack ? 'text-white' : 'text-ink-muted'}`}>Pure Black Ink (Xerox Dark)</span>
-                  <InfoTooltip title="Pure Black Ink" content="Binarizes after enhance: faint gray → solid black, paper → pure white. Best for Xerox/laser where gray vanishes." position="top" />
-                </div>
-                <ToggleSwitch enabled={enhancePureBlack} onChange={handleEnhancePureBlackChange} label="Pure Black Ink" />
-              </div>
-              <p className="text-[9px] text-ink-muted leading-tight">
-                For module / notebook scans on white paper. Faint handwriting becomes high-contrast for print.
-              </p>
-            </div>
-          )}
-
-          {/* -- Parameter Toggle + Slider Rows (hidden when Enhance is active to keep UI simple) -- */}
-          {!isEnhance && (
+          {/* -- Parameter Toggle + Slider Rows -- */}
           <div className="flex flex-col gap-2.5">
             {SLIDERS.map((slider) => {
               const isOn = toggles[slider.toggleKey];
@@ -461,7 +384,6 @@ export const ProcessingSettingsPanel: React.FC<ProcessingSettingsPanelProps> = (
               );
             })}
           </div>
-          )}
 
           {/* -- Preview note -- */}
           <p className="text-center text-[9px] text-ink-muted italic">
@@ -505,7 +427,7 @@ export const ProcessingSettingsPanel: React.FC<ProcessingSettingsPanelProps> = (
             </button>
           </div>
 
-          {!isEnhance && !isDirty && !anyToggleOn && (
+          {!isDirty && !anyToggleOn && (
             <p className="text-center text-[9px] text-ink-muted">
               Enable a toggle above to override preset defaults, then tap &ldquo;Re-process All&rdquo; to apply to every page.
             </p>

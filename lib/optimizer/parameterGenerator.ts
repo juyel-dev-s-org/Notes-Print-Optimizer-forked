@@ -83,25 +83,6 @@ export class ParameterGenerator {
           dilationKernelSize: 0,
         };
 
-      case 'PRINT_ENHANCE':
-        return {
-          preset: 'PRINT_ENHANCE',
-          invertMode: 'none',
-          smartColorMapping: false,
-          backgroundWhiteningThreshold: 200,
-          contrastEnhancement: 50,
-          sharpenAmount: 35,
-          denoiseAmount: 15,
-          bannerCropTopPct: 0,
-          bannerCropBottomPct: 0,
-          autoTrimMargins: false,
-          binaizationThreshold: 0,
-          outputQuality: 0.9,
-          strokeEnhancement: 'none',
-          dilationKernelSize: 0,
-          enhanceIntensity: 50,
-        };
-
       case 'AUTO_ADAPTIVE':
       default:
         return {

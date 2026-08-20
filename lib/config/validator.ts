@@ -1,6 +1,6 @@
 import type { AppConfig } from './schema';
 
-const VALID_PRESETS = new Set(['AUTO_ADAPTIVE', 'PW_DARK_SLIDE', 'LIGHT_HANDWRITTEN', 'INK_SAVER_EXTREME', 'DIAGRAM_HIGH_CONTRAST', 'PRINT_ENHANCE']);
+const VALID_PRESETS = new Set(['AUTO_ADAPTIVE', 'PW_DARK_SLIDE', 'LIGHT_HANDWRITTEN', 'INK_SAVER_EXTREME', 'DIAGRAM_HIGH_CONTRAST']);
 const VALID_EXECUTION_MODES = new Set(['auto', 'parallel', 'sequential', 'hybrid']);
 
 export interface ValidationResult {

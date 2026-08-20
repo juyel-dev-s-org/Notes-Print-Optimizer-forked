@@ -14,9 +14,8 @@
 import { getLuminance } from './luminance';
 import { rgbToHsv, fastMinChannel } from './hsv';
 import { applyMaskDilation, setDilationHook } from './maskOps';
-import { applyUnsharpMask, applyUnsharpMaskBW, setUnsharpHook, setUnsharpBwHook } from './sharpen';
+import { applyUnsharpMaskBW, setUnsharpHook, setUnsharpBwHook } from './sharpen';
 import { ensureCC, getCCLabels, getCCQueue, getCCMinX, getCCMinY, getCCMaxX, getCCMaxY, getCCArea, getCCDrop } from './connectedComponents';
-import { enhanceFadedDocument, setEnhanceHook } from './enhance';
 import type { IWasmKernels } from '../wasm/types';
 
 let wasmKernels: IWasmKernels | null = null;
@@ -30,11 +29,6 @@ export function setWasmKernelsHooks(kernels: IWasmKernels): void {
   } else {
     setUnsharpBwHook(null);
   }
-  if (typeof kernels.enhanceFaded === 'function') {
-    setEnhanceHook((data, w, h, intensity, thr) => kernels.enhanceFaded!(data, w, h, intensity, thr));
-  } else {
-    setEnhanceHook(null);
-  }
 }
 
 export function clearWasmKernelsHooks(): void {
@@ -42,7 +36,6 @@ export function clearWasmKernelsHooks(): void {
   setDilationHook(null);
   setUnsharpHook(null);
   setUnsharpBwHook(null);
-  setEnhanceHook(null);
 }
 
 export function setWasmHooks(
@@ -140,15 +133,12 @@ export function processPage(
   width: number,
   height: number,
   params: {
-    preset?: string;
     invertMode: string;
     bannerCropTopPct: number;
     bannerCropBottomPct: number;
     strokeEnhancement?: string;
     sharpenAmount: number;
     dilationKernelSize?: number;
-    enhanceIntensity?: number;
-    binaizationThreshold?: number;
   },
   profile: { classification: string; darkBackgroundRatio: number }
 ): KernelProcessResult {
@@ -165,35 +155,6 @@ export function processPage(
   const ks = params.dilationKernelSize != null
     ? params.dilationKernelSize
     : (params.strokeEnhancement === 'strong' ? 5 : params.strokeEnhancement === 'normal' ? 3 : 0);
-
-  /* Print Enhance path: white-bg faded notes → auto-levels + optional
-   * binarize. Bypasses the dark-slide mask pipeline entirely. This is the
-   * user-requested "module / scanned notebook" tool. */
-  if (params.preset === 'PRINT_ENHANCE') {
-    const dst = new Uint8ClampedArray(totalPixels * 4);
-    const srcRowBytes = sw * 4;
-    const dstRowBytes = dw * 4;
-    const srcOffset = ct * srcRowBytes;
-    for (let y = 0; y < dh; y++) {
-      const srcStart = srcOffset + y * srcRowBytes;
-      const dstStart = y * dstRowBytes;
-      dst.set(srcData.subarray(srcStart, srcStart + dstRowBytes), dstStart);
-    }
-    enhanceFadedDocument(dst, dw, dh, {
-      intensity: params.enhanceIntensity ?? 50,
-      binarizeThreshold: params.binaizationThreshold ?? 0,
-    });
-    if (params.sharpenAmount > 0) {
-      if ((params.binaizationThreshold ?? 0) > 0) {
-        applyUnsharpMaskBW(dst, dw, dh, params.sharpenAmount / 100);
-      } else {
-        applyUnsharpMask(dst, dw, dh, params.sharpenAmount / 100);
-      }
-    }
-    const dst32 = new Uint32Array(dst.buffer);
-    for (let i = 0; i < totalPixels; i++) dst32[i] |= 0xFF000000;
-    return { buffer: dst.buffer, width: dw, height: dh };
-  }
 
   /* Monolithic WASM path: single call, 2 copies (in+out) vs ~15 round-trips.
    * Falls through to per-kernel path if WASM isn't loaded or processPage
