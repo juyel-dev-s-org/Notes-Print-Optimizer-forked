@@ -7,7 +7,14 @@
 
 ## [Unreleased]
 
-No pending changes.
+### Fixed
+
+- **Settings/Info modals rendered inside the drawer** instead of the
+  viewport: the drawer's slide-in animation (`animate-slide-in-left`,
+  fill-mode `both`) leaves a retained `transform` that turns the drawer into
+  a containing block, trapping `position: fixed` children. `Modal` now
+  renders through a React portal to `document.body` (verified: desktop
+  viewport-centered dialog, mobile full-width bottom sheet).
 
 ## [1.1.0] - 2026-08-18
 
