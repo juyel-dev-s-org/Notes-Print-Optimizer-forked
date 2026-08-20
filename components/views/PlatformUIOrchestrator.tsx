@@ -38,7 +38,7 @@ function useMediaQuery(query: string): boolean {
   );
 }
 
-export const PlatformUIOrchestrator: React.FC<WorkflowUIProps> = ({ state, actions, handlers, resume }) => {
+export const PlatformUIOrchestrator: React.FC<WorkflowUIProps> = ({ state, actions, handlers, resume, toolMode, onToolModeChange }) => {
   const [overrideMode, setOverrideMode] = useState<PlatformOverride>('AUTO');
   const [mounted, setMounted] = useState(false);
   const isMobile = useMediaQuery(MOBILE_QUERY);
@@ -47,7 +47,7 @@ export const PlatformUIOrchestrator: React.FC<WorkflowUIProps> = ({ state, actio
 
   useEffect(() => setMounted(true), []);
 
-  const platformProps = { state, actions, handlers, resume };
+  const platformProps = { state, actions, handlers, resume, toolMode, onToolModeChange };
 
   return (
     <div className="w-full max-w-full">

@@ -8,11 +8,13 @@ import { usePageHandlers } from '@/lib/workflow/usePageHandlers';
 import { useMonitor } from '@/lib/monitoring/useMonitor';
 import { ToastProvider } from '@/components/shared/Toast';
 import type { WorkflowState, WorkflowActions, WorkflowHandlers, ResumeSession } from '@/components/views/types';
+import type { ToolMode } from '@/lib/enhance/types';
 import { RefreshCw, X } from 'lucide-react';
 
 export default function AppShell() {
   useMonitor();
   const [swUpdateAvailable, setSwUpdateAvailable] = useState(false);
+  const [toolMode, setToolMode] = useState<ToolMode>('dark-print');
 
   useEffect(() => {
     if ('serviceWorker' in navigator) {
@@ -196,6 +198,8 @@ export default function AppShell() {
           actions={workflowActions}
           handlers={workflowHandlers}
           resume={resumeSession}
+          toolMode={toolMode}
+          onToolModeChange={setToolMode}
         />
       </main>
       <footer className="border-t border-surface-2/60 px-4 py-6 text-center text-[11px] text-ink-muted">

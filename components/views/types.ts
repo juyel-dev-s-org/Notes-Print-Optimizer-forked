@@ -11,6 +11,7 @@ import type {
   ProcessingProgress,
 } from '@/lib/optimizer/types';
 import type { UploadedPdfItem } from '@/lib/workflow/types';
+import type { ToolMode } from '@/lib/enhance/types';
 
 export type { ResumeInfo, UploadedPdfItem };
 
@@ -103,4 +104,7 @@ export interface WorkflowUIProps {
   actions: WorkflowActions;
   handlers: WorkflowHandlers;
   resume: ResumeSession;
+  /** Active tool selection (landing tools box). Mobile-only for now. */
+  toolMode?: ToolMode;
+  onToolModeChange?: (mode: ToolMode) => void;
 }
