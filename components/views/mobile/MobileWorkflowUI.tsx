@@ -7,7 +7,6 @@ import { UploadArea } from '@/components/UploadArea';
 import { LandingHero } from '@/components/LandingHero';
 import { FeatureStrip } from '@/components/FeatureStrip';
 import { ToolsBox } from '@/components/tools/ToolsBox';
-import { EnhanceToolView } from '@/components/enhance/EnhanceToolView';
 import { FileSequencePanel } from '@/components/FileSequencePanel';
 import { BeforeAfterSlider } from '@/components/BeforeAfterSlider';
 import { PageGrid } from '@/components/PageGrid';
@@ -41,6 +40,11 @@ const MarginSettings = dynamic(() => import('@/components/MarginSettings').then(
 });
 
 const ProcessingSettingsPanel = dynamic(() => import('@/components/ProcessingSettingsPanel').then(m => m.ProcessingSettingsPanel), {
+  loading: () => <CardSkeleton />,
+});
+
+/** Enhance Light PDF tool — code-split so the landing bundle stays lean. */
+const EnhanceToolView = dynamic(() => import('@/components/enhance/EnhanceToolView').then(m => m.EnhanceToolView), {
   loading: () => <CardSkeleton />,
 });
 
