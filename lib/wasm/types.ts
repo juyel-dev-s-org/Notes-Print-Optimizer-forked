@@ -33,16 +33,4 @@ export interface IWasmKernels {
     dilationKs: number,
     sharpenAmount: number
   ): Uint8Array;
-
-  /**
-   * Print-enhance for faded white-bg documents (auto-levels + binarize).
-   * Optional — JS fallback is used when unavailable.
-   */
-  enhanceFaded?(
-    data: Uint8ClampedArray,
-    width: number,
-    height: number,
-    intensity: number,
-    binarizeThreshold: number
-  ): void;
 }

@@ -29,13 +29,6 @@ export const MENU_CONFIG: MenuSectionConfig[] = [
         description: 'Combine multiple PDFs into one document.',
         action: { type: 'app', name: 'goto-merge' },
       },
-      {
-        id: 'tools.enhance',
-        icon: 'sparkles',
-        title: 'Enhance for Print',
-        description: 'Boost faded notes & scans for crisp print/xerox.',
-        action: { type: 'app', name: 'goto-enhance' },
-      },
     ],
   },
 
