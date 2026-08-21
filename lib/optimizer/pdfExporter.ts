@@ -36,7 +36,7 @@ export class PdfExporter {
   public static async processPdfStreaming(pdfBuffer: ArrayBuffer, pdfId: string, presetMode: PresetMode = 'AUTO_ADAPTIVE',
     onProgress?: (current: number, total: number, action: string) => void, engineVersion?: EngineVersion
   ): Promise<{ processedPages: ProcessedPage[]; docProfile: DocumentProfile }> {
-    const engine = getProcessingEngine(engineVersion);
+    const engine = getProcessingEngine();
     const result = await engine.processDocument({ pdfBuffer, pdfId, presetMode }, {}, onProgress);
     return { processedPages: result.processedPages, docProfile: result.docProfile };
   }

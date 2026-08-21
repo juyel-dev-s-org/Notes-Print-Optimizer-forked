@@ -16,7 +16,6 @@ import type {
   ProcessingParameters,
   ProcessingProgress,
 } from '../optimizer/types';
-import type { EngineVersion } from '../optimizer/engine/types';
 import type { UploadedPdfItem } from './types';
 
 export interface WorkflowActions {
@@ -37,7 +36,6 @@ export interface WorkflowActions {
   setSelectedPageIndex: (index: number) => void;
   setExcludedPages: (pages: Set<number>) => void;
   togglePageExcluded: (pageIndex: number) => void;
-  setEngineVersion: (version: EngineVersion) => void;
   setMasterParams: (params: ProcessingParameters) => void;
   setProcessingToggles: (toggles: ProcessingToggleState) => void;
   setPreviewProcessing: (isPreviewProcessing: boolean) => void;
@@ -93,8 +91,6 @@ export function useWorkflow(): {
         dispatch({ type: 'SET_EXCLUDED_PAGES', pages }),
       togglePageExcluded: (pageIndex) =>
         dispatch({ type: 'TOGGLE_PAGE_EXCLUDED', pageIndex }),
-      setEngineVersion: (version) =>
-        dispatch({ type: 'SET_ENGINE_VERSION', version }),
       setMasterParams: (params) =>
         dispatch({ type: 'SET_MASTER_PARAMS', params }),
       setProcessingToggles: (toggles) =>

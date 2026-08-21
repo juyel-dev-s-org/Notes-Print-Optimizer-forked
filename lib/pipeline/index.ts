@@ -1,12 +1,5 @@
-export { PluginRegistry } from './PluginRegistry';
-export { PipelineScheduler } from './PipelineScheduler';
-export { PipelineController } from './PipelineController';
 export { MemoryGuard, memoryGuard } from './MemoryGuard';
 export { CheckpointManager } from './checkpoint/CheckpointManager';
-export { computeScheduleProfile } from './types';
+export { detectDeviceProfile, computeScheduleProfile } from './types';
 export type { DeviceProfile, ScheduleProfile } from './types';
 export type { MemoryLimits } from './MemoryGuard';
-export type { PipelineRunOptions, PagePipelineResult } from './PipelineController';
-export type { PluginId, PluginManifest, PluginContext, PluginResult, PluginMetrics, IPlugin, PluginRegistration } from './plugin/types';
-export type { ChannelId, ChannelDataMap } from './plugin/channels';
-export { Channels } from './plugin/channels';

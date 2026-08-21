@@ -1,5 +1,4 @@
-import type { WorkflowPhase, ProcessingToggleState, ResumeInfo } from '@/lib/workflow/types';
-import type { EngineVersion } from '@/lib/optimizer/engine/types';
+import type { WorkflowPhase, ProcessingToggleState } from '@/lib/workflow/types';
 import type {
   DocumentProfile,
   GridFormat,
@@ -13,7 +12,7 @@ import type {
 import type { UploadedPdfItem } from '@/lib/workflow/types';
 import type { ToolMode } from '@/lib/enhance/types';
 
-export type { ResumeInfo, UploadedPdfItem };
+export type { UploadedPdfItem };
 
 /** Core workflow state extracted from useWorkflow */
 export interface WorkflowState {
@@ -25,7 +24,6 @@ export interface WorkflowState {
   mergedPdfBlob: Blob | null;
   mergedPdfBytes: Uint8Array | null;
   mergedPageDataUrls: string[];
-  selectedEngineVersion: EngineVersion;
   processedPages: ProcessedPage[];
   selectedPageIndex: number;
   excludedPages: Set<number>;
@@ -51,7 +49,6 @@ export interface WorkflowState {
 export interface WorkflowActions {
   setPhase: (phase: WorkflowPhase) => void;
   setError: (msg: string | null) => void;
-  setEngineVersion: (version: EngineVersion) => void;
   setSelectedPageIndex: (idx: number) => void;
   setMasterParams: (params: ProcessingParameters) => void;
   setProcessingToggles: (toggles: ProcessingToggleState) => void;
@@ -87,14 +84,7 @@ export interface WorkflowHandlers {
   handleSendFeedback: () => void;
   handleResetWorkflow: () => void;
   handleCancelProcessing: () => void;
-  handleResumeProcessing?: () => void;
-  handleDismissResume?: () => void;
   compilePhase3PrintLayout?: (config: LayoutConfig, overrideExcludedPages?: Set<number>) => Promise<void>;
-}
-
-/** Resume session info */
-export interface ResumeSession {
-  resumeInfo: ResumeInfo | null;
 }
 
 /** Consolidated props for PlatformUIOrchestrator */
@@ -102,7 +92,6 @@ export interface WorkflowUIProps {
   state: WorkflowState;
   actions: WorkflowActions;
   handlers: WorkflowHandlers;
-  resume: ResumeSession;
   /** Active tool selection — null means landing (no tool chosen yet) */
   toolMode?: ToolMode | null;
   onToolModeChange?: (mode: ToolMode | null) => void;

@@ -7,7 +7,7 @@ import { PlatformUIOrchestrator } from '@/components/views/PlatformUIOrchestrato
 import { usePageHandlers } from '@/lib/workflow/usePageHandlers';
 import { useMonitor } from '@/lib/monitoring/useMonitor';
 import { ToastProvider } from '@/components/shared/Toast';
-import type { WorkflowState, WorkflowActions, WorkflowHandlers, ResumeSession } from '@/components/views/types';
+import type { WorkflowState, WorkflowActions, WorkflowHandlers } from '@/components/views/types';
 import type { ToolMode } from '@/lib/enhance/types';
 import { RefreshCw, X } from 'lucide-react';
 
@@ -52,7 +52,7 @@ export default function AppShell() {
     handleTogglePageNumbers, handleUpdateOuterMargins, handleUpdateInnerMargin,
     handleApplyLayout, handleDownloadFinalPrintPdf, handleProceedToPhase4,
     handleSendFeedback, compilePhase3PrintLayout,
-    handleCancelProcessing, resumeInfo, handleResumeProcessing, handleDismissResume,
+    handleCancelProcessing,
     progressiveThumbnails,
   } = usePageHandlers();
 
@@ -65,7 +65,6 @@ export default function AppShell() {
     mergedPdfBlob: state.mergedPdfBlob,
     mergedPdfBytes: state.mergedPdfBytes,
     mergedPageDataUrls: state.mergedPageDataUrls,
-    selectedEngineVersion: state.selectedEngineVersion,
     processedPages: state.processedPages,
     selectedPageIndex: state.selectedPageIndex,
     excludedPages: state.excludedPages,
@@ -90,7 +89,6 @@ export default function AppShell() {
   const workflowActions: WorkflowActions = useMemo(() => ({
     setPhase: actions.setPhase,
     setError: actions.setError,
-    setEngineVersion: actions.setEngineVersion,
     setSelectedPageIndex: actions.setSelectedPageIndex,
     setMasterParams: actions.setMasterParams,
     setProcessingToggles: actions.setProcessingToggles,
@@ -125,8 +123,6 @@ export default function AppShell() {
     handleSendFeedback,
     handleResetWorkflow,
     handleCancelProcessing,
-    handleResumeProcessing,
-    handleDismissResume,
     compilePhase3PrintLayout,
   }), [
     handleFilesUpload, handleMoveItem, handleRemoveItem,
@@ -136,13 +132,8 @@ export default function AppShell() {
     handleSelectLayoutFormat, handleToggleOrientation, handleToggleBorders,
     handleTogglePageNumbers, handleUpdateOuterMargins, handleUpdateInnerMargin,
     handleDownloadFinalPrintPdf, handleProceedToPhase4, handleSendFeedback,
-    handleResetWorkflow, handleCancelProcessing, handleResumeProcessing,
-    handleDismissResume, compilePhase3PrintLayout,
+    handleResetWorkflow, handleCancelProcessing, compilePhase3PrintLayout,
   ]);
-
-  const resumeSession: ResumeSession = useMemo(() => ({
-    resumeInfo,
-  }), [resumeInfo]);
 
   return (
     <ToastProvider>
@@ -196,7 +187,6 @@ export default function AppShell() {
           state={workflowState}
           actions={workflowActions}
           handlers={workflowHandlers}
-          resume={resumeSession}
           toolMode={toolMode}
           onToolModeChange={setToolMode}
         />

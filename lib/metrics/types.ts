@@ -1,13 +1,10 @@
 export type MetricEventType =
   | 'page:processed'
   | 'page:render'
-  | 'plugin:execute'
-  | 'plugin:error'
   | 'memory:pressure'
   | 'memory:eviction'
   | 'worker:task'
   | 'worker:crashed'
-  | 'pipeline:phase'
   | 'page:phases'
   | 'doc:phases';
 
@@ -22,18 +19,6 @@ export interface PageProcessedEvent extends BaseMetricEvent {
   pageIndex: number;
   inkBeforePct: number;
   inkAfterPct: number;
-}
-
-export interface PluginExecuteEvent extends BaseMetricEvent {
-  type: 'plugin:execute';
-  pluginId: string;
-  pageIndex: number;
-}
-
-export interface PluginErrorEvent extends BaseMetricEvent {
-  type: 'plugin:error';
-  pluginId: string;
-  errorMessage: string;
 }
 
 export interface MemoryPressureEvent extends BaseMetricEvent {
@@ -57,12 +42,6 @@ export interface WorkerTaskEvent extends BaseMetricEvent {
 export interface WorkerCrashedEvent extends BaseMetricEvent {
   type: 'worker:crashed';
   workerType: string;
-}
-
-export interface PipelinePhaseEvent extends BaseMetricEvent {
-  type: 'pipeline:phase';
-  phase: string;
-  documentId: string;
 }
 
 /** Phase-0: per-page timing breakdown (milliseconds). */
@@ -90,13 +69,10 @@ export interface DocPhasesEvent extends BaseMetricEvent {
 
 export type MetricEvent =
   | PageProcessedEvent
-  | PluginExecuteEvent
-  | PluginErrorEvent
   | MemoryPressureEvent
   | MemoryEvictionEvent
   | WorkerTaskEvent
   | WorkerCrashedEvent
-  | PipelinePhaseEvent
   | PagePhasesEvent
   | DocPhasesEvent;
 
@@ -108,6 +84,5 @@ export interface MetricsSnapshot {
   avgProcessingTimeMs: number;
   peakMemoryMB: number;
   workerCrashes: number;
-  pluginErrors: number;
   totalElapsedMs: number;
 }

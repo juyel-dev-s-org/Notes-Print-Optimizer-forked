@@ -1,4 +1,3 @@
-import type { EngineVersion } from '../optimizer/engine/types';
 import type { ProcessedPage, LayoutConfig, OptimizationMetrics, PresetMode, DocumentProfile, ProcessingParameters } from '../optimizer/types';
 import { metricsBus } from '../metrics/MetricsBus';
 
@@ -7,14 +6,13 @@ export class OptimizationService {
     pdfBuffer: ArrayBuffer,
     pdfId: string,
     presetMode: PresetMode = 'AUTO_ADAPTIVE',
-    engineVersion?: EngineVersion,
     onProgress?: (current: number, total: number, action: string) => void,
     onPageOptimized?: (pageIndex: number, thumbnailUrl: string, inkBeforePct: number, inkAfterPct: number) => void,
     customParams?: Partial<ProcessingParameters>,
   ): Promise<{ processedPages: ProcessedPage[]; docProfile: DocumentProfile }> {
-    // Defer the processing engines until a document is actually processed.
+    // Defer the processing engine until a document is actually processed.
     const { getProcessingEngine } = await import('../optimizer/engine');
-    const engine = getProcessingEngine(engineVersion);
+    const engine = getProcessingEngine();
     const wrappedOnPageOptimized = (pageIndex: number, thumbnailUrl: string, inkBeforePct: number, inkAfterPct: number) => {
       metricsBus.emit({
         type: 'page:processed', timestamp: Date.now(),

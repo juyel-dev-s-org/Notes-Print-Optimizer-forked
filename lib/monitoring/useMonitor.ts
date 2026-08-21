@@ -1,5 +1,4 @@
 import { useEffect, useRef } from 'react';
-import { installGlobalBenchmark } from '../optimizer/perf/runBenchmark';
 
 interface PerformanceEntry {
   name: string;
@@ -29,9 +28,6 @@ export function useMonitor() {
     reported.current = true;
 
     log('app.loaded', performance.now());
-
-    /* Phase-0: expose full-pipeline benchmark (window.__npoBenchmark / ?bench=1) */
-    installGlobalBenchmark();
 
     if ('performance' in window && typeof PerformanceObserver !== 'undefined') {
       const obs = new PerformanceObserver((list) => {

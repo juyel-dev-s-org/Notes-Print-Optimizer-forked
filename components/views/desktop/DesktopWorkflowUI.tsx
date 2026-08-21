@@ -5,13 +5,11 @@ import dynamic from 'next/dynamic';
 import { WorkflowUIProps } from '../types';
 import { UploadArea } from '@/components/UploadArea';
 import { LandingHero } from '@/components/LandingHero';
-import { FeatureStrip } from '@/components/FeatureStrip';
 import { ToolsBox } from '@/components/tools/ToolsBox';
 import { FileSequencePanel } from '@/components/FileSequencePanel';
 import { BeforeAfterSlider } from '@/components/BeforeAfterSlider';
 import { PageGrid } from '@/components/PageGrid';
 import { PageSequencePreview } from '@/components/PageSequencePreview';
-import { EngineSelector } from '@/components/EngineSelector';
 import { InfoTooltip } from '@/components/InfoTooltip';
 import {
   Download,
@@ -64,7 +62,6 @@ export const DesktopWorkflowUI: React.FC<WorkflowUIProps> = ({ state, actions, h
           onSelectDarkPrint={() => onToolModeChange?.('dark-print')}
           onSelectEnhance={() => onToolModeChange?.('enhance')}
         />
-        <FeatureStrip />
       </div>
     );
   }
@@ -75,7 +72,6 @@ export const DesktopWorkflowUI: React.FC<WorkflowUIProps> = ({ state, actions, h
     mergedPdfBlob,
     mergedPdfBytes,
     mergedPageDataUrls,
-    selectedEngineVersion,
     processedPages,
     selectedPageIndex,
     excludedPages,
@@ -94,7 +90,6 @@ export const DesktopWorkflowUI: React.FC<WorkflowUIProps> = ({ state, actions, h
 
   const {
     setPhase: setCurrentPhase,
-    setEngineVersion: setSelectedEngineVersion,
     setSelectedPageIndex,
     setMasterParams: onMasterParamsChange,
     setProcessingToggles: onProcessingTogglesChange,
@@ -164,7 +159,6 @@ export const DesktopWorkflowUI: React.FC<WorkflowUIProps> = ({ state, actions, h
           />
 
           {/* Empty-state value strip: compact bottom, not blocking upload */}
-          {uploadedItems.length === 0 && !isProcessing && <FeatureStrip />}
 
           {uploadedItems.length > 0 && (
             <div className="flex flex-col gap-4 rounded-2xl border border-surface-2 bg-surface/90 p-5 shadow-xl">
@@ -193,12 +187,6 @@ export const DesktopWorkflowUI: React.FC<WorkflowUIProps> = ({ state, actions, h
                 maxHeightClass="max-h-[320px]"
               />
 
-              {/* Engine Selector */}
-              <EngineSelector
-                selectedVersion={selectedEngineVersion}
-                onSelectVersion={setSelectedEngineVersion}
-                disabled={isProcessing}
-              />
 
               {/* Page Sequence Preview Gallery */}
               <PageSequencePreview pageUrls={mergedPageDataUrls} />
@@ -307,7 +295,7 @@ export const DesktopWorkflowUI: React.FC<WorkflowUIProps> = ({ state, actions, h
         ) : (
           <EmptyPhaseState
             title="No pages to optimize yet"
-            message="Upload and process your PDF first ÃƒÂ¢Ã¢â€šÂ¬â€ then you can fine-tune ink savings here."
+            message="Upload and process your PDF first — then you can fine-tune ink savings here."
             onBack={() => setCurrentPhase(1)}
             backLabel="Back to Upload"
           />
@@ -412,7 +400,7 @@ export const DesktopWorkflowUI: React.FC<WorkflowUIProps> = ({ state, actions, h
             )}
           </button>
           {layoutDirty && !isProcessing && (
-            <span className="text-[10px] text-warning font-medium">ÃƒÂ¢â€”Ã‚Â Unsaved changes</span>
+            <span className="text-[10px] text-warning font-medium">Unsaved changes</span>
           )}
         </div>
 
@@ -506,7 +494,6 @@ export const DesktopWorkflowUI: React.FC<WorkflowUIProps> = ({ state, actions, h
 
           <FeedbackSection
             currentPhase={4}
-            selectedEngineVersion={selectedEngineVersion}
             uploadedItemsCount={uploadedItems.length}
             uploadedFileNames={uploadedItems.map((item) => item.name)}
             uploadedFileSizesMB={uploadedItems.map((item) => (item.file?.size || 0) / (1024 * 1024))}
@@ -538,7 +525,7 @@ export const DesktopWorkflowUI: React.FC<WorkflowUIProps> = ({ state, actions, h
         ) : (
           <EmptyPhaseState
             title="Nothing here yet"
-            message="Generate your print-ready PDF first ÃƒÂ¢Ã¢â€šÂ¬â€ your summary and feedback form will appear here."
+            message="Generate your print-ready PDF first — your summary and feedback form will appear here."
             onBack={() => setCurrentPhase(3)}
             backLabel="Back to Layout"
           />
