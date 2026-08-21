@@ -4,6 +4,8 @@ import React, { useState, useCallback, useRef, useEffect } from 'react';
 import type { ProcessingParameters } from '@/lib/optimizer/types';
 import type { ProcessingToggleState } from '@/lib/workflow/types';
 import { InfoTooltip } from '@/components/InfoTooltip';
+import { ToggleSwitch } from '@/components/ui/Toggle';
+import { Slider } from '@/components/ui/Slider';
 import {
   SlidersHorizontal,
   ChevronDown,
@@ -123,34 +125,6 @@ const PRESET_LABELS: Record<string, string> = {
   INK_SAVER_EXTREME: 'Ink Saver Extreme',
   DIAGRAM_HIGH_CONTRAST: 'Diagram Hi-Contrast',
 };
-
-/* -- Toggle Switch (small pill) ----------------------------------- */
-const ToggleSwitch: React.FC<{
-  enabled: boolean;
-  onChange: (on: boolean) => void;
-  disabled?: boolean;
-  label: string;
-}> = ({ enabled, onChange, disabled, label }) => (
-  <button
-    type="button"
-    role="switch"
-    aria-checked={enabled}
-    aria-label={`${label} override`}
-    disabled={disabled}
-    onClick={() => onChange(!enabled)}
-    className={`relative inline-flex h-7 w-11 shrink-0 items-center rounded-full transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-soft ${
-      enabled
-        ? 'bg-primary-strong'
-        : 'bg-elevated'
-    } ${disabled ? 'opacity-40 cursor-not-allowed' : 'cursor-pointer'}`}
-  >
-    <span
-      className={`inline-block h-4 w-4 transform rounded-full bg-white shadow-sm transition-transform duration-200 ${
-        enabled ? 'translate-x-[22px]' : 'translate-x-[4px]'
-      }`}
-    />
-  </button>
-);
 
 /* -- Main Component ----------------------------------------------- */
 export const ProcessingSettingsPanel: React.FC<ProcessingSettingsPanelProps> = ({
@@ -298,7 +272,6 @@ export const ProcessingSettingsPanel: React.FC<ProcessingSettingsPanelProps> = (
             {SLIDERS.map((slider) => {
               const isOn = toggles[slider.toggleKey];
               const value = (params[slider.key] as number) ?? slider.min;
-              const pct = ((value - slider.min) / (slider.max - slider.min)) * 100;
 
               return (
                 <div
@@ -344,40 +317,24 @@ export const ProcessingSettingsPanel: React.FC<ProcessingSettingsPanelProps> = (
                   </div>
 
                   {/* Slider (disabled when toggle OFF) */}
-                  <div className={isOn ? '' : 'opacity-35 pointer-events-none'}>
-                    <input
-                      type="range"
+                  <div className={isOn ? '' : 'pointer-events-none opacity-35'}>
+                    <Slider
+                      value={value}
                       min={slider.min}
                       max={slider.max}
                       step={slider.step}
-                      value={value}
                       disabled={!isOn}
-                      onChange={(e) => handleSliderChange(slider.key, Number(e.target.value))}
-                      className="w-full h-1.5 rounded-full appearance-none cursor-pointer
-                        bg-elevated accent-primary
-                        [&::-webkit-slider-thumb]:appearance-none
-                        [&::-webkit-slider-thumb]:h-3.5
-                        [&::-webkit-slider-thumb]:w-3.5
-                        [&::-webkit-slider-thumb]:rounded-full
-                        [&::-webkit-slider-thumb]:bg-primary
-                        [&::-webkit-slider-thumb]:shadow-md
-                        [&::-webkit-slider-thumb]:border-2
-                        [&::-webkit-slider-thumb]:border-primary-soft
-                        disabled:cursor-not-allowed"
-                      style={{
-                        background: isOn
-                          ? `linear-gradient(to right, var(--color-primary) ${pct}%, var(--color-elevated) ${pct}%)`
-                          : 'var(--color-elevated)',
-                      }}
+                      ariaLabel={slider.label}
+                      onChange={(v) => handleSliderChange(slider.key, v)}
                     />
                   </div>
 
                   {/* OFF hint */}
                   {!isOn && (
-                    <p className="text-[9px] text-ink-muted leading-tight">
+                    <p className="text-xs text-ink-muted leading-tight">
                       {slider.toggleKey === 'strokeDilation'
-                        ? 'OFF - Raw PDF preserved. No morphology applied.'
-                        : 'OFF - Using preset default value.'}
+                        ? 'OFF — Raw PDF preserved. No morphology applied.'
+                        : 'OFF — Using preset default value.'}
                     </p>
                   )}
                 </div>
