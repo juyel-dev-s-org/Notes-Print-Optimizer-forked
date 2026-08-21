@@ -10,8 +10,8 @@ test.describe('Cross-browser smoke tests', () => {
   test('shows tool selection on initial load', async ({ page }) => {
     await page.goto('/');
     await page.waitForLoadState('networkidle');
-    await expect(page.getByText('Every PDF', { exact: false })).toBeVisible({ timeout: 10000 });
-    await expect(page.getByText('Choose a Tool')).toBeVisible({ timeout: 10000 });
+    await expect(page.getByText('Every PDF')).toBeVisible({ timeout: 10000 });
+    await expect(page.getByRole('heading', { name: 'Choose a Tool' })).toBeVisible({ timeout: 10000 });
   });
 
   test('renders processing modal when processing starts', async ({ page }) => {
