@@ -122,26 +122,26 @@ export const Header: React.FC<HeaderProps> = ({
                 {isMenuOpen ? <X className="h-5 w-5 text-warning" /> : <Menu className="h-5 w-5 text-primary-soft" />}
               </button>
 
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2.5">
                 <AppLogo className="h-9 w-9 text-primary-soft drop-shadow-md lg:h-10 lg:w-10" />
                 <div className="flex flex-col gap-0.5">
                   <div className="flex items-center gap-1.5">
-                    <h1 className="text-sm font-bold tracking-tight text-white sm:text-base">
+                    <h1 className="text-sm font-bold tracking-tight text-white sm:text-[15px]">
                       PW Optimizer
                     </h1>
-                    <span className="rounded-md bg-primary/20 px-1.5 py-0.5 text-[10px] font-bold text-primary-soft border border-primary/30">
+                    <span className="hidden sm:inline-flex rounded-md bg-primary/15 px-1.5 py-0.5 text-[10px] font-bold tracking-wide text-primary-soft border border-primary/30">
                       PWA
                     </span>
                   </div>
-                  <span className="text-[10px] text-ink-muted font-medium hidden sm:inline">
+                  <span className="hidden text-[10px] font-medium tracking-wide text-slate-400 sm:inline">
                     Android & Web Print Engine
                   </span>
                 </div>
               </div>
             </div>
 
-            {/* Middle: Compact Stepper Indicator for Mobile & Tablet */}
-            <nav aria-label="Progress Stepper" className="flex items-center gap-1 rounded-xl bg-surface-2/70 p-1 border border-elevated/50 lg:justify-self-center">
+            {/* Middle: Stepper — hidden on mobile to reduce clutter, visible from sm+ */}
+            <nav aria-label="Progress Stepper" className="hidden items-center gap-1 rounded-xl bg-slate-800/80 p-1 border border-slate-700/60 sm:flex lg:justify-self-center">
               {steps.map((step) => {
                 const isActive = currentPhase === step.phase;
                 const isCompleted = currentPhase > step.phase;
@@ -157,26 +157,26 @@ export const Header: React.FC<HeaderProps> = ({
                     disabled={!isCompleted && !isActive}
                     aria-current={isActive ? 'step' : undefined}
                     aria-label={`Step ${step.phase}: ${step.label}`}
-                    className={`flex items-center gap-1 rounded-lg px-2 py-1.5 text-xs font-semibold transition-all ${
+                    className={`flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-semibold transition-all ${
                       isActive
-                        ? 'bg-primary-strong text-white shadow-xs lg:scale-105'
+                        ? 'bg-indigo-600 text-white shadow-sm'
                         : isCompleted
-                        ? 'text-success hover:bg-elevated/60'
-                        : 'text-ink-muted cursor-not-allowed'
+                        ? 'bg-emerald-500/15 text-emerald-300 hover:bg-emerald-500/25 border border-emerald-500/20'
+                        : 'text-slate-300 bg-slate-700/60 border border-slate-600/60 cursor-not-allowed'
                     }`}
                   >
                     <span
-                      className={`flex h-4 w-4 items-center justify-center rounded-full text-[10px] font-bold ${
+                      className={`flex h-5 w-5 items-center justify-center rounded-full text-[11px] font-bold ring-1 ${
                         isActive
-                          ? 'bg-white text-primary-deep'
+                          ? 'bg-white text-indigo-700 ring-white/20'
                           : isCompleted
-                          ? 'bg-success-strong text-bg'
-                          : 'bg-elevated text-ink-muted'
+                          ? 'bg-emerald-500 text-white ring-emerald-400/30'
+                          : 'bg-slate-600 text-slate-100 ring-slate-500/40'
                       }`}
                     >
-                      {isCompleted ? <CheckCircle2 className="h-3 w-3" /> : step.phase}
+                      {isCompleted ? <CheckCircle2 className="h-3.5 w-3.5" /> : step.phase}
                     </span>
-                    <span className="hidden min-[400px]:inline text-[11px] sm:text-xs">{step.label}</span>
+                    <span className="hidden min-[400px]:inline text-xs tracking-wide">{step.label}</span>
                   </button>
                 );
               })}

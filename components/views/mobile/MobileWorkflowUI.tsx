@@ -19,7 +19,6 @@ import {
   CheckCircle2,
   RotateCcw,
   Check,
-  Smartphone,
 } from 'lucide-react';
 import { PhaseErrorBoundary } from '@/components/shared/PhaseErrorBoundary';
 import { CardSkeleton } from '@/components/shared/LoadingSkeleton';
@@ -54,13 +53,6 @@ export const MobileWorkflowUI: React.FC<WorkflowUIProps> = ({ state, actions, ha
   if (toolMode === 'enhance') {
     return (
       <div className="flex flex-col gap-4 pb-20 w-full max-w-full">
-        <div className="flex items-center justify-between px-1 text-[10px] text-ink-muted font-mono">
-          <span className="flex items-center gap-1 bg-surface/80 border border-surface-2 px-2 py-0.5 rounded-full">
-            <Smartphone className="h-3 w-3 text-primary-soft" />
-            Mobile UI Viewport
-          </span>
-          <span>Tools · Enhance</span>
-        </div>
         <EnhanceToolView onBack={() => onToolModeChange?.('dark-print')} />
       </div>
     );
@@ -133,28 +125,11 @@ export const MobileWorkflowUI: React.FC<WorkflowUIProps> = ({ state, actions, ha
 
   return (
     <div className="flex flex-col gap-4 pb-20 w-full max-w-full">
-      {/* Platform Badge Indicator */}
-      <div className="flex items-center justify-between px-1 text-[10px] text-ink-muted font-mono">
-        <span className="flex items-center gap-1 bg-surface/80 border border-surface-2 px-2 py-0.5 rounded-full">
-          <Smartphone className="h-3 w-3 text-primary-soft" />
-          Mobile UI Viewport
-        </span>
-        <span>Touch-Optimized UX</span>
-      </div>
-
-      {/* PHASE 1: UPLOAD & MERGE */}
+      {/* PHASE 1: UPLOAD & MERGE — Upload is primary CTA, directly below hero */}
       {currentPhase === 1 && (
         <PhaseErrorBoundary phaseName="Upload & Merge">
         <div className="flex flex-col gap-4 animate-in fade-in duration-200">
           <LandingHero />
-
-          <ToolsBox
-            onSelectDarkPrint={() => {
-              onToolModeChange?.('dark-print');
-              document.getElementById('upload-area')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-            }}
-            onSelectEnhance={() => onToolModeChange?.('enhance')}
-          />
 
           <div id="upload-area" className="scroll-mt-4">
             <UploadArea
@@ -163,6 +138,14 @@ export const MobileWorkflowUI: React.FC<WorkflowUIProps> = ({ state, actions, ha
               isProcessing={isProcessing}
             />
           </div>
+
+          <ToolsBox
+            onSelectDarkPrint={() => {
+              onToolModeChange?.('dark-print');
+              document.getElementById('upload-area')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }}
+            onSelectEnhance={() => onToolModeChange?.('enhance')}
+          />
 
           {uploadedItems.length === 0 && !isProcessing && <FeatureStrip />}
 

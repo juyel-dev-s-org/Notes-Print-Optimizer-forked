@@ -51,22 +51,24 @@ export const LandingHero: React.FC = () => (
         locally on your device. Nothing is ever uploaded to a server.
       </p>
 
-      <div className="grid w-full max-w-2xl grid-cols-2 gap-2.5 sm:grid-cols-4">
+      {/* Primary CTA — prominent, high-contrast, directly above upload */}
+      <div className="mt-1 inline-flex items-center gap-2 rounded-full bg-indigo-600 px-5 py-2.5 text-xs font-bold tracking-wide text-white shadow-lg shadow-indigo-600/25 ring-1 ring-indigo-500/30">
+        <ArrowDown className="h-3.5 w-3.5 shrink-0 animate-bounce" aria-hidden="true" />
+        Drop your class notes below to begin
+      </div>
+
+      {/* Feature hints — compact, low-dominance; hidden on mobile to keep upload above the fold */}
+      <div className="hidden w-full max-w-2xl grid-cols-4 gap-2 sm:grid">
         {heroStats.map((stat) => (
           <div
             key={stat.label}
-            className="flex flex-col items-center gap-1 rounded-xl border border-slate-800/80 bg-slate-950/50 px-2 py-3 backdrop-blur-sm"
+            className="flex flex-col items-center gap-1 rounded-xl border border-slate-800/50 bg-slate-900/30 px-2 py-2.5 backdrop-blur-sm"
           >
-            <stat.icon className="h-4 w-4 text-[#8B6BFF]" />
-            <span className="text-[11px] font-bold text-slate-200">{stat.label}</span>
-            <span className="text-[10px] text-slate-500">{stat.sub}</span>
+            <stat.icon className="h-3.5 w-3.5 text-[#8B6BFF]" />
+            <span className="text-[10px] font-semibold tracking-wide text-slate-300">{stat.label}</span>
+            <span className="hidden text-[9px] leading-none text-slate-500 sm:block">{stat.sub}</span>
           </div>
         ))}
-      </div>
-
-      <div className="mt-1 flex items-center gap-1.5 text-[10px] font-medium text-slate-500">
-        <ArrowDown className="h-3 w-3 text-slate-600" />
-        Drop your class notes below to begin
       </div>
     </div>
   </section>
