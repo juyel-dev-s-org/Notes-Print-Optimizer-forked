@@ -1,7 +1,7 @@
 'use client';
 
-import React, { useState } from 'react';
-import { Loader2, Wand2, Ban, Download } from 'lucide-react';
+import React, { useEffect, useState } from 'react';
+import { Loader2, Wand2, Ban, Download, Check } from 'lucide-react';
 import { ENHANCE_SETTING_RANGE, type EnhanceSettings } from '@/lib/enhance/types';
 import type { EnhanceWorkflow } from '@/lib/enhance/useEnhanceWorkflow';
 
@@ -11,9 +11,10 @@ const SliderRow: React.FC<{
   label: string;
   hint: string;
   value: number;
+  range: readonly [number, number];
   onChange: (v: number) => void;
-}> = ({ label, hint, value, onChange }) => {
-  const [min, max] = ENHANCE_SETTING_RANGE.darken;
+}> = ({ label, hint, value, range, onChange }) => {
+  const [min, max] = range;
   const pct = ((value - min) / (max - min)) * 100;
   return (
     <div className="flex flex-col gap-2">
@@ -34,15 +35,21 @@ const SliderRow: React.FC<{
         value={value}
         aria-label={label}
         onChange={(e) => onChange(Number(e.target.value))}
-        className="w-full h-1.5 rounded-full appearance-none cursor-pointer bg-elevated
+        className="w-full h-2 rounded-full appearance-none cursor-pointer bg-elevated py-2
           [&::-webkit-slider-thumb]:appearance-none
-          [&::-webkit-slider-thumb]:h-4
-          [&::-webkit-slider-thumb]:w-4
+          [&::-webkit-slider-thumb]:h-6
+          [&::-webkit-slider-thumb]:w-6
           [&::-webkit-slider-thumb]:rounded-full
           [&::-webkit-slider-thumb]:bg-[#5B35FF]
           [&::-webkit-slider-thumb]:shadow-md
           [&::-webkit-slider-thumb]:border-2
-          [&::-webkit-slider-thumb]:border-[#a78bfa]"
+          [&::-webkit-slider-thumb]:border-[#a78bfa]
+          [&::-moz-range-thumb]:h-6
+          [&::-moz-range-thumb]:w-6
+          [&::-moz-range-thumb]:rounded-full
+          [&::-moz-range-thumb]:bg-[#5B35FF]
+          [&::-moz-range-thumb]:border-2
+          [&::-moz-range-thumb]:border-[#a78bfa]"
         style={{ background: `linear-gradient(to right, #5B35FF ${pct}%, var(--color-elevated) ${pct}%)` }}
       />
     </div>
@@ -85,7 +92,23 @@ const ToggleRow: React.FC<{
 export const EnhanceWorkbenchView: React.FC<{ workflow: EnhanceWorkflow }> = ({ workflow }) => {
   const { state, handleSetSettings, handleSetSelected, handleApplySettings, handleCancelProcessing, handleExport } = workflow;
   const [showBefore, setShowBefore] = useState(false);
+  const [appliedSettings, setAppliedSettings] = useState<EnhanceSettings>(state.settings);
   const selected = state.results[state.selectedIndex];
+
+  useEffect(() => {
+    if (state.results.length > 0 && !state.isProcessing) {
+      setAppliedSettings(state.settings);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- only sync when processing finishes, not on every slider change
+  }, [state.results.length, state.isProcessing]);
+
+  const isDirty =
+    state.results.length === 0 ||
+    appliedSettings.darken !== state.settings.darken ||
+    appliedSettings.contrast !== state.settings.contrast ||
+    appliedSettings.sharpen !== state.settings.sharpen ||
+    appliedSettings.cleanBackground !== state.settings.cleanBackground ||
+    appliedSettings.grayscale !== state.settings.grayscale;
 
   const updateSetting = <K extends keyof EnhanceSettings>(key: K, value: EnhanceSettings[K]) => {
     handleSetSettings({ ...state.settings, [key]: value });
@@ -127,9 +150,9 @@ export const EnhanceWorkbenchView: React.FC<{ workflow: EnhanceWorkflow }> = ({ 
       {/* Settings */}
       <div className="flex flex-col gap-4 rounded-2xl border border-slate-800/70 bg-slate-900/70 p-4">
         <h3 className="text-[13px] font-bold tracking-wide text-white">Enhancement Settings</h3>
-        <SliderRow label="Darken Ink" hint="Push faint pencil/ink toward black" value={state.settings.darken} onChange={(v) => updateSetting('darken', v)} />
-        <SliderRow label="Contrast" hint="Remove flat gray from scanned paper" value={state.settings.contrast} onChange={(v) => updateSetting('contrast', v)} />
-        <SliderRow label="Sharpen" hint="Crisp handwriting edges" value={state.settings.sharpen} onChange={(v) => updateSetting('sharpen', v)} />
+        <SliderRow label="Darken Ink" hint="Push faint pencil/ink toward black" value={state.settings.darken} range={ENHANCE_SETTING_RANGE.darken} onChange={(v) => updateSetting('darken', v)} />
+        <SliderRow label="Contrast" hint="Remove flat gray from scanned paper" value={state.settings.contrast} range={ENHANCE_SETTING_RANGE.contrast} onChange={(v) => updateSetting('contrast', v)} />
+        <SliderRow label="Sharpen" hint="Crisp handwriting edges" value={state.settings.sharpen} range={ENHANCE_SETTING_RANGE.sharpen} onChange={(v) => updateSetting('sharpen', v)} />
         <div className="flex flex-col divide-y divide-slate-800/70 border-t border-slate-800/70 pt-2">
           <ToggleRow label="Clean Background" hint="Map paper tint & camera shadows to pure white" enabled={state.settings.cleanBackground} onChange={(v) => updateSetting('cleanBackground', v)} />
           <ToggleRow label="Grayscale" hint="Monochrome output — maximum print contrast" enabled={state.settings.grayscale} onChange={(v) => updateSetting('grayscale', v)} />
@@ -137,11 +160,11 @@ export const EnhanceWorkbenchView: React.FC<{ workflow: EnhanceWorkflow }> = ({ 
         <button
           type="button"
           onClick={handleApplySettings}
-          disabled={state.isProcessing || state.exportBusy}
+          disabled={state.isProcessing || state.exportBusy || (!isDirty && state.results.length > 0)}
           className="flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-[#243BFF] via-[#5B35FF] to-[#A12CFF] text-sm font-bold text-white shadow-md shadow-[#5B35FF]/25 transition-transform duration-150 active:scale-[0.98] disabled:opacity-50 disabled:active:scale-100"
         >
-          <Wand2 className="h-4 w-4" />
-          {state.isProcessing ? 'Enhancing…' : 'Apply & Re-Enhance'}
+          {state.isProcessing ? <Loader2 className="h-4 w-4 animate-spin" /> : isDirty ? <Wand2 className="h-4 w-4" /> : <Check className="h-4 w-4" />}
+          {state.isProcessing ? 'Enhancing…' : isDirty ? 'Apply & Re-Enhance' : 'Up to date'}
         </button>
       </div>
 
@@ -166,12 +189,20 @@ export const EnhanceWorkbenchView: React.FC<{ workflow: EnhanceWorkflow }> = ({ 
             </button>
           </div>
 
-          <div className="relative overflow-hidden rounded-2xl border border-slate-800/70 bg-slate-900/70">
+          <div
+            className="relative overflow-hidden rounded-2xl border border-slate-800/70 bg-slate-900/70 select-none"
+            onPointerDown={() => setShowBefore(true)}
+            onPointerUp={() => setShowBefore(false)}
+            onPointerLeave={() => setShowBefore(false)}
+            onTouchStart={() => setShowBefore(true)}
+            onTouchEnd={() => setShowBefore(false)}
+          >
             <img
               src={showBefore ? selected.originalDataUrl : selected.dataUrl}
               alt={`Enhanced page ${selected.index + 1}`}
               className="h-auto w-full"
               loading="lazy"
+              draggable={false}
             />
             <span
               className={`absolute left-3 top-3 rounded-full px-2.5 py-1 text-[10px] font-bold tracking-wide ${
@@ -179,6 +210,9 @@ export const EnhanceWorkbenchView: React.FC<{ workflow: EnhanceWorkflow }> = ({ 
               }`}
             >
               {showBefore ? 'BEFORE' : 'AFTER'}
+            </span>
+            <span className="absolute bottom-3 right-3 rounded-full bg-slate-900/80 px-2 py-1 text-[10px] font-medium text-slate-300 backdrop-blur">
+              Hold to see before
             </span>
           </div>
 
@@ -203,9 +237,9 @@ export const EnhanceWorkbenchView: React.FC<{ workflow: EnhanceWorkflow }> = ({ 
         </div>
       )}
 
-      {/* Sticky export CTA */}
+      {/* Sticky export CTA — safe-area aware for gesture bar */}
       {!state.isProcessing && state.results.length > 0 && (
-        <div className="sticky bottom-4 z-20 -mx-4 border-t border-slate-800/70 bg-slate-950/95 px-4 pb-4 pt-3 backdrop-blur-md">
+        <div className="sticky bottom-0 z-20 -mx-4 border-t border-slate-800/70 bg-slate-950/95 px-4 pt-3 backdrop-blur-md" style={{ paddingBottom: 'calc(1rem + env(safe-area-inset-bottom, 0px))' }}>
           <button
             type="button"
             onClick={handleExport}

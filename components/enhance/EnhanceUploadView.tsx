@@ -2,7 +2,7 @@
 
 import React, { useRef, useState } from 'react';
 import { FileUp, ShieldCheck, Upload, AlertCircle } from 'lucide-react';
-import { isLikelyPdfFile, MAX_FILE_SIZE_MB, MAX_TOTAL_SIZE_MB } from '@/lib/services/UploadService';
+import { MAX_FILE_SIZE_MB, validatePdfFiles } from '@/lib/services/UploadService';
 import type { EnhanceWorkflow } from '@/lib/enhance/useEnhanceWorkflow';
 
 const MAX_FILES = 10;
@@ -15,28 +15,11 @@ export const EnhanceUploadView: React.FC<{ workflow: EnhanceWorkflow }> = ({ wor
 
   const processFileList = async (filesList: FileList | File[]) => {
     setUploadError(null);
-    const validFiles: File[] = [];
-    const skipped: string[] = [];
-    let totalSize = 0;
+    const files = Array.from(filesList as FileList);
+    const { validFiles, skipped, error } = await validatePdfFiles(files, MAX_FILES);
 
-    for (let i = 0; i < Math.min(filesList.length, MAX_FILES); i++) {
-      const file = filesList[i];
-      totalSize += file.size;
-      if (file.size > MAX_FILE_SIZE_MB * 1024 * 1024) {
-        skipped.push(`${file.name} (over ${MAX_FILE_SIZE_MB} MB)`);
-        continue;
-      }
-      const looksLikePdf = file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf');
-      const isPdf = looksLikePdf && (await isLikelyPdfFile(file));
-      if (!isPdf) {
-        skipped.push(file.name);
-        continue;
-      }
-      validFiles.push(file);
-    }
-
-    if (totalSize > MAX_TOTAL_SIZE_MB * 1024 * 1024) {
-      setUploadError(`Combined size exceeds the ${MAX_TOTAL_SIZE_MB} MB limit. Please upload fewer or smaller files.`);
+    if (error) {
+      setUploadError(error);
       return;
     }
 
@@ -47,6 +30,8 @@ export const EnhanceUploadView: React.FC<{ workflow: EnhanceWorkflow }> = ({ wor
     if (skipped.length > 0) {
       const list = skipped.slice(0, 3).join(', ') + (skipped.length > 3 ? ` +${skipped.length - 3} more` : '');
       setUploadError(`Skipped ${skipped.length} file(s): ${list} — only valid PDFs up to ${MAX_FILE_SIZE_MB} MB are accepted.`);
+    } else if (validFiles.length === 0) {
+      setUploadError(`No valid PDFs found — only valid PDFs up to ${MAX_FILE_SIZE_MB} MB are accepted.`);
     }
   };
 
@@ -99,14 +84,13 @@ export const EnhanceUploadView: React.FC<{ workflow: EnhanceWorkflow }> = ({ wor
           </p>
         </div>
 
-        <button
-          type="button"
-          onClick={(e) => { e.stopPropagation(); fileInputRef.current?.click(); }}
-          className="relative mt-5 flex h-12 w-full max-w-xs items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-[#243BFF] via-[#5B35FF] to-[#A12CFF] px-5 text-sm font-bold text-white shadow-md shadow-[#5B35FF]/25 transition-transform duration-150 active:scale-[0.98]"
+        <span
+          aria-hidden="true"
+          className="relative mt-5 flex h-12 w-full max-w-xs items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-[#243BFF] via-[#5B35FF] to-[#A12CFF] px-5 text-sm font-bold text-white shadow-md shadow-[#5B35FF]/25 pointer-events-none"
         >
           <Upload className="h-4 w-4" />
           <span>Select PDF Files</span>
-        </button>
+        </span>
 
         <div className="relative mt-6 flex flex-wrap items-center justify-center gap-2.5 border-t border-slate-800 pt-4 text-[11px] text-slate-400">
           <span className="flex items-center gap-1 font-semibold text-emerald-400">

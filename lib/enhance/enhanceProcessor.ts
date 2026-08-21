@@ -12,9 +12,13 @@ import { enhanceImageData } from './enhanceKernels';
 import type { EnhancePageResult, EnhanceSettings } from './types';
 import type { UploadedPdfItem } from '@/lib/workflow/types';
 
-/** Render scale: ~165 DPI (120/72) — print-safe detail without phone OOM. */
+/** Render scale: 120 DPI (120/72 ≈ 1.67×) — print-safe detail without phone OOM. */
 const RENDER_SCALE = 120 / 72;
 const JPEG_QUALITY = 0.92;
+
+function throwIfAborted(signal?: AbortSignal): void {
+  if (signal?.aborted) throw new Error('Processing cancelled.');
+}
 
 function canvasToDataUrl(canvas: HTMLCanvasElement): Promise<string> {
   return new Promise((res, rej) => {
@@ -71,25 +75,30 @@ export class EnhanceProcessor {
     try {
       for (const { item, doc } of docs) {
         for (let p = 1; p <= doc.numPages; p++) {
-          if (signal?.aborted) throw new Error('Processing cancelled.');
+          throwIfAborted(signal);
           onProgress({ current: done, total: totalPages, phase: `${item.name} · page ${p}/${doc.numPages}` });
 
           const page = await doc.getPage(p);
+          throwIfAborted(signal);
           const viewport = page.getViewport({ scale: RENDER_SCALE });
           const vw = Math.max(1, Math.floor(viewport.width));
           const vh = Math.max(1, Math.floor(viewport.height));
           const canvas = memoryManager.acquireCanvas(vw, vh);
           const ctx = canvas.getContext('2d', { willReadFrequently: true })!;
           await page.render({ canvasContext: ctx, viewport }).promise;
+          throwIfAborted(signal);
 
           const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
           const enhanced = enhanceImageData(imageData, settings);
+          throwIfAborted(signal);
 
           const originalDataUrl = await canvasToDataUrl(canvas);
+          throwIfAborted(signal);
           const outCanvas = memoryManager.acquireCanvas(vw, vh);
           const outCtx = outCanvas.getContext('2d')!;
           outCtx.putImageData(enhanced, 0, 0);
           const dataUrl = await canvasToDataUrl(outCanvas);
+          throwIfAborted(signal);
 
           memoryManager.disposeCanvas(canvas);
           memoryManager.disposeCanvas(outCanvas);

@@ -20,18 +20,14 @@ export const LandingHero: React.FC = () => (
     aria-label="Notes Print Optimizer — convert lecture slides to print-ready PDFs"
     className="relative overflow-hidden rounded-2xl border border-slate-800/70 bg-gradient-to-b from-[#0b1230]/50 via-slate-900/60 to-slate-900/40 px-5 py-8 text-center animate-slide-up"
   >
-    {/* Ambient glows */}
+    {/* Ambient glows — 2 layers for performance (reduced composite) */}
     <div
       aria-hidden="true"
-      className="pointer-events-none absolute -top-24 left-1/2 h-64 w-64 -translate-x-1/2 rounded-full bg-[#243BFF]/25 blur-3xl"
+      className="pointer-events-none absolute -top-24 left-1/2 h-64 w-64 -translate-x-1/2 rounded-full bg-[#243BFF]/20 blur-3xl"
     />
     <div
       aria-hidden="true"
-      className="pointer-events-none absolute -bottom-32 -right-16 h-72 w-72 rounded-full bg-[#A12CFF]/15 blur-3xl"
-    />
-    <div
-      aria-hidden="true"
-      className="pointer-events-none absolute -left-20 top-1/3 h-56 w-56 rounded-full bg-[#5B35FF]/15 blur-3xl"
+      className="pointer-events-none absolute -bottom-32 -right-16 h-72 w-72 rounded-full bg-[#A12CFF]/12 blur-3xl"
     />
 
     <div className="relative flex flex-col items-center gap-4">

@@ -25,6 +25,52 @@ export async function isLikelyPdfFile(file: File): Promise<boolean> {
   return false;
 }
 
+export interface PdfValidationResult {
+  validFiles: File[];
+  skipped: string[];
+  error: string | null;
+}
+
+/**
+ * Shared validator for PDF uploads — used by both the main UploadArea
+ * and the Enhance tool. Keeps per-file / total-size / magic-byte checks
+ * in one place so limits stay consistent.
+ */
+export async function validatePdfFiles(files: File[], maxFiles = 10): Promise<PdfValidationResult> {
+  const validFiles: File[] = [];
+  const skipped: string[] = [];
+  let totalSize = 0;
+
+  for (const file of files) {
+    if (validFiles.length >= maxFiles) {
+      skipped.push(`${file.name} (over ${maxFiles} file limit)`);
+      continue;
+    }
+    if (file.size > MAX_FILE_SIZE_MB * 1024 * 1024) {
+      skipped.push(`${file.name} (over ${MAX_FILE_SIZE_MB} MB)`);
+      continue;
+    }
+    const looksLikePdf = file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf');
+    const isPdf = looksLikePdf && (await isLikelyPdfFile(file));
+    if (!isPdf) {
+      skipped.push(file.name);
+      continue;
+    }
+    validFiles.push(file);
+    totalSize += file.size;
+  }
+
+  if (totalSize > MAX_TOTAL_SIZE_MB * 1024 * 1024) {
+    return {
+      validFiles: [],
+      skipped,
+      error: `Combined size exceeds the ${MAX_TOTAL_SIZE_MB} MB limit. Please upload fewer or smaller files.`,
+    };
+  }
+
+  return { validFiles, skipped, error: null };
+}
+
 export class UploadService {
   static async readFiles(files: File[]): Promise<UploadedItem[]> {
     let counter = 0;

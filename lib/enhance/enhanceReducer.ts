@@ -58,6 +58,9 @@ export function enhanceReducer(state: EnhanceState, action: EnhanceAction): Enha
     case 'PROCESS_ERROR':
       return { ...state, isProcessing: false, progress: null, error: action.error };
 
+    case 'PROCESS_CANCEL':
+      return { ...state, isProcessing: false, progress: null, error: null };
+
     case 'EXPORT_START':
       return { ...state, exportBusy: true, error: null };
 

@@ -9,7 +9,8 @@ export interface ToolsBoxProps {
   onSelectEnhance: () => void;
 }
 
-const AURORA_GRADIENT = 'linear-gradient(135deg, #243BFF 0%, #5B35FF 55%, #A12CFF 100%)';
+const DARK_PRINT_GRADIENT = 'linear-gradient(135deg, #243BFF 0%, #0EA5E9 55%, #06B6D4 100%)';
+const ENHANCE_GRADIENT = 'linear-gradient(135deg, #5B35FF 0%, #A12CFF 55%, #EC4899 100%)';
 
 /**
  * Mobile-only "Choose a Tool" box shown on the landing phase.
@@ -27,7 +28,7 @@ export const ToolsBox: React.FC<ToolsBoxProps> = ({ onSelectDarkPrint, onSelectE
       title="Dark Notes → Print"
       description="Turn dark lecture slides into crisp, print-ready PDFs with auto-whitening and smart N-up layouts."
       icon={FileText}
-      gradient={AURORA_GRADIENT}
+      gradient={DARK_PRINT_GRADIENT}
       chips={['Auto-whiten', 'Banner removal', 'Up to 10-up']}
       cta="Convert"
       onClick={onSelectDarkPrint}
@@ -37,7 +38,7 @@ export const ToolsBox: React.FC<ToolsBoxProps> = ({ onSelectDarkPrint, onSelectE
       title="Enhance Light PDF"
       description="Fix faint scans — darken light ink, boost contrast and sharpen handwritten notes so printouts stay readable."
       icon={Contrast}
-      gradient={AURORA_GRADIENT}
+      gradient={ENHANCE_GRADIENT}
       chips={['Darken ink', 'Contrast', 'Sharpen']}
       cta="Enhance"
       onClick={onSelectEnhance}

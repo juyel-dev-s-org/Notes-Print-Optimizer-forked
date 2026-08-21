@@ -14,6 +14,25 @@
 import { applyUnsharpMask, applyUnsharpMaskBW } from '@/lib/kernels/sharpen';
 import type { EnhanceSettings } from './types';
 
+/**
+ * Tunable constants for the enhance pipeline — extracted for testability
+ * and future calibration. Values chosen to push faint pencil (luma ~150-180)
+ * toward black while preserving dark ink (<40) and mapping paper tint
+ * (≥ bg-12) to pure white.
+ */
+export const ENHANCE_TUNING = {
+  /** Ink is considered anything below (bg - this) */
+  INK_CEILING_OFFSET: 30,
+  /** Pixels with luma ≥ (bg - this) are snapped to white when cleaning */
+  BG_CLEAN_THRESHOLD: 12,
+  /** Max lift (darken) applied at darken=100 */
+  DARKEN_MAX_LIFT: 96,
+  /** Contrast gain multiplier */
+  CONTRAST_GAIN_FACTOR: 1.5,
+  /** Max unsharp amount at sharpen=100 */
+  SHARPEN_MAX_AMT: 0.55,
+} as const;
+
 function clamp255(v: number): number {
   return v < 0 ? 0 : v > 255 ? 255 : v;
 }
@@ -77,13 +96,13 @@ export function enhanceImageData(input: ImageData, settings: EnhanceSettings): I
   const { p1, p95 } = computeLumaStats(src);
 
   const bgCeiling = p95;
-  const inkCeiling = Math.max(0, bgCeiling - 30);
-  const darkenLift = Math.round((settings.darken / 100) * 96);
+  const inkCeiling = Math.max(0, bgCeiling - ENHANCE_TUNING.INK_CEILING_OFFSET);
+  const darkenLift = Math.round((settings.darken / 100) * ENHANCE_TUNING.DARKEN_MAX_LIFT);
 
   const contrast = settings.contrast / 100;
   const stretchLo = p1;
   const stretchRange = Math.max(1, p95 - p1);
-  const contrastGain = 1 + contrast * 1.5;
+  const contrastGain = 1 + contrast * ENHANCE_TUNING.CONTRAST_GAIN_FACTOR;
 
   for (let i = 0; i < n; i++) {
     const o = i * 4;
@@ -94,7 +113,7 @@ export function enhanceImageData(input: ImageData, settings: EnhanceSettings): I
 
     let l = lumaOf(r, g, b);
 
-    if (settings.cleanBackground && l >= bgCeiling - 12) {
+    if (settings.cleanBackground && l >= bgCeiling - ENHANCE_TUNING.BG_CLEAN_THRESHOLD) {
       r = 255; g = 255; b = 255;
       l = 255;
     }
@@ -128,7 +147,7 @@ export function enhanceImageData(input: ImageData, settings: EnhanceSettings): I
   }
 
   if (settings.sharpen > 0) {
-    const amt = (settings.sharpen / 100) * 0.55;
+    const amt = (settings.sharpen / 100) * ENHANCE_TUNING.SHARPEN_MAX_AMT;
     if (settings.grayscale) {
       applyUnsharpMaskBW(out, width, height, amt);
     } else {
