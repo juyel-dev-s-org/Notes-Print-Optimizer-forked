@@ -48,12 +48,24 @@ const EnhanceToolView = dynamic(() => import('@/components/enhance/EnhanceToolVi
 });
 
 export const MobileWorkflowUI: React.FC<WorkflowUIProps> = ({ state, actions, handlers, toolMode, onToolModeChange }) => {
-  // Enhance Light PDF tool (mobile). Rendered in place of the workflow
-  // when selected from the landing tools box; back arrow restores dark-print.
   if (toolMode === 'enhance') {
     return (
-      <div className="flex flex-col gap-4 pb-20 w-full max-w-full">
-        <EnhanceToolView onBack={() => onToolModeChange?.('dark-print')} />
+      <div className="flex flex-col gap-4 pb-20 w-full max-w-full overflow-hidden">
+        <EnhanceToolView onBack={() => onToolModeChange?.(null)} />
+      </div>
+    );
+  }
+
+  // Landing — no upload here, only Hero + Tools (best practice)
+  if (toolMode === null) {
+    return (
+      <div className="flex flex-col gap-4 w-full max-w-full overflow-hidden">
+        <LandingHero />
+        <ToolsBox
+          onSelectDarkPrint={() => onToolModeChange?.('dark-print')}
+          onSelectEnhance={() => onToolModeChange?.('enhance')}
+        />
+        <FeatureStrip />
       </div>
     );
   }
@@ -94,7 +106,6 @@ export const MobileWorkflowUI: React.FC<WorkflowUIProps> = ({ state, actions, ha
 
   const {
     handleFilesUpload: onFilesUpload,
-    handleLoadSamplePdf: onLoadSample,
     handleMoveItem: onMoveItem,
     handleRemoveItem: onRemoveItem,
     handleReorderItem: onReorderItem,
@@ -118,36 +129,38 @@ export const MobileWorkflowUI: React.FC<WorkflowUIProps> = ({ state, actions, ha
     handleResetWorkflow: onResetWorkflow,
   } = handlers;
 
+  const handleBackToTools = () => {
+    // Robust garbage cleaning when leaving tool
+    onResetWorkflow();
+    onToolModeChange?.(null);
+  };
+
   // Alias for onToggleExcludeAll which needs state access
   const onToggleExcludeAll = (exclude: boolean) => {
     actions.setExcludedPages(buildExcludedSet(state.processedPages.length, exclude));
   };
 
   return (
-    <div className="flex flex-col gap-4 pb-20 w-full max-w-full">
-      {/* PHASE 1: UPLOAD & MERGE — Upload is primary CTA, directly below hero */}
+    <div className="flex flex-col gap-4 pb-20 w-full max-w-full overflow-hidden">
+      {/* PHASE 1: UPLOAD & MERGE — new screen after tool choose */}
       {currentPhase === 1 && (
         <PhaseErrorBoundary phaseName="Upload & Merge">
         <div className="flex flex-col gap-4 animate-in fade-in duration-200">
-          <LandingHero />
+          {/* Back to tool selection */}
+          <button
+            type="button"
+            onClick={handleBackToTools}
+            className="inline-flex items-center gap-1.5 self-start rounded-full border border-slate-700 bg-slate-900 px-3 py-1.5 text-xs font-semibold text-slate-300 hover:bg-slate-800 hover:text-white transition-colors"
+          >
+            <ArrowLeft className="h-3.5 w-3.5" /> Back to Tools
+          </button>
 
           <div id="upload-area" className="scroll-mt-4">
             <UploadArea
               onFilesUpload={onFilesUpload}
-              onLoadSample={onLoadSample}
               isProcessing={isProcessing}
             />
           </div>
-
-          <ToolsBox
-            onSelectDarkPrint={() => {
-              onToolModeChange?.('dark-print');
-              document.getElementById('upload-area')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-            }}
-            onSelectEnhance={() => onToolModeChange?.('enhance')}
-          />
-
-          {uploadedItems.length === 0 && !isProcessing && <FeatureStrip />}
 
           {uploadedItems.length > 0 && (
             <div className="flex flex-col gap-3 rounded-2xl border border-surface-2 bg-surface/90 p-3.5 shadow-lg">

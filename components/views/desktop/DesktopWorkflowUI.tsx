@@ -50,8 +50,21 @@ const EnhanceToolView = dynamic(() => import('@/components/enhance/EnhanceToolVi
 export const DesktopWorkflowUI: React.FC<WorkflowUIProps> = ({ state, actions, handlers, toolMode, onToolModeChange }) => {
   if (toolMode === 'enhance') {
     return (
-      <div className="flex flex-col gap-6 pb-12 w-full max-w-full">
-        <EnhanceToolView onBack={() => onToolModeChange?.('dark-print')} />
+      <div className="flex flex-col gap-6 pb-12 w-full max-w-full overflow-hidden">
+        <EnhanceToolView onBack={() => onToolModeChange?.(null)} />
+      </div>
+    );
+  }
+
+  if (toolMode === null) {
+    return (
+      <div className="flex flex-col gap-6 w-full max-w-full overflow-hidden">
+        <LandingHero />
+        <ToolsBox
+          onSelectDarkPrint={() => onToolModeChange?.('dark-print')}
+          onSelectEnhance={() => onToolModeChange?.('enhance')}
+        />
+        <FeatureStrip />
       </div>
     );
   }
@@ -92,7 +105,6 @@ export const DesktopWorkflowUI: React.FC<WorkflowUIProps> = ({ state, actions, h
 
   const {
     handleFilesUpload: onFilesUpload,
-    handleLoadSamplePdf: onLoadSample,
     handleMoveItem: onMoveItem,
     handleRemoveItem: onRemoveItem,
     handleReorderItem: onReorderItem,
@@ -120,20 +132,27 @@ export const DesktopWorkflowUI: React.FC<WorkflowUIProps> = ({ state, actions, h
     setExcludedPages(buildExcludedSet(state.processedPages.length, exclude));
   };
 
+  const handleBackToTools = () => {
+    handlers.handleResetWorkflow();
+    onToolModeChange?.(null);
+  };
+
   return (
-    <div className="flex flex-col gap-6 pb-12 w-full max-w-full">
-      {/* PHASE 1: UPLOAD & MERGE — Upload primary, ToolsBox + FeatureStrip follow */}
+    <div className="flex flex-col gap-6 pb-12 w-full max-w-full overflow-hidden">
+      {/* PHASE 1: UPLOAD & MERGE — new screen after tool choose */}
       {currentPhase === 1 && (
         <PhaseErrorBoundary phaseName="Upload & Merge">
         <div className="flex flex-col gap-5 animate-in fade-in duration-200">
-          <LandingHero />
+          <button
+            type="button"
+            onClick={handleBackToTools}
+            className="inline-flex items-center gap-1.5 self-start rounded-full border border-slate-700 bg-slate-900 px-3 py-1.5 text-xs font-semibold text-slate-300 hover:bg-slate-800 hover:text-white transition-colors"
+          >
+            <ArrowLeft className="h-3.5 w-3.5" /> Back to Tools
+          </button>
 
           <div id="upload-area" className="scroll-mt-4">
-            <UploadArea
-              onFilesUpload={onFilesUpload}
-              onLoadSample={onLoadSample}
-              isProcessing={isProcessing}
-            />
+            <UploadArea onFilesUpload={onFilesUpload} isProcessing={isProcessing} />
           </div>
 
           <ToolsBox

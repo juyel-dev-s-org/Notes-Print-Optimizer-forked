@@ -4,9 +4,7 @@ import React, { lazy, Suspense, useCallback, useEffect, useRef, useState } from 
 import {
   Menu,
   X,
-  ShieldCheck,
   CheckCircle2,
-  Sparkles,
   RefreshCw,
 } from 'lucide-react';
 import { AppLogo } from './AppLogo';
@@ -23,9 +21,10 @@ const LazySettingsDrawer = lazy(() => import('./menu/SettingsDrawer').then((m) =
 interface HeaderProps {
   currentPhase: WorkflowPhase;
   onReset?: () => void;
-  onLoadSample?: () => void;
   onNavigatePhase?: (phase: WorkflowPhase) => void;
   isProcessing?: boolean;
+  /** Controls stepper visibility — landing has no stepper until a tool is chosen */
+  showStepper?: boolean;
 }
 
 interface SettingsDrawerProps {
@@ -41,9 +40,9 @@ const SettingsDrawer = ({ onAppAction }: SettingsDrawerProps) => (
 export const Header: React.FC<HeaderProps> = ({
   currentPhase,
   onReset,
-  onLoadSample,
   onNavigatePhase,
   isProcessing = false,
+  showStepper = true,
 }) => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const hamburgerRef = useRef<HTMLButtonElement>(null);
@@ -124,83 +123,58 @@ export const Header: React.FC<HeaderProps> = ({
 
               <div className="flex items-center gap-2.5">
                 <AppLogo className="h-9 w-9 text-primary-soft drop-shadow-md lg:h-10 lg:w-10" />
-                <div className="flex flex-col gap-0.5">
-                  <div className="flex items-center gap-1.5">
-                    <h1 className="text-sm font-bold tracking-tight text-white sm:text-[15px]">
-                      PW Optimizer
-                    </h1>
-                    <span className="hidden sm:inline-flex rounded-md bg-primary/15 px-1.5 py-0.5 text-[10px] font-bold tracking-wide text-primary-soft border border-primary/30">
-                      PWA
-                    </span>
-                  </div>
-                  <span className="hidden text-[10px] font-medium tracking-wide text-slate-400 sm:inline">
-                    Android & Web Print Engine
-                  </span>
-                </div>
+                <h1 className="text-[15px] font-bold tracking-tight text-white sm:text-base">
+                  Print Optimizer
+                </h1>
               </div>
             </div>
 
-            {/* Middle: Stepper — hidden on mobile to reduce clutter, visible from sm+ */}
-            <nav aria-label="Progress Stepper" className="hidden items-center gap-1 rounded-xl bg-slate-800/80 p-1 border border-slate-700/60 sm:flex lg:justify-self-center">
-              {steps.map((step) => {
-                const isActive = currentPhase === step.phase;
-                const isCompleted = currentPhase > step.phase;
+            {/* Middle: Stepper — landing has no stepper, after tool choose it appears */}
+            {showStepper && (
+              <nav aria-label="Progress Stepper" className="hidden items-center gap-1 rounded-xl bg-slate-800/80 p-1 border border-slate-700/60 sm:flex lg:justify-self-center">
+                {steps.map((step) => {
+                  const isActive = currentPhase === step.phase;
+                  const isCompleted = currentPhase > step.phase;
 
-                return (
-                  <button
-                    key={step.phase}
-                    onClick={() => {
-                      if (isCompleted && onNavigatePhase) {
-                        onNavigatePhase(step.phase);
-                      }
-                    }}
-                    disabled={!isCompleted && !isActive}
-                    aria-current={isActive ? 'step' : undefined}
-                    aria-label={`Step ${step.phase}: ${step.label}`}
-                    className={`flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-semibold transition-all ${
-                      isActive
-                        ? 'bg-indigo-600 text-white shadow-sm'
-                        : isCompleted
-                        ? 'bg-emerald-500/15 text-emerald-300 hover:bg-emerald-500/25 border border-emerald-500/20'
-                        : 'text-slate-300 bg-slate-700/60 border border-slate-600/60 cursor-not-allowed'
-                    }`}
-                  >
-                    <span
-                      className={`flex h-5 w-5 items-center justify-center rounded-full text-[11px] font-bold ring-1 ${
+                  return (
+                    <button
+                      key={step.phase}
+                      onClick={() => {
+                        if (isCompleted && onNavigatePhase) {
+                          onNavigatePhase(step.phase);
+                        }
+                      }}
+                      disabled={!isCompleted && !isActive}
+                      aria-current={isActive ? 'step' : undefined}
+                      aria-label={`Step ${step.phase}: ${step.label}`}
+                      className={`flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-semibold transition-all ${
                         isActive
-                          ? 'bg-white text-indigo-700 ring-white/20'
+                          ? 'bg-indigo-600 text-white shadow-sm'
                           : isCompleted
-                          ? 'bg-emerald-500 text-white ring-emerald-400/30'
-                          : 'bg-slate-600 text-slate-100 ring-slate-500/40'
+                          ? 'bg-emerald-500/15 text-emerald-300 hover:bg-emerald-500/25 border border-emerald-500/20'
+                          : 'text-slate-300 bg-slate-700/60 border border-slate-600/60 cursor-not-allowed'
                       }`}
                     >
-                      {isCompleted ? <CheckCircle2 className="h-3.5 w-3.5" /> : step.phase}
-                    </span>
-                    <span className="hidden min-[400px]:inline text-xs tracking-wide">{step.label}</span>
-                  </button>
-                );
-              })}
-            </nav>
+                      <span
+                        className={`flex h-5 w-5 items-center justify-center rounded-full text-[11px] font-bold ring-1 ${
+                          isActive
+                            ? 'bg-white text-indigo-700 ring-white/20'
+                            : isCompleted
+                            ? 'bg-emerald-500 text-white ring-emerald-400/30'
+                            : 'bg-slate-600 text-slate-100 ring-slate-500/40'
+                        }`}
+                      >
+                        {isCompleted ? <CheckCircle2 className="h-3.5 w-3.5" /> : step.phase}
+                      </span>
+                      <span className="hidden min-[400px]:inline text-xs tracking-wide">{step.label}</span>
+                    </button>
+                  );
+                })}
+              </nav>
+            )}
 
             {/* Right: Quick Action Buttons for Desktop / Tablet */}
             <div className="hidden md:flex items-center gap-2 lg:justify-self-end">
-              <div className="flex items-center gap-1.5 rounded-lg border border-success-strong/30 bg-success-strong/10 px-2.5 py-1 text-xs font-medium text-success-soft">
-                <ShieldCheck className="h-3.5 w-3.5 text-success" />
-                <span>100% Offline</span>
-              </div>
-
-              {currentPhase === 1 && onLoadSample && (
-                <button
-                  type="button"
-                  onClick={onLoadSample}
-                  disabled={isProcessing}
-                  className="flex h-9 items-center gap-1.5 rounded-lg border border-primary/40 bg-primary-strong/20 px-3 text-xs font-semibold text-primary-soft hover:bg-primary-strong/30 transition-colors disabled:opacity-50"
-                >
-                  <Sparkles className="h-3.5 w-3.5 text-primary-soft" />
-                  <span>Sample PDF</span>
-                </button>
-              )}
-
               {currentPhase > 1 && onReset && (
                 <button
                   type="button"
@@ -215,11 +189,11 @@ export const Header: React.FC<HeaderProps> = ({
           </div>
         </div>
 
-        {/* Top Progress Line Indicator */}
+        {/* Top Progress Line — only after tool chosen */}
         <div className="h-0.5 w-full bg-surface-2">
           <div
             className="h-full bg-gradient-to-r from-primary via-accent-soft to-success transition-[width] duration-200 ease-in-out"
-            style={{ width: `${(currentPhase / 4) * 100}%` }}
+            style={{ width: showStepper ? `${(currentPhase / 4) * 100}%` : '0%' }}
           />
         </div>
       </header>
@@ -248,7 +222,7 @@ export const Header: React.FC<HeaderProps> = ({
                 <div className="flex items-center gap-2.5">
                   <AppLogo className="h-8 w-8 text-primary-soft" />
                   <div>
-                    <h2 className="text-sm font-bold text-white">PW Print Optimizer</h2>
+                    <h2 className="text-sm font-bold text-white">Print Optimizer</h2>
                     <p className="text-[11px] text-ink-muted">Settings &amp; Information</p>
                   </div>
                 </div>

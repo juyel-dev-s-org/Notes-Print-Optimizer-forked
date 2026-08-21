@@ -1,18 +1,16 @@
 'use client';
 
 import React, { useRef, useState } from 'react';
-import { FileUp, Sparkles, ShieldCheck, Upload, AlertCircle } from 'lucide-react';
+import { FileUp, ShieldCheck, Upload, AlertCircle } from 'lucide-react';
 import { isLikelyPdfFile, MAX_FILE_SIZE_MB, MAX_TOTAL_SIZE_MB } from '@/lib/services/UploadService';
 
 interface UploadAreaProps {
   onFilesUpload: (files: File[]) => void;
-  onLoadSample: () => void;
   isProcessing: boolean;
 }
 
 export const UploadArea: React.FC<UploadAreaProps> = ({
   onFilesUpload,
-  onLoadSample,
   isProcessing,
 }) => {
   const [isDragging, setIsDragging] = useState(false);
@@ -138,31 +136,18 @@ export const UploadArea: React.FC<UploadAreaProps> = ({
           </p>
         </div>
 
-        {/* Action Buttons with Large Touch Area (min 48px height) */}
-        <div className="mt-5 lg:mt-8 flex flex-col sm:flex-row items-center justify-center gap-3 lg:gap-4 w-full max-w-xs lg:max-w-md">
+        {/* Primary CTA — single prominent button (Try Demo removed per spec) */}
+        <div className="mt-5 lg:mt-8 flex items-center justify-center w-full max-w-xs lg:max-w-md">
           <button
             type="button"
             onClick={(e) => {
               e.stopPropagation();
               fileInputRef.current?.click();
             }}
-            className="w-full flex h-12 items-center justify-center gap-2 rounded-xl lg:rounded-[14px] bg-indigo-600 px-5 lg:px-6 text-sm font-bold text-white shadow-md hover:bg-indigo-500 hover:shadow-lg hover:shadow-indigo-500/25 active:scale-98 transition-all duration-150"
+            className="w-full flex h-12 items-center justify-center gap-2 rounded-xl lg:rounded-[14px] bg-indigo-600 px-6 text-sm font-bold text-white shadow-md hover:bg-indigo-500 hover:shadow-lg hover:shadow-indigo-500/25 active:scale-[0.98] transition-all duration-150"
           >
             <Upload className="h-4 w-4" />
             <span>Select PDF Files</span>
-          </button>
-
-          <button
-            type="button"
-            onClick={(e) => {
-              e.stopPropagation();
-              onLoadSample();
-            }}
-            disabled={isProcessing}
-            className="w-full flex h-12 items-center justify-center gap-2 rounded-xl lg:rounded-[14px] border border-indigo-500/40 bg-indigo-950/50 px-4 lg:px-6 text-sm font-bold text-indigo-300 hover:bg-indigo-900/60 active:scale-98 transition-all duration-150 disabled:opacity-50"
-          >
-            <Sparkles className="h-4 w-4 text-indigo-400" />
-            <span>Try Demo PDF</span>
           </button>
         </div>
 

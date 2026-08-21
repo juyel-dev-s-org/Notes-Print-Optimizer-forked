@@ -14,7 +14,7 @@ import { RefreshCw, X } from 'lucide-react';
 export default function AppShell() {
   useMonitor();
   const [swUpdateAvailable, setSwUpdateAvailable] = useState(false);
-  const [toolMode, setToolMode] = useState<ToolMode>('dark-print');
+  const [toolMode, setToolMode] = useState<ToolMode | null>(null);
 
   useEffect(() => {
     if ('serviceWorker' in navigator) {
@@ -42,7 +42,7 @@ export default function AppShell() {
 
   const {
     state, actions,
-    handleResetWorkflow, handleFilesUpload, handleLoadSamplePdf,
+    handleResetWorkflow, handleFilesUpload,
     handleMoveItem, handleRemoveItem, handleDownloadMerged,
     handleSmartArrange, handleReorderItem,
     handleProceedToPhase2, handleToggleExcludePage, handleDownloadOptimized1Up,
@@ -101,7 +101,6 @@ export default function AppShell() {
 
   const workflowHandlers: WorkflowHandlers = useMemo(() => ({
     handleFilesUpload,
-    handleLoadSamplePdf,
     handleMoveItem,
     handleRemoveItem,
     handleReorderItem,
@@ -130,7 +129,7 @@ export default function AppShell() {
     handleDismissResume,
     compilePhase3PrintLayout,
   }), [
-    handleFilesUpload, handleLoadSamplePdf, handleMoveItem, handleRemoveItem,
+    handleFilesUpload, handleMoveItem, handleRemoveItem,
     handleReorderItem, handleSmartArrange, handleDownloadMerged, handleProceedToPhase2,
     handleToggleExcludePage, handleDownloadOptimized1Up, handleProceedToPhase3,
     handleReprocess, handlePreviewReprocess, handleResetSettings, handleApplyLayout,
@@ -152,9 +151,9 @@ export default function AppShell() {
       <Header
         currentPhase={state.currentPhase}
         onReset={handleResetWorkflow}
-        onLoadSample={handleLoadSamplePdf}
         onNavigatePhase={(phase) => actions.setPhase(phase)}
         isProcessing={state.isProcessing}
+        showStepper={toolMode !== null}
       />
       <ProcessingModal progress={state.progress} onCancel={handleCancelProcessing} progressiveThumbnails={progressiveThumbnails} />
       {swUpdateAvailable && (

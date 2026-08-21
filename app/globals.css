@@ -113,10 +113,19 @@ html {
   scrollbar-color: rgb(100 116 139 / 0.5) transparent;
 }
 
-/* Disable overscroll bounce on mobile app shell for native feel */
+/* Prevent horizontal scroll / layout shift (stable viewport left-right) */
 html, body {
   overscroll-behavior-y: none;
   -webkit-tap-highlight-color: transparent;
+  overflow-x: hidden;
+  max-width: 100vw;
+}
+
+/* App shell main container — prevent any child from forcing horizontal scroll */
+#main-content,
+.app-shell-bg {
+  overflow-x: hidden;
+  max-width: 100%;
 }
 
 /* Desktop-only ambient background: soft subtle radial glow.
