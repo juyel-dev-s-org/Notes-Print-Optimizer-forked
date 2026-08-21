@@ -81,7 +81,7 @@ describe('LayoutEngine', () => {
       const withoutFooter = LayoutEngine.getSheetCompositionGeometry({ ...config, showPageNumbers: false });
       expect(withFooter.footerHeight).toBeGreaterThan(0);
       expect(withFooter.cellHeight).toBeLessThan(withoutFooter.cellHeight);
-      expect(LayoutEngine.getSheetFooterText(1, 3)).toBe('Sheet 2 of 3  •  PW Notes Print Optimizer');
+      expect(LayoutEngine.getSheetFooterText(1, 3)).toBe('Sheet 2 of 3  •  Print Optimizer');
     });
   });
 });
