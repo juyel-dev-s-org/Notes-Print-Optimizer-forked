@@ -1,9 +1,9 @@
 export const strings = {
   app: {
-    name: 'PW Optimizer',
-    tagline: 'Android & Web Print Engine',
-    fullName: 'PW Notes Print Optimizer',
-    description: 'Mobile-first adaptive print optimizer and PDF engine for Physics Wallah and lecture class notes.',
+    name: 'Print Optimizer',
+    tagline: 'Every PDF, Print-Perfect',
+    fullName: 'Print Optimizer',
+    description: 'Every PDF, print-perfect — merge, whiten dark notes, enhance light scans & build smart N-up layouts. 100% offline, on-device.',
   },
   nav: {
     upload: 'Upload',
@@ -51,13 +51,13 @@ export const strings = {
   },
   complete: {
     printReady: 'Your PDF is Print-Ready!',
-    description: 'Your Physics Wallah class notes have been stripped of dark backgrounds, sharpened, and formatted for paper-saving printouts.',
+    description: 'Your documents have been optimized and formatted for paper-saving, ink-efficient printouts.',
     downloadAgain: 'Download Print PDF Again',
     optimizeAnother: 'Optimize Another PDF',
   },
   pwa: {
-    installTitle: 'Install Android App',
-    installDesc: 'Install PW Optimizer on your phone for home screen access, offline support, and full-screen workspace.',
+    installTitle: 'Install App',
+    installDesc: 'Install Print Optimizer on your phone for home screen access, offline support, and full-screen workspace.',
     addToHome: 'Add to Home Screen',
     offline: '100% Offline',
     clientSide: '100% Client-Side Privacy',

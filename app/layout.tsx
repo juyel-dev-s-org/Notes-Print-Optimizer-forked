@@ -13,25 +13,25 @@ const siteUrl = `https://juyel-dev.github.io${basePath}`;
 
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
-  title: 'PW Notes Print Optimizer',
+  title: 'Print Optimizer',
   description:
-    'Mobile-first adaptive print optimizer and PDF engine for Physics Wallah and lecture class notes.',
+    'Every PDF, print-perfect — merge, whiten dark notes, enhance light scans & build smart N-up layouts. 100% offline, on-device.',
   alternates: {
     canonical: `${basePath}/`,
   },
   openGraph: {
-    title: 'PW Notes Print Optimizer',
+    title: 'Print Optimizer',
     description:
-      'Convert dark-background lecture slides to print-ready PDFs with optimal ink and paper usage.',
+      'Every PDF, print-perfect — merge, whiten dark notes, enhance light scans & build smart N-up layouts. 100% offline, on-device.',
     url: `${basePath}/`,
-    siteName: 'PW Notes Print Optimizer',
+    siteName: 'Print Optimizer',
     type: 'website',
     images: [
       {
         url: `${basePath}/icon-512-v2.png`,
         width: 512,
         height: 512,
-        alt: 'PW Notes Print Optimizer',
+        alt: 'Print Optimizer',
       },
     ],
   },
@@ -61,7 +61,7 @@ export const metadata: Metadata = {
   appleWebApp: {
     capable: true,
     statusBarStyle: 'black-translucent',
-    title: 'PW Optimizer',
+    title: 'Print Optimizer',
     startupImage: [
       {
         url: `${basePath}/icon-512-v2.png`,

@@ -116,16 +116,4 @@ export class UploadService {
     }
     return { pdfBlob, pdfBytes, thumbnails };
   }
-
-  static async generateSamplePdf(): Promise<UploadedItem> {
-    const { SamplePdfGenerator } = await import('../optimizer/samplePdfGenerator');
-    const sampleBytes = await SamplePdfGenerator.generateSamplePWDoc();
-    const pdfBuffer = sampleBytes.buffer as ArrayBuffer;
-    const file = new File([pdfBuffer], 'PW_Sample_Class_Notes.pdf', { type: 'application/pdf' });
-    return {
-      id: 'sample-pw-notes', file, name: file.name,
-      sizeMB: (file.size / (1024 * 1024)).toFixed(2),
-      arrayBuffer: pdfBuffer,
-    };
-  }
 }

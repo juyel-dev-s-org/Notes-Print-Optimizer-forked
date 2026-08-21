@@ -50,7 +50,7 @@ const EnhanceToolView = dynamic(() => import('@/components/enhance/EnhanceToolVi
 export const DesktopWorkflowUI: React.FC<WorkflowUIProps> = ({ state, actions, handlers, toolMode, onToolModeChange }) => {
   if (toolMode === 'enhance') {
     return (
-      <div className="flex flex-col gap-6 pb-12 w-full max-w-full overflow-hidden">
+      <div className="flex flex-col gap-6 pb-12 w-full max-w-full min-w-0">
         <EnhanceToolView onBack={() => onToolModeChange?.(null)} />
       </div>
     );
@@ -58,7 +58,7 @@ export const DesktopWorkflowUI: React.FC<WorkflowUIProps> = ({ state, actions, h
 
   if (toolMode === null) {
     return (
-      <div className="flex flex-col gap-6 w-full max-w-full overflow-hidden">
+      <div className="flex flex-col gap-6 w-full max-w-full min-w-0">
         <LandingHero />
         <ToolsBox
           onSelectDarkPrint={() => onToolModeChange?.('dark-print')}
@@ -138,7 +138,7 @@ export const DesktopWorkflowUI: React.FC<WorkflowUIProps> = ({ state, actions, h
   };
 
   return (
-    <div className="flex flex-col gap-6 pb-12 w-full max-w-full overflow-hidden">
+    <div className="flex flex-col gap-6 pb-12 w-full max-w-full min-w-0">
       {/* PHASE 1: UPLOAD & MERGE — new screen after tool choose */}
       {currentPhase === 1 && (
         <PhaseErrorBoundary phaseName="Upload & Merge">
@@ -146,7 +146,7 @@ export const DesktopWorkflowUI: React.FC<WorkflowUIProps> = ({ state, actions, h
           <button
             type="button"
             onClick={handleBackToTools}
-            className="inline-flex items-center gap-1.5 self-start rounded-full border border-slate-700 bg-slate-900 px-3 py-1.5 text-xs font-semibold text-slate-300 hover:bg-slate-800 hover:text-white transition-colors"
+            className="inline-flex h-11 items-center gap-1.5 self-start rounded-full border border-slate-700 bg-slate-900 px-4 text-xs font-semibold text-slate-300 hover:bg-slate-800 hover:text-white transition-colors"
           >
             <ArrowLeft className="h-3.5 w-3.5" /> Back to Tools
           </button>
@@ -359,7 +359,7 @@ export const DesktopWorkflowUI: React.FC<WorkflowUIProps> = ({ state, actions, h
                     type="checkbox"
                     checked={layoutConfig.showSlideBorders}
                     onChange={onToggleBorders}
-                    className="h-4 w-4 rounded-xs border-elevated text-primary-strong"
+                    className="h-5 w-5 rounded-sm border-elevated text-primary-strong"
                   />
                   <span>Slide Borders</span>
                 </label>
@@ -369,7 +369,7 @@ export const DesktopWorkflowUI: React.FC<WorkflowUIProps> = ({ state, actions, h
                     type="checkbox"
                     checked={layoutConfig.showPageNumbers}
                     onChange={onTogglePageNumbers}
-                    className="h-4 w-4 rounded-xs border-elevated text-primary-strong"
+                    className="h-5 w-5 rounded-sm border-elevated text-primary-strong"
                   />
                   <span>Page Numbers</span>
                 </label>

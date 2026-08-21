@@ -9,14 +9,17 @@ import { PhaseSkeleton } from '@/components/shared/LoadingSkeleton';
 
 const MobileWorkflowUI = dynamic(() => import('./mobile/MobileWorkflowUI').then(m => m.MobileWorkflowUI), {
   loading: () => <PhaseSkeleton phaseName="Mobile" />,
+  ssr: false,
 });
 
 const TabletWorkflowUI = dynamic(() => import('./tablet/TabletWorkflowUI').then(m => m.TabletWorkflowUI), {
   loading: () => <PhaseSkeleton phaseName="Tablet" />,
+  ssr: false,
 });
 
 const DesktopWorkflowUI = dynamic(() => import('./desktop/DesktopWorkflowUI').then(m => m.DesktopWorkflowUI), {
   loading: () => <PhaseSkeleton phaseName="Desktop" />,
+  ssr: false,
 });
 
 type PlatformOverride = 'AUTO' | 'MOBILE' | 'TABLET' | 'DESKTOP';
@@ -41,18 +44,30 @@ function useMediaQuery(query: string): boolean {
 export const PlatformUIOrchestrator: React.FC<WorkflowUIProps> = ({ state, actions, handlers, resume, toolMode, onToolModeChange }) => {
   const [overrideMode, setOverrideMode] = useState<PlatformOverride>('AUTO');
   const [mounted, setMounted] = useState(false);
+  const [barDismissed, setBarDismissed] = useState(false);
   const isMobile = useMediaQuery(MOBILE_QUERY);
   const isTablet = useMediaQuery(TABLET_QUERY);
   const isDesktop = useMediaQuery(DESKTOP_QUERY);
 
   useEffect(() => setMounted(true), []);
+  useEffect(() => {
+    try {
+      if (localStorage.getItem('po:hidePlatformBar') === '1') setBarDismissed(true);
+    } catch {}
+  }, []);
 
   const platformProps = { state, actions, handlers, resume, toolMode, onToolModeChange };
 
+  const handleDismissBar = () => {
+    setBarDismissed(true);
+    try { localStorage.setItem('po:hidePlatformBar', '1'); } catch {}
+  };
+
   return (
-    <div className="w-full max-w-full">
-      {/* Device Viewport Override Toolbar — balanced spacing, aligned icons */}
-      <div className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-slate-700/60 bg-slate-900/50 px-3 py-2.5 text-xs backdrop-blur-sm">
+    <div className="w-full max-w-full min-w-0">
+      {/* Platform bar — hidden on landing (toolMode===null) to keep fold clean; dismissible */}
+      {toolMode !== null && !barDismissed && (
+      <div className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-slate-700/60 bg-slate-900/50 px-3 py-2 text-xs backdrop-blur-sm">
         <div className="flex items-center gap-2.5">
           <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-slate-800 border border-slate-700">
             <Settings2 className="h-3.5 w-3.5 text-indigo-400" />
@@ -65,7 +80,7 @@ export const PlatformUIOrchestrator: React.FC<WorkflowUIProps> = ({ state, actio
             type="button"
             onClick={() => setOverrideMode('AUTO')}
             aria-pressed={overrideMode === 'AUTO'}
-            className={`inline-flex h-8 items-center justify-center rounded-full px-3.5 text-[11px] font-bold transition-all ${
+            className={`inline-flex h-11 items-center justify-center rounded-full px-3.5 text-[11px] font-bold transition-all ${
               overrideMode === 'AUTO'
                 ? 'bg-indigo-600 text-white shadow-sm'
                 : 'text-slate-400 hover:text-slate-100 hover:bg-slate-800'
@@ -78,7 +93,7 @@ export const PlatformUIOrchestrator: React.FC<WorkflowUIProps> = ({ state, actio
             type="button"
             onClick={() => setOverrideMode('MOBILE')}
             aria-pressed={overrideMode === 'MOBILE'}
-            className={`inline-flex h-8 items-center justify-center gap-1.5 rounded-full px-2.5 text-[11px] font-bold transition-all ${
+            className={`inline-flex h-11 items-center justify-center gap-1.5 rounded-full px-2.5 text-[11px] font-bold transition-all ${
               overrideMode === 'MOBILE'
                 ? 'bg-indigo-600 text-white shadow-sm'
                 : 'text-slate-400 hover:text-slate-100 hover:bg-slate-800'
@@ -93,7 +108,7 @@ export const PlatformUIOrchestrator: React.FC<WorkflowUIProps> = ({ state, actio
             type="button"
             onClick={() => setOverrideMode('TABLET')}
             aria-pressed={overrideMode === 'TABLET'}
-            className={`inline-flex h-8 items-center justify-center gap-1.5 rounded-full px-2.5 text-[11px] font-bold transition-all ${
+            className={`inline-flex h-11 items-center justify-center gap-1.5 rounded-full px-2.5 text-[11px] font-bold transition-all ${
               overrideMode === 'TABLET'
                 ? 'bg-indigo-600 text-white shadow-sm'
                 : 'text-slate-400 hover:text-slate-100 hover:bg-slate-800'
@@ -108,7 +123,7 @@ export const PlatformUIOrchestrator: React.FC<WorkflowUIProps> = ({ state, actio
             type="button"
             onClick={() => setOverrideMode('DESKTOP')}
             aria-pressed={overrideMode === 'DESKTOP'}
-            className={`inline-flex h-8 items-center justify-center gap-1.5 rounded-full px-2.5 text-[11px] font-bold transition-all ${
+            className={`inline-flex h-11 items-center justify-center gap-1.5 rounded-full px-2.5 text-[11px] font-bold transition-all ${
               overrideMode === 'DESKTOP'
                 ? 'bg-indigo-600 text-white shadow-sm'
                 : 'text-slate-400 hover:text-slate-100 hover:bg-slate-800'
@@ -119,7 +134,16 @@ export const PlatformUIOrchestrator: React.FC<WorkflowUIProps> = ({ state, actio
             <span className="hidden sm:inline">Desktop</span>
           </button>
         </div>
+        <button
+          type="button"
+          onClick={handleDismissBar}
+          aria-label="Dismiss platform bar"
+          className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-slate-400 hover:bg-slate-800 hover:text-slate-100 transition-colors"
+        >
+          <X className="h-4 w-4" />
+        </button>
       </div>
+      )}
 
       {/* Resume Prompt Banner */}
       {resume.resumeInfo && state.currentPhase === 1 && (
@@ -145,7 +169,7 @@ export const PlatformUIOrchestrator: React.FC<WorkflowUIProps> = ({ state, actio
               type="button"
               onClick={handlers.handleDismissResume}
               aria-label="Dismiss resume prompt"
-              className="flex h-9 w-9 items-center justify-center rounded-lg text-warning-soft/70 hover:bg-warning-faint/60 hover:text-warning-soft transition-colors"
+              className="flex h-11 w-11 items-center justify-center rounded-lg text-warning-soft/70 hover:bg-warning-faint/60 hover:text-warning-soft transition-colors"
               title="Dismiss"
             >
               <X className="h-4 w-4" />

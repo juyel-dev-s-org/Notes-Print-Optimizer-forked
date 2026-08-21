@@ -160,7 +160,7 @@ export default function AppShell() {
         <div role="status" className="bg-primary-faint/90 border-b border-primary-deep text-primary-soft text-xs py-2 px-4 flex items-center justify-between font-medium shadow-md">
           <div className="flex items-center gap-2">
             <RefreshCw className="w-3.5 h-3.5 text-primary-soft animate-spin" />
-            <span>A new version of Notes Print Optimizer is available.</span>
+            <span>A new version of Print Optimizer is available.</span>
           </div>
           <div className="flex items-center gap-2">
             <button

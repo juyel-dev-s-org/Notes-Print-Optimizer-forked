@@ -113,19 +113,21 @@ html {
   scrollbar-color: rgb(100 116 139 / 0.5) transparent;
 }
 
-/* Prevent horizontal scroll / layout shift (stable viewport left-right) */
+/* Stable viewport — prevent horizontal shift without clipping hover/shadow.
+   Use clip (not hidden) only on decorative shell; fix blowout with min-w-0 on flex children. */
 html, body {
-  overscroll-behavior-y: none;
+  overscroll-behavior-y: contain;
   -webkit-tap-highlight-color: transparent;
-  overflow-x: hidden;
-  max-width: 100vw;
+  width: 100%;
+  max-width: 100%;
 }
 
-/* App shell main container — prevent any child from forcing horizontal scroll */
-#main-content,
 .app-shell-bg {
-  overflow-x: hidden;
-  max-width: 100%;
+  overflow-x: clip;
+}
+
+#main-content {
+  min-width: 0;
 }
 
 /* Desktop-only ambient background: soft subtle radial glow.

@@ -62,13 +62,13 @@ const LazyPageCard: React.FC<{
           onClick={() => onToggleExcludePage(idx)}
           aria-pressed={isExcluded}
           aria-label={isExcluded ? `Include page ${idx + 1}` : `Exclude page ${idx + 1}`}
-          className="flex h-9 w-9 items-center justify-center rounded-md text-primary-soft hover:bg-elevated/60 active:scale-95 transition-transform"
+          className="flex h-11 w-11 items-center justify-center rounded-md text-primary-soft hover:bg-elevated/60 active:scale-95 transition-transform"
           title={isExcluded ? 'Include page' : 'Exclude page'}
         >
           {isExcluded ? (
-            <Square className="h-4 w-4 text-ink-muted" />
+            <Square className="h-5 w-5 text-ink-muted" />
           ) : (
-            <CheckSquare className="h-4 w-4 text-primary-soft fill-primary/20" />
+            <CheckSquare className="h-5 w-5 text-primary-soft fill-primary/20" />
           )}
         </button>
       </div>
