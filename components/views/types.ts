@@ -63,7 +63,7 @@ export interface WorkflowActions {
 /** All handler functions from usePageHandlers */
 export interface WorkflowHandlers {
   handleFilesUpload: (files: File[]) => void;
-  handleLoadSamplePdf: () => void;
+  handleLoadSamplePdf?: () => void;
   handleMoveItem: (index: number, direction: 'UP' | 'DOWN') => void;
   handleRemoveItem: (index: number) => void;
   handleReorderItem: (fromIndex: number, toIndex: number) => void;
@@ -104,7 +104,7 @@ export interface WorkflowUIProps {
   actions: WorkflowActions;
   handlers: WorkflowHandlers;
   resume: ResumeSession;
-  /** Active tool selection (landing tools box). Mobile-only for now. */
-  toolMode?: ToolMode;
-  onToolModeChange?: (mode: ToolMode) => void;
+  /** Active tool selection — null means landing (no tool chosen yet) */
+  toolMode?: ToolMode | null;
+  onToolModeChange?: (mode: ToolMode | null) => void;
 }
