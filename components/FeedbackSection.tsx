@@ -18,7 +18,7 @@ import {
   Star,
   X,
 } from 'lucide-react';
-import { EngineVersion } from '@/lib/optimizer/engine';
+
 import { LayoutConfig, OptimizationMetrics } from '@/lib/optimizer/types';
 import { FeedbackCategory, FeedbackUserInput, PdfStats, ProcessingSettings } from '@/lib/feedback/types';
 import { buildFeedbackPayload } from '@/lib/feedback/payloadBuilder';
@@ -28,7 +28,6 @@ import { useDialogFocus } from '@/lib/ui/useDialogFocus';
 
 interface FeedbackSectionProps {
   currentPhase: number;
-  selectedEngineVersion: EngineVersion;
   uploadedItemsCount: number;
   uploadedFileNames: string[];
   uploadedFileSizesMB?: number[];
@@ -48,7 +47,6 @@ interface FeedbackSectionProps {
 
 export const FeedbackSection: React.FC<FeedbackSectionProps> = ({
   currentPhase,
-  selectedEngineVersion,
   uploadedItemsCount,
   uploadedFileNames,
   uploadedFileSizesMB,
@@ -166,7 +164,7 @@ export const FeedbackSection: React.FC<FeedbackSectionProps> = ({
       const payload = await buildFeedbackPayload(
         userInput,
         currentPhase,
-        selectedEngineVersion,
+        "v2",
         getPdfStats(),
         getProcessingSettings(),
         finalPrintPdfBlob
@@ -205,7 +203,7 @@ export const FeedbackSection: React.FC<FeedbackSectionProps> = ({
     const payload = await buildFeedbackPayload(
       userInput,
       currentPhase,
-      selectedEngineVersion,
+      "v2",
       getPdfStats(),
       getProcessingSettings(),
       finalPrintPdfBlob

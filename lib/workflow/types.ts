@@ -20,7 +20,6 @@ import type {
   ProcessingProgress,
 } from '@/lib/optimizer/types';
 
-import type { EngineVersion } from '@/lib/optimizer/engine/types';
 
 /**
  * Numeric workflow phase. Mirrors `WorkflowPhase` exported from
@@ -115,8 +114,7 @@ export interface WorkflowState {
   selectedPageIndex: number;
   excludedPages: Set<number>;
 
-  // Master parameters / engine selection (user preferences)
-  selectedEngineVersion: EngineVersion;
+  // Master parameters (user preferences)
   masterParams: ProcessingParameters;
 
   // Processing toggle overrides (which params are manually controlled)
@@ -166,8 +164,7 @@ export type WorkflowAction =
   | { type: 'SET_SELECTED_PAGE_INDEX'; index: number }
   | { type: 'SET_EXCLUDED_PAGES'; pages: Set<number> }
   | { type: 'TOGGLE_PAGE_EXCLUDED'; pageIndex: number }
-  // Engine / master params
-  | { type: 'SET_ENGINE_VERSION'; version: EngineVersion }
+  // Master params
   | { type: 'SET_MASTER_PARAMS'; params: ProcessingParameters }
   // Processing toggles
   | { type: 'SET_PROCESSING_TOGGLES'; toggles: ProcessingToggleState }
@@ -190,5 +187,5 @@ export type WorkflowAction =
       optimizationTimeMs?: number;
       layoutTimeMs?: number;
     }
-  // Reset (preserves user preferences: masterParams + selectedEngineVersion)
+  // Reset (preserves user preferences: masterParams)
   | { type: 'RESET_WORKFLOW' };

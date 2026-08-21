@@ -2,7 +2,6 @@ import { ParameterGenerator } from '../optimizer/parameterGenerator';
 import type {
   LayoutConfig,
 } from '../optimizer/types';
-import type { EngineVersion } from '../optimizer/engine/types';
 import type {
   WorkflowAction,
   WorkflowState,
@@ -41,7 +40,6 @@ export const initialState: WorkflowState = {
   selectedPageIndex: 0,
   excludedPages: new Set<number>(),
 
-  selectedEngineVersion: 'v2' as EngineVersion,
   masterParams: ParameterGenerator.getPresetParameters('AUTO_ADAPTIVE'),
 
   processingToggles: { ...DEFAULT_PROCESSING_TOGGLES },
@@ -64,7 +62,7 @@ export const initialState: WorkflowState = {
 
 function resetTransientState(): Omit<
   WorkflowState,
-  'selectedEngineVersion' | 'masterParams'
+  'masterParams'
 > {
   return {
     currentPhase: 1,
@@ -163,10 +161,7 @@ export function workflowReducer(
       return { ...state, excludedPages: next };
     }
 
-    // Engine / master params
-    case 'SET_ENGINE_VERSION':
-      return { ...state, selectedEngineVersion: action.version };
-
+    // Master params
     case 'SET_MASTER_PARAMS':
       return { ...state, masterParams: action.params };
 
@@ -227,7 +222,6 @@ export function workflowReducer(
     case 'RESET_WORKFLOW':
       return {
         ...resetTransientState(),
-        selectedEngineVersion: state.selectedEngineVersion,
         masterParams: state.masterParams,
       };
 

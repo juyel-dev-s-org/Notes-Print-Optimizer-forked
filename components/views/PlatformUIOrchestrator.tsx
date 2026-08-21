@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useSyncExternalStore } from 'react';
 import dynamic from 'next/dynamic';
 import { WorkflowUIProps } from './types';
-import { RotateCcw, X } from 'lucide-react';
+import { X } from 'lucide-react';
 import { Smartphone, Tablet, Monitor, Settings2 } from 'lucide-react';
 import { PhaseSkeleton } from '@/components/shared/LoadingSkeleton';
 
@@ -41,7 +41,7 @@ function useMediaQuery(query: string): boolean {
   );
 }
 
-export const PlatformUIOrchestrator: React.FC<WorkflowUIProps> = ({ state, actions, handlers, resume, toolMode, onToolModeChange }) => {
+export const PlatformUIOrchestrator: React.FC<WorkflowUIProps> = ({ state, actions, handlers, toolMode, onToolModeChange }) => {
   const [overrideMode, setOverrideMode] = useState<PlatformOverride>('AUTO');
   const [mounted, setMounted] = useState(false);
   const [barDismissed, setBarDismissed] = useState(false);
@@ -56,7 +56,7 @@ export const PlatformUIOrchestrator: React.FC<WorkflowUIProps> = ({ state, actio
     } catch {}
   }, []);
 
-  const platformProps = { state, actions, handlers, resume, toolMode, onToolModeChange };
+  const platformProps = { state, actions, handlers, toolMode, onToolModeChange };
 
   const handleDismissBar = () => {
     setBarDismissed(true);
@@ -143,39 +143,6 @@ export const PlatformUIOrchestrator: React.FC<WorkflowUIProps> = ({ state, actio
           <X className="h-4 w-4" />
         </button>
       </div>
-      )}
-
-      {/* Resume Prompt Banner */}
-      {resume.resumeInfo && state.currentPhase === 1 && (
-        <div role="status" className="mb-4 flex items-center justify-between gap-3 rounded-xl border border-warning-strong/40 bg-warning-faint/30 p-3 shadow-md">
-          <div className="flex items-center gap-3 min-w-0">
-            <RotateCcw className="h-5 w-5 shrink-0 text-warning" />
-            <div className="min-w-0">
-              <p className="text-xs font-bold text-warning-soft">Resume where you left off?</p>
-              <p className="text-[11px] text-warning-soft/70 truncate">
-                {resume.resumeInfo.completedCount} of {resume.resumeInfo.totalPages} pages already processed.
-              </p>
-            </div>
-          </div>
-          <div className="flex items-center gap-2 shrink-0">
-            <button
-              type="button"
-              onClick={handlers.handleResumeProcessing}
-              className="rounded-lg bg-warning-strong px-3 py-1.5 text-[10px] font-bold text-white hover:bg-warning transition-colors"
-            >
-              Resume
-            </button>
-            <button
-              type="button"
-              onClick={handlers.handleDismissResume}
-              aria-label="Dismiss resume prompt"
-              className="flex h-11 w-11 items-center justify-center rounded-lg text-warning-soft/70 hover:bg-warning-faint/60 hover:text-warning-soft transition-colors"
-              title="Dismiss"
-            >
-              <X className="h-4 w-4" />
-            </button>
-          </div>
-        </div>
       )}
 
       {/* Render only the active view (matchMedia) so idle platform UIs stay unmounted */}

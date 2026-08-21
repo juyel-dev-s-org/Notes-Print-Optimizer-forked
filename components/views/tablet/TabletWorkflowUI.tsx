@@ -5,13 +5,11 @@ import dynamic from 'next/dynamic';
 import { WorkflowUIProps } from '../types';
 import { UploadArea } from '@/components/UploadArea';
 import { LandingHero } from '@/components/LandingHero';
-import { FeatureStrip } from '@/components/FeatureStrip';
 import { ToolsBox } from '@/components/tools/ToolsBox';
 import { FileSequencePanel } from '@/components/FileSequencePanel';
 import { BeforeAfterSlider } from '@/components/BeforeAfterSlider';
 import { PageGrid } from '@/components/PageGrid';
 import { PageSequencePreview } from '@/components/PageSequencePreview';
-import { EngineSelector } from '@/components/EngineSelector';
 import {
   Download,
   ArrowLeft,
@@ -63,7 +61,6 @@ export const TabletWorkflowUI: React.FC<WorkflowUIProps> = ({ state, actions, ha
           onSelectDarkPrint={() => onToolModeChange?.('dark-print')}
           onSelectEnhance={() => onToolModeChange?.('enhance')}
         />
-        <FeatureStrip />
       </div>
     );
   }
@@ -74,7 +71,6 @@ export const TabletWorkflowUI: React.FC<WorkflowUIProps> = ({ state, actions, ha
     mergedPdfBlob,
     mergedPdfBytes,
     mergedPageDataUrls,
-    selectedEngineVersion,
     processedPages,
     selectedPageIndex,
     excludedPages,
@@ -93,7 +89,6 @@ export const TabletWorkflowUI: React.FC<WorkflowUIProps> = ({ state, actions, ha
 
   const {
     setPhase: setCurrentPhase,
-    setEngineVersion: setSelectedEngineVersion,
     setSelectedPageIndex,
     setMasterParams: onMasterParamsChange,
     setProcessingToggles: onProcessingTogglesChange,
@@ -177,14 +172,8 @@ export const TabletWorkflowUI: React.FC<WorkflowUIProps> = ({ state, actions, ha
                 />
               </div>
 
-              {/* Right Column: Engine Selector & Sequence Preview (7 cols) */}
+              {/* Right Column: Sequence Preview (7 cols) */}
               <div className="md:col-span-7 flex flex-col gap-3 rounded-2xl border border-surface-2 bg-surface/90 p-4 shadow-xl">
-                <EngineSelector
-                  selectedVersion={selectedEngineVersion}
-                  onSelectVersion={setSelectedEngineVersion}
-                  disabled={isProcessing}
-                />
-
                 <PageSequencePreview pageUrls={mergedPageDataUrls} />
 
                 <div className="flex items-center justify-between gap-2 pt-3 border-t border-surface-2 mt-auto">
@@ -288,7 +277,7 @@ export const TabletWorkflowUI: React.FC<WorkflowUIProps> = ({ state, actions, ha
         ) : (
           <EmptyPhaseState
             title="No pages to optimize yet"
-            message="Upload and process your PDF first ÃƒÂ¢Ã¢â€šÂ¬â€ then you can fine-tune ink savings here."
+            message="Upload and process your PDF first — then you can fine-tune ink savings here."
             onBack={() => setCurrentPhase(1)}
             backLabel="Back to Upload"
           />
@@ -384,7 +373,7 @@ export const TabletWorkflowUI: React.FC<WorkflowUIProps> = ({ state, actions, ha
             )}
           </button>
           {layoutDirty && !isProcessing && (
-            <span className="text-[10px] text-warning font-medium">ÃƒÂ¢â€”Ã‚Â Unsaved changes</span>
+            <span className="text-[10px] text-warning font-medium">Unsaved changes</span>
           )}
         </div>
 
@@ -472,7 +461,6 @@ export const TabletWorkflowUI: React.FC<WorkflowUIProps> = ({ state, actions, ha
 
           <FeedbackSection
             currentPhase={4}
-            selectedEngineVersion={selectedEngineVersion}
             uploadedItemsCount={uploadedItems.length}
             uploadedFileNames={uploadedItems.map((item) => item.name)}
             uploadedFileSizesMB={uploadedItems.map((item) => (item.file?.size || 0) / (1024 * 1024))}
@@ -504,7 +492,7 @@ export const TabletWorkflowUI: React.FC<WorkflowUIProps> = ({ state, actions, ha
         ) : (
           <EmptyPhaseState
             title="Nothing here yet"
-            message="Generate your print-ready PDF first ÃƒÂ¢Ã¢â€šÂ¬â€ your summary and feedback form will appear here."
+            message="Generate your print-ready PDF first — your summary and feedback form will appear here."
             onBack={() => setCurrentPhase(3)}
             backLabel="Back to Layout"
           />

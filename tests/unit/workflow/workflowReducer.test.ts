@@ -263,14 +263,6 @@ describe('workflowReducer', () => {
   });
 
   describe('engine and params (user preferences)', () => {
-    it('should set engine version', () => {
-      const next = workflowReducer(state, {
-        type: 'SET_ENGINE_VERSION',
-        version: 'v2',
-      });
-      expect(next.selectedEngineVersion).toBe('v2');
-    });
-
     it('should set master params', () => {
       const params = { ...state.masterParams, preset: 'PW_DARK_SLIDE' as const };
       const next = workflowReducer(state, {
@@ -391,15 +383,6 @@ describe('workflowReducer', () => {
       expect(reset.isProcessing).toBe(false);
       expect(reset.progress).toBeNull();
       expect(reset.errorMessage).toBeNull();
-    });
-
-    it('should preserve selectedEngineVersion on reset', () => {
-      const setV2 = workflowReducer(state, {
-        type: 'SET_ENGINE_VERSION',
-        version: 'v2',
-      });
-      const reset = workflowReducer(setV2, { type: 'RESET_WORKFLOW' });
-      expect(reset.selectedEngineVersion).toBe('v2');
     });
 
     it('should preserve masterParams on reset', () => {

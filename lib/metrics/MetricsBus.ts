@@ -49,7 +49,6 @@ export class MetricsBus {
     const peakMemEvents = this.history.filter(e => e.type === 'memory:pressure') as MemoryPressureEvent[];
     const peakMem = peakMemEvents.length > 0 ? Math.max(...peakMemEvents.map(e => e.usedMB)) : 0;
     const workerCrashes = this.history.filter(e => e.type === 'worker:crashed').length;
-    const pluginErrors = this.history.filter(e => e.type === 'plugin:error').length;
     const firstEvent = this.history[0];
     const lastEvent = this.history[this.history.length - 1];
     const totalElapsed = firstEvent && lastEvent ? lastEvent.timestamp - firstEvent.timestamp : 0;
@@ -60,7 +59,6 @@ export class MetricsBus {
       avgProcessingTimeMs: Math.round(avgTime),
       peakMemoryMB: Math.round(peakMem),
       workerCrashes,
-      pluginErrors,
       totalElapsedMs: Math.round(totalElapsed),
     };
   }

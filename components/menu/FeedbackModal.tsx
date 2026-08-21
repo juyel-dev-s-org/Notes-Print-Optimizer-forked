@@ -3,7 +3,7 @@
 import React from 'react';
 import dynamic from 'next/dynamic';
 import { Modal } from './Modal';
-import { defaultLayoutConfig } from '@/lib/config/defaults';
+import { initialLayoutConfig } from '@/lib/workflow/workflowReducer';
 import { CardSkeleton } from '@/components/shared/LoadingSkeleton';
 
 // Lazy-load the existing feedback form so it stays out of the initial bundle.
@@ -26,7 +26,6 @@ export const FeedbackModal: React.FC<FeedbackModalProps> = ({ onClose }) => {
     <Modal title="Send Feedback" subtitle="Ratings, bugs and feature requests" onClose={onClose}>
       <FeedbackSection
         currentPhase={4}
-        selectedEngineVersion="v2"
         uploadedItemsCount={0}
         uploadedFileNames={[]}
         totalInputPages={0}
@@ -34,7 +33,7 @@ export const FeedbackModal: React.FC<FeedbackModalProps> = ({ onClose }) => {
         excludedPagesCount={0}
         totalOriginalSizeMB={0}
         finalMetrics={null}
-        layoutConfig={defaultLayoutConfig}
+        layoutConfig={initialLayoutConfig}
         finalPrintPdfBlob={null}
       />
     </Modal>

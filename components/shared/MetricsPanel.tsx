@@ -61,7 +61,6 @@ function MetricsPanel({ defaultOpen = false }: MetricsPanelProps) {
         <Row label="Avg time/page" value={`${snapshot.avgProcessingTimeMs}ms`} />
         <Row label="Peak memory" value={`${snapshot.peakMemoryMB}MB`} />
         <Row label="Worker crashes" value={snapshot.workerCrashes} />
-        <Row label="Plugin errors" value={snapshot.pluginErrors} />
         <Row label="Elapsed" value={`${(snapshot.totalElapsedMs / 1000).toFixed(1)}s`} />
       </div>
 

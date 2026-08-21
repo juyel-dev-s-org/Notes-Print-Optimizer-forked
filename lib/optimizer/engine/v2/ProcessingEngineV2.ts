@@ -13,11 +13,6 @@
  *  - Batched IDB writes (reduces transaction overhead)
  *  - Adaptive yield frequency per device class
  */
-import { PipelineController } from '../../../pipeline/PipelineController';
-import { PluginRegistry } from '../../../pipeline/PluginRegistry';
-import { RenderPlugin } from '../../../plugins/RenderPlugin';
-import { AnalyzePlugin } from '../../../plugins/AnalyzePlugin';
-import { ProcessPlugin } from '../../../plugins/ProcessPlugin';
 import type { IProcessingEngine } from '../IProcessingEngine';
 import type {
   EngineCapabilities,
@@ -139,7 +134,6 @@ export class ProcessingEngineV2 implements IProcessingEngine {
       'v2: Sequential pipeline with immediate persistence & adaptive quality.',
   };
 
-  private controller: PipelineController;
   private activeThumbnailUrls: Set<string> = new Set();
   private disposed = false;
   private abortController: AbortController | null = null;
@@ -147,15 +141,7 @@ export class ProcessingEngineV2 implements IProcessingEngine {
   private thumbTargetCanvas: { canvas: OffscreenCanvas | HTMLCanvasElement; ctx: any; isOffscreen: boolean } | null = null;
 
   constructor(_layoutConfig?: LayoutConfig) {
-    const registry = new PluginRegistry();
-    registry.register(new RenderPlugin());
-    registry.register(new AnalyzePlugin());
-    registry.register(new ProcessPlugin());
-    this.controller = new PipelineController(registry);
-  }
-
-  getController(): PipelineController {
-    return this.controller;
+    /* No external pipeline scaffold — V2 owns its sequential loop. */
   }
 
   async analyzePage(imageData: ImageData, pageIndex: number): Promise<PageProfile> {
@@ -486,7 +472,6 @@ export class ProcessingEngineV2 implements IProcessingEngine {
     if (this.disposed) return;
     this.disposed = true;
     this.abortController?.abort();
-    this.controller.abort();
     this.cleanupThumbnails();
     if (this.thumbSrcCanvas) freeCanvas(this.thumbSrcCanvas.canvas, this.thumbSrcCanvas.isOffscreen);
     if (this.thumbTargetCanvas) freeCanvas(this.thumbTargetCanvas.canvas, this.thumbTargetCanvas.isOffscreen);

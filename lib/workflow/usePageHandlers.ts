@@ -9,7 +9,6 @@ import { ExportService } from '../services/ExportService';
 import { OptimizationService } from '../services/OptimizationService';
 import { pwOptimizerStorage } from '../optimizer/storage';
 import { memoryManager } from '../optimizer/memoryManager';
-import { CheckpointManager } from '../pipeline/checkpoint/CheckpointManager';
 import { ParameterGenerator } from '../optimizer/parameterGenerator';
 import { getPdfjsLib } from '../optimizer/pdfjsLoader';
 import { sendFeedbackToGas } from '../feedback/gasClient';
@@ -20,10 +19,9 @@ import type {
   ProcessedPage,
   ProcessingParameters,
 } from '../optimizer/types';
-import type { ProcessingToggleState, ResumeInfo } from './types';
+import type { ProcessingToggleState } from './types';
 import { DEFAULT_PROCESSING_TOGGLES } from './types';
 
-const checkpointManager = new CheckpointManager();
 
 /* ----------------------------------------------------------------
  * buildEffectiveParams
@@ -95,7 +93,6 @@ export function usePageHandlers() {
     processedPages,
     excludedPages,
     layoutConfig,
-    selectedEngineVersion,
     masterParams,
     processingToggles,
     selectedPageIndex,
@@ -104,9 +101,7 @@ export function usePageHandlers() {
   } = state;
 
   const abortRef = useRef<AbortController | null>(null);
-  const [resumeInfo, setResumeInfo] = useState<ResumeInfo | null>(null);
   const [progressiveThumbnails, setProgressiveThumbnails] = useState<Map<number, string>>(new Map());
-  const snapshotsCheckedRef = useRef(false);
 
   /**
    * Tracks the blob URL of the current single-page preview so it can be
@@ -125,19 +120,6 @@ export function usePageHandlers() {
     memoryManager.checkStorageQuota().then(q => {
       if (q && !q.ok) console.warn(`[Storage] ${q.percentUsed.toFixed(0)}% used - near quota`);
     });
-    if (!snapshotsCheckedRef.current) {
-      snapshotsCheckedRef.current = true;
-      checkpointManager.listSnapshots().then(snapshots => {
-        if (snapshots.length > 0) {
-          const latest = snapshots.reduce((a, b) => a.lastUpdated > b.lastUpdated ? a : b);
-          if (latest.completedCount < latest.totalPages) {
-            setResumeInfo(latest);
-          } else {
-            checkpointManager.remove(latest.documentId);
-          }
-        }
-      });
-    }
     const handleUnload = () => {
       pwOptimizerStorage.clearCache();
       memoryManager.revokeAllBlobUrls();
@@ -178,25 +160,6 @@ export function usePageHandlers() {
     actions.setError(null);
     actions.setPhase(1);
   }, [actions]);
-
-  const handleResumeProcessing = useCallback(() => {
-    if (!resumeInfo) return;
-    actions.setError(null);
-    actions.setProcessing(true);
-    actions.setProgress({
-      stage: 'INITIALIZING', currentPage: resumeInfo.completedCount, totalPages: resumeInfo.totalPages,
-      percent: Math.round((resumeInfo.completedCount / resumeInfo.totalPages) * 100),
-      currentAction: 'Resuming from checkpoint...', elapsedMs: 0,
-    });
-    setResumeInfo(null);
-  }, [resumeInfo, actions]);
-
-  const handleDismissResume = useCallback(() => {
-    if (resumeInfo) {
-      checkpointManager.remove(resumeInfo.documentId);
-      setResumeInfo(null);
-    }
-  }, [resumeInfo]);
 
   const handleResetWorkflow = useCallback(() => {
     if (abortRef.current) { abortRef.current.abort(); abortRef.current = null; }
@@ -318,19 +281,10 @@ export function usePageHandlers() {
     setProgressiveThumbnails(new Map());
     await withProcessing(async () => {
       const signal = abortController.signal;
-      await checkpointManager.save(pdfId, {
-        documentId: pdfId, totalPages: 0, completedPages: [],
-        engineVersion: selectedEngineVersion, params: masterParams as unknown as Record<string, unknown>,
-        layoutConfig: { gridFormat: '2x2', paperSize: 'A4', orientation: 'PORTRAIT',
-          outerMarginMm: { top: 2, left: 5, right: 3, bottom: 2 }, innerMarginMm: 1, marginMm: 2, spacingMm: 1,
-          showSlideBorders: false, showPageNumbers: false, headerTitle: '',
-        } as unknown as Record<string, unknown>,
-      });
       const service = new OptimizationService();
       const effectiveParams = buildEffectiveParams(masterParams, processingToggles);
       const { processedPages: pages, docProfile: dProf } = await service.processDocument(
         mergedPdfBytes.buffer.slice(mergedPdfBytes.byteOffset, mergedPdfBytes.byteOffset + mergedPdfBytes.byteLength) as ArrayBuffer, pdfId, effectiveParams.preset,
-        selectedEngineVersion,
         (curr, total, action) => {
           if (signal.aborted) throw new Error('CANCELLED');
           actions.setProgress({
@@ -338,9 +292,6 @@ export function usePageHandlers() {
             percent: Math.round((curr / total) * 100), currentAction: action,
             elapsedMs: Date.now() - startTime,
           });
-          if (curr > 0 && curr <= total) {
-            checkpointManager.markPageDone(pdfId, curr);
-          }
         },
         (pageIndex, thumbUrl) => {
           setProgressiveThumbnails(prev => {
@@ -360,10 +311,9 @@ export function usePageHandlers() {
       actions.setPageProfiles(dProf.pages);
       actions.setProcessedPages(pages);
       actions.setPhase(2);
-      await checkpointManager.remove(pdfId);
     }, 'Processing failed due to browser memory limits.', null);
     if (abortRef.current === abortController) abortRef.current = null;
-  }, [mergedPdfBytes, masterParams, processingToggles, selectedEngineVersion, actions, withProcessing]);
+  }, [mergedPdfBytes, masterParams, processingToggles, actions, withProcessing]);
 
   /* ----------------------------------------------------------------
    * handlePreviewReprocess  -  SINGLE-PAGE PREVIEW PROCESSING
@@ -405,7 +355,7 @@ export function usePageHandlers() {
     try {
       const effectiveParams = buildEffectiveParams(masterParams, processingToggles);
       const { getProcessingEngine } = await import('../optimizer/engine');
-      const engine = getProcessingEngine(selectedEngineVersion);
+const engine = getProcessingEngine();
 
       // 1. Render ONLY the selected page from the cached or loaded PDF
       let pdfDoc = previewPdfDocRef.current?.bytes === mergedPdfBytes ? previewPdfDocRef.current.doc : null;
@@ -532,7 +482,7 @@ export function usePageHandlers() {
     }
   }, [
     mergedPdfBytes, processedPages, selectedPageIndex, masterParams,
-    processingToggles, selectedEngineVersion, pageProfiles, actions,
+    processingToggles, pageProfiles, actions,
   ]);
 
   /* ----------------------------------------------------------------
@@ -568,7 +518,6 @@ export function usePageHandlers() {
       const effectiveParams = buildEffectiveParams(masterParams, processingToggles);
       const { processedPages: pages, docProfile: dProf } = await service.processDocument(
         mergedPdfBytes.buffer.slice(mergedPdfBytes.byteOffset, mergedPdfBytes.byteOffset + mergedPdfBytes.byteLength) as ArrayBuffer, pdfId, effectiveParams.preset,
-        selectedEngineVersion,
         (curr, total, action) => {
           if (signal.aborted) throw new Error('CANCELLED');
           actions.setProgress({
@@ -597,7 +546,7 @@ export function usePageHandlers() {
       actions.setExcludedPages(new Set());
     }, 'Re-processing failed. Try reducing settings values.', null);
     if (abortRef.current === abortController) abortRef.current = null;
-  }, [mergedPdfBytes, masterParams, processingToggles, selectedEngineVersion, actions, withProcessing]);
+  }, [mergedPdfBytes, masterParams, processingToggles, actions, withProcessing]);
 
   /* ----------------------------------------------------------------
    * handleResetSettings  -  RESET DEFAULTS
@@ -773,7 +722,7 @@ export function usePageHandlers() {
     handleTogglePageNumbers, handleUpdateOuterMargins, handleUpdateInnerMargin,
     handleApplyLayout, handleDownloadFinalPrintPdf, handleProceedToPhase4,
     handleSendFeedback, compilePhase3PrintLayout,
-    handleCancelProcessing, resumeInfo, handleResumeProcessing, handleDismissResume,
+    handleCancelProcessing,
     progressiveThumbnails,
   };
 }

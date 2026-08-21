@@ -5,13 +5,11 @@ import dynamic from 'next/dynamic';
 import { WorkflowUIProps } from '../types';
 import { UploadArea } from '@/components/UploadArea';
 import { LandingHero } from '@/components/LandingHero';
-import { FeatureStrip } from '@/components/FeatureStrip';
 import { ToolsBox } from '@/components/tools/ToolsBox';
 import { FileSequencePanel } from '@/components/FileSequencePanel';
 import { BeforeAfterSlider } from '@/components/BeforeAfterSlider';
 import { PageGrid } from '@/components/PageGrid';
 import { PageSequencePreview } from '@/components/PageSequencePreview';
-import { EngineSelector } from '@/components/EngineSelector';
 import {
   Download,
   ArrowLeft,
@@ -65,7 +63,6 @@ export const MobileWorkflowUI: React.FC<WorkflowUIProps> = ({ state, actions, ha
           onSelectDarkPrint={() => onToolModeChange?.('dark-print')}
           onSelectEnhance={() => onToolModeChange?.('enhance')}
         />
-        <FeatureStrip />
       </div>
     );
   }
@@ -77,7 +74,6 @@ export const MobileWorkflowUI: React.FC<WorkflowUIProps> = ({ state, actions, ha
     mergedPdfBlob,
     mergedPdfBytes,
     mergedPageDataUrls,
-    selectedEngineVersion,
     processedPages,
     selectedPageIndex,
     excludedPages,
@@ -96,7 +92,6 @@ export const MobileWorkflowUI: React.FC<WorkflowUIProps> = ({ state, actions, ha
 
   const {
     setPhase: setCurrentPhase,
-    setEngineVersion: setSelectedEngineVersion,
     setSelectedPageIndex,
     setMasterParams: onMasterParamsChange,
     setProcessingToggles: onProcessingTogglesChange,
@@ -182,13 +177,6 @@ export const MobileWorkflowUI: React.FC<WorkflowUIProps> = ({ state, actions, ha
                 onReorderItem={onReorderItem}
                 onSmartArrange={onSmartArrange}
                 compact
-              />
-
-              {/* Modular Processing Engine Selector */}
-              <EngineSelector
-                selectedVersion={selectedEngineVersion}
-                onSelectVersion={setSelectedEngineVersion}
-                disabled={isProcessing}
               />
 
               {/* Sequence Gallery Preview */}
@@ -294,7 +282,7 @@ export const MobileWorkflowUI: React.FC<WorkflowUIProps> = ({ state, actions, ha
         ) : (
           <EmptyPhaseState
             title="No pages to optimize yet"
-            message="Upload and process your PDF first ÃƒÂ¢Ã¢â€šÂ¬â€ then you can fine-tune ink savings here."
+            message="Upload and process your PDF first — then you can fine-tune ink savings here."
             onBack={() => setCurrentPhase(1)}
             backLabel="Back to Upload"
           />
@@ -388,7 +376,7 @@ export const MobileWorkflowUI: React.FC<WorkflowUIProps> = ({ state, actions, ha
             )}
           </button>
           {layoutDirty && !isProcessing && (
-            <span className="text-[9px] text-warning font-bold">ÃƒÂ¢â€”Ã‚Â Unsaved</span>
+            <span className="text-[9px] text-warning font-bold">Unsaved</span>
           )}
         </div>
 
@@ -475,7 +463,6 @@ export const MobileWorkflowUI: React.FC<WorkflowUIProps> = ({ state, actions, ha
 
           <FeedbackSection
             currentPhase={4}
-            selectedEngineVersion={selectedEngineVersion}
             uploadedItemsCount={uploadedItems.length}
             uploadedFileNames={uploadedItems.map((item) => item.name)}
             uploadedFileSizesMB={uploadedItems.map((item) => (item.file?.size || 0) / (1024 * 1024))}
@@ -507,7 +494,7 @@ export const MobileWorkflowUI: React.FC<WorkflowUIProps> = ({ state, actions, ha
         ) : (
           <EmptyPhaseState
             title="Nothing here yet"
-            message="Generate your print-ready PDF first ÃƒÂ¢Ã¢â€šÂ¬â€ your summary and feedback form will appear here."
+            message="Generate your print-ready PDF first — your summary and feedback form will appear here."
             onBack={() => setCurrentPhase(3)}
             backLabel="Back to Layout"
           />

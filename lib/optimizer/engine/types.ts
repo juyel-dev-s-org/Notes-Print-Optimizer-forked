@@ -6,7 +6,7 @@ import {
   OptimizationMetrics,
 } from '../types';
 
-export type EngineVersion = 'v1' | 'v2' | 'v3';
+export type EngineVersion = 'v2';
 
 export interface EngineCapabilities {
   supportsWebWorkers: boolean;
