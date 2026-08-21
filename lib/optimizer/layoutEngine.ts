@@ -67,7 +67,7 @@ export class LayoutEngine {
   }
 
   public static getSheetFooterText(sheetIndex: number, totalSheets: number): string {
-    return `Sheet ${sheetIndex + 1} of ${totalSheets}  \u2022  PW Notes Print Optimizer`;
+    return `Sheet ${sheetIndex + 1} of ${totalSheets}  \u2022  Print Optimizer`;
   }
 
   public static composeSheet(slideImages: ImageData[], sheetIndex: number, totalSheets: number, config: LayoutConfig): HTMLCanvasElement {

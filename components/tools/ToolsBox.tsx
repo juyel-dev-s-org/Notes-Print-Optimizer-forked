@@ -23,7 +23,7 @@ export const ToolsBox: React.FC<ToolsBoxProps> = ({ onSelectDarkPrint, onSelectE
       <span className="text-[10px] font-medium text-slate-500">Free · No sign-up</span>
     </div>
 
-    <div className="grid grid-cols-2 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+    <div className="grid grid-cols-1 gap-3 min-[375px]:grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 auto-rows-fr">
       <ToolCard
         title="Dark Notes → Print"
         description="Turn dark lecture slides into crisp, print-ready PDFs with auto-whitening and smart N-up layouts."

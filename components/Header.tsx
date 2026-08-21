@@ -42,7 +42,7 @@ export const Header: React.FC<HeaderProps> = ({
   onReset,
   onNavigatePhase,
   isProcessing = false,
-  showStepper = true,
+  showStepper = false,
 }) => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const hamburgerRef = useRef<HTMLButtonElement>(null);
@@ -190,8 +190,9 @@ export const Header: React.FC<HeaderProps> = ({
         </div>
 
         {/* Top Progress Line — only after tool chosen */}
-        <div className="h-0.5 w-full bg-surface-2">
+        <div aria-hidden="true" className="h-0.5 w-full bg-surface-2">
           <div
+            aria-hidden="true"
             className="h-full bg-gradient-to-r from-primary via-accent-soft to-success transition-[width] duration-200 ease-in-out"
             style={{ width: showStepper ? `${(currentPhase / 4) * 100}%` : '0%' }}
           />
@@ -230,7 +231,7 @@ export const Header: React.FC<HeaderProps> = ({
                   ref={drawerCloseRef}
                   type="button"
                   onClick={() => setIsMenuOpen(false)}
-                  className="flex h-9 w-9 items-center justify-center rounded-lg bg-surface-2 text-ink-muted hover:text-white"
+                  className="flex h-11 w-11 items-center justify-center rounded-lg bg-surface-2 text-ink-muted hover:text-white"
                   aria-label="Close menu"
                 >
                   <X className="h-5 w-5" />

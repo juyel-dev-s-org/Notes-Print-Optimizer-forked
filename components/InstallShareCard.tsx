@@ -51,8 +51,8 @@ export const InstallShareCard: React.FC = () => {
   const handleShare = useCallback(async () => {
     const url = window.location.origin + (process.env.NEXT_PUBLIC_BASE_PATH || '');
     const data = {
-      title: 'Notes Print Optimizer',
-      text: 'Turn dark lecture slides into clean, ink-saving print PDFs. 100% private, on-device.',
+      title: 'Print Optimizer',
+      text: 'Every PDF, print-perfect — merge, whiten, enhance & layout. 100% private, on-device.',
       url,
     };
     try {
@@ -114,8 +114,7 @@ export const InstallShareCard: React.FC = () => {
           </div>
 
           <p className="mt-3 text-xs leading-relaxed text-ink-muted">
-            Enjoying it? Share Notes Print Optimizer with friends who want to
-            save ink and paper.
+            Enjoying it? Share Print Optimizer with friends who want to save ink and paper.
           </p>
 
           <button
@@ -154,8 +153,7 @@ export const InstallShareCard: React.FC = () => {
         </div>
 
         <p className="mt-3 text-xs leading-relaxed text-ink-muted">
-          Add Notes Print Optimizer to your home screen for instant access,
-          offline support and a full-screen workspace.
+          Add Print Optimizer to your home screen for instant access, offline support and a full-screen workspace.
         </p>
 
         <div className="mt-3 flex flex-wrap gap-1.5">

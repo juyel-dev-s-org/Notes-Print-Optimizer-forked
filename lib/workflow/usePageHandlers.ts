@@ -100,6 +100,7 @@ export function usePageHandlers() {
     processingToggles,
     selectedPageIndex,
     pageProfiles,
+    mergedPageDataUrls,
   } = state;
 
   const abortRef = useRef<AbortController | null>(null);
@@ -228,10 +229,20 @@ export function usePageHandlers() {
   }, [actions]);
 
   const generateMergedPreview = useCallback(async (items: UploadedItem[]) => {
-    if (items.length === 0) { actions.setMergeResult(null, null, []); return; }
+    // Revoke previous thumbnails to prevent orphaned blob URLs
+    if (mergedPageDataUrls.length > 0) {
+      mergedPageDataUrls.forEach((url: string) => {
+        try { memoryManager.revokeBlobUrl(url); } catch {}
+      });
+    }
+    if (items.length === 0) {
+      actions.setMergeResult(null, null, []);
+      setProgressiveThumbnails(new Map());
+      return;
+    }
     const result = await UploadService.mergeAndPreview(items);
     if (result) actions.setMergeResult(result.pdfBlob, result.pdfBytes, result.thumbnails);
-  }, [actions]);
+  }, [actions, mergedPageDataUrls]);
 
   const handleFilesUpload = useCallback(async (newFiles: File[]) => {
     await withProcessing(async () => {
@@ -251,17 +262,7 @@ export function usePageHandlers() {
     });
   }, [uploadedItems, actions, withProcessing, generateMergedPreview]);
 
-  const handleLoadSamplePdf = useCallback(async () => {
-    await withProcessing(async () => {
-      const item = await UploadService.generateSamplePdf();
-      const updatedList = [item];
-      actions.setUploadedItems(updatedList);
-      await generateMergedPreview(updatedList);
-    }, 'Failed to load sample PDF.', {
-      stage: 'INITIALIZING', currentPage: 1, totalPages: 1,
-      percent: 30, currentAction: 'Generating sample slides...', elapsedMs: 0,
-    });
-  }, [actions, withProcessing, generateMergedPreview]);
+
 
   const handleMoveItem = useCallback(async (index: number, direction: 'UP' | 'DOWN') => {
     const targetIdx = direction === 'UP' ? index - 1 : index + 1;
@@ -300,8 +301,7 @@ export function usePageHandlers() {
   const handleRemoveItem = useCallback(async (index: number) => {
     const newList = uploadedItems.filter((_, i) => i !== index);
     actions.setUploadedItems(newList);
-    if (newList.length > 0) await generateMergedPreview(newList);
-    else actions.setMergeResult(null, null, []);
+    await generateMergedPreview(newList);
   }, [uploadedItems, actions, generateMergedPreview]);
 
   const handleDownloadMerged = useCallback(() => {
@@ -763,7 +763,7 @@ export function usePageHandlers() {
 
   return {
     state, actions,
-    handleResetWorkflow, handleFilesUpload, handleLoadSamplePdf,
+    handleResetWorkflow, handleFilesUpload,
     handleMoveItem, handleRemoveItem, handleDownloadMerged,
     handleSmartArrange, handleReorderItem,
     handleProceedToPhase2, handleToggleExcludePage, handleDownloadOptimized1Up,
