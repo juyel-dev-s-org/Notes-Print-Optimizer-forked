@@ -51,39 +51,41 @@ export const PlatformUIOrchestrator: React.FC<WorkflowUIProps> = ({ state, actio
 
   return (
     <div className="w-full max-w-full">
-      {/* Device Viewport Override Toolbar */}
-      <div className="mb-4 lg:mb-3 flex items-center justify-between gap-2 rounded-xl border border-surface-2 bg-surface/60 p-2 lg:p-1.5 text-xs">
-        <div className="flex items-center gap-2">
-          <Settings2 className="h-3.5 w-3.5 text-primary-soft" />
-          <span className="font-bold text-ink-muted text-[11px]">Platform Layout Mode:</span>
+      {/* Device Viewport Override Toolbar — balanced spacing, aligned icons */}
+      <div className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-slate-700/60 bg-slate-900/50 px-3 py-2.5 text-xs backdrop-blur-sm">
+        <div className="flex items-center gap-2.5">
+          <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-slate-800 border border-slate-700">
+            <Settings2 className="h-3.5 w-3.5 text-indigo-400" />
+          </span>
+          <span className="text-[11px] font-bold tracking-wide text-slate-300">Platform Layout Mode:</span>
         </div>
 
-        <div className="flex items-center gap-1 rounded-lg bg-bg p-1 border border-surface-2">
+        <div className="flex items-center gap-1.5 rounded-full bg-slate-950 p-1 border border-slate-800">
           <button
             type="button"
             onClick={() => setOverrideMode('AUTO')}
             aria-pressed={overrideMode === 'AUTO'}
-            className={`flex h-8 items-center gap-1 px-2.5 rounded-md text-[11px] font-bold transition-colors ${
+            className={`inline-flex h-8 items-center justify-center rounded-full px-3.5 text-[11px] font-bold transition-all ${
               overrideMode === 'AUTO'
-                ? 'bg-primary-strong text-white shadow-xs'
-                : 'text-ink-muted hover:text-ink'
+                ? 'bg-indigo-600 text-white shadow-sm'
+                : 'text-slate-400 hover:text-slate-100 hover:bg-slate-800'
             }`}
           >
-            <span>Auto Responsive</span>
+            Auto Responsive
           </button>
 
           <button
             type="button"
             onClick={() => setOverrideMode('MOBILE')}
             aria-pressed={overrideMode === 'MOBILE'}
-            className={`flex h-8 items-center gap-1 px-2.5 rounded-md text-[11px] font-bold transition-colors ${
+            className={`inline-flex h-8 items-center justify-center gap-1.5 rounded-full px-2.5 text-[11px] font-bold transition-all ${
               overrideMode === 'MOBILE'
-                ? 'bg-primary-strong text-white shadow-xs'
-                : 'text-ink-muted hover:text-ink'
+                ? 'bg-indigo-600 text-white shadow-sm'
+                : 'text-slate-400 hover:text-slate-100 hover:bg-slate-800'
             }`}
             title="Force Mobile UI View"
           >
-            <Smartphone className="h-3 w-3" />
+            <Smartphone className="h-3.5 w-3.5" />
             <span className="hidden sm:inline">Mobile</span>
           </button>
 
@@ -91,14 +93,14 @@ export const PlatformUIOrchestrator: React.FC<WorkflowUIProps> = ({ state, actio
             type="button"
             onClick={() => setOverrideMode('TABLET')}
             aria-pressed={overrideMode === 'TABLET'}
-            className={`flex h-8 items-center gap-1 px-2.5 rounded-md text-[11px] font-bold transition-colors ${
+            className={`inline-flex h-8 items-center justify-center gap-1.5 rounded-full px-2.5 text-[11px] font-bold transition-all ${
               overrideMode === 'TABLET'
-                ? 'bg-primary-strong text-white shadow-xs'
-                : 'text-ink-muted hover:text-ink'
+                ? 'bg-indigo-600 text-white shadow-sm'
+                : 'text-slate-400 hover:text-slate-100 hover:bg-slate-800'
             }`}
             title="Force Tablet UI View"
           >
-            <Tablet className="h-3 w-3" />
+            <Tablet className="h-3.5 w-3.5" />
             <span className="hidden sm:inline">Tablet</span>
           </button>
 
@@ -106,14 +108,14 @@ export const PlatformUIOrchestrator: React.FC<WorkflowUIProps> = ({ state, actio
             type="button"
             onClick={() => setOverrideMode('DESKTOP')}
             aria-pressed={overrideMode === 'DESKTOP'}
-            className={`flex h-8 items-center gap-1 px-2.5 rounded-md text-[11px] font-bold transition-colors ${
+            className={`inline-flex h-8 items-center justify-center gap-1.5 rounded-full px-2.5 text-[11px] font-bold transition-all ${
               overrideMode === 'DESKTOP'
-                ? 'bg-primary-strong text-white shadow-xs'
-                : 'text-ink-muted hover:text-ink'
+                ? 'bg-indigo-600 text-white shadow-sm'
+                : 'text-slate-400 hover:text-slate-100 hover:bg-slate-800'
             }`}
             title="Force Desktop UI View"
           >
-            <Monitor className="h-3 w-3" />
+            <Monitor className="h-3.5 w-3.5" />
             <span className="hidden sm:inline">Desktop</span>
           </button>
         </div>

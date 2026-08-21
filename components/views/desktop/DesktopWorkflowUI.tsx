@@ -6,6 +6,7 @@ import { WorkflowUIProps } from '../types';
 import { UploadArea } from '@/components/UploadArea';
 import { LandingHero } from '@/components/LandingHero';
 import { FeatureStrip } from '@/components/FeatureStrip';
+import { ToolsBox } from '@/components/tools/ToolsBox';
 import { FileSequencePanel } from '@/components/FileSequencePanel';
 import { BeforeAfterSlider } from '@/components/BeforeAfterSlider';
 import { PageGrid } from '@/components/PageGrid';
@@ -19,7 +20,6 @@ import {
   CheckCircle2,
   RotateCcw,
   Check,
-  Monitor,
 } from 'lucide-react';
 import { PhaseErrorBoundary } from '@/components/shared/PhaseErrorBoundary';
 import { CardSkeleton } from '@/components/shared/LoadingSkeleton';
@@ -43,7 +43,18 @@ const ProcessingSettingsPanel = dynamic(() => import('@/components/ProcessingSet
   loading: () => <CardSkeleton />,
 });
 
-export const DesktopWorkflowUI: React.FC<WorkflowUIProps> = ({ state, actions, handlers }) => {
+const EnhanceToolView = dynamic(() => import('@/components/enhance/EnhanceToolView').then(m => m.EnhanceToolView), {
+  loading: () => <CardSkeleton />,
+});
+
+export const DesktopWorkflowUI: React.FC<WorkflowUIProps> = ({ state, actions, handlers, toolMode, onToolModeChange }) => {
+  if (toolMode === 'enhance') {
+    return (
+      <div className="flex flex-col gap-6 pb-12 w-full max-w-full">
+        <EnhanceToolView onBack={() => onToolModeChange?.('dark-print')} />
+      </div>
+    );
+  }
   const {
     currentPhase,
     isProcessing,
@@ -111,28 +122,29 @@ export const DesktopWorkflowUI: React.FC<WorkflowUIProps> = ({ state, actions, h
 
   return (
     <div className="flex flex-col gap-6 pb-12 w-full max-w-full">
-      {/* Platform Badge Indicator */}
-      <div className="flex items-center justify-between px-1 text-[10px] text-ink-muted font-mono">
-        <span className="flex items-center gap-1.5 bg-surface/80 border border-surface-2 px-3 py-1 rounded-full">
-          <Monitor className="h-3.5 w-3.5 text-primary-soft" />
-          Desktop / Laptop Viewport
-        </span>
-        <span>Expanded Multi-Column Dashboard</span>
-      </div>
-
-      {/* PHASE 1: UPLOAD & MERGE */}
+      {/* PHASE 1: UPLOAD & MERGE — Upload primary, ToolsBox + FeatureStrip follow */}
       {currentPhase === 1 && (
         <PhaseErrorBoundary phaseName="Upload & Merge">
         <div className="flex flex-col gap-5 animate-in fade-in duration-200">
           <LandingHero />
 
-          <UploadArea
-            onFilesUpload={onFilesUpload}
-            onLoadSample={onLoadSample}
-            isProcessing={isProcessing}
+          <div id="upload-area" className="scroll-mt-4">
+            <UploadArea
+              onFilesUpload={onFilesUpload}
+              onLoadSample={onLoadSample}
+              isProcessing={isProcessing}
+            />
+          </div>
+
+          <ToolsBox
+            onSelectDarkPrint={() => {
+              onToolModeChange?.('dark-print');
+              document.getElementById('upload-area')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }}
+            onSelectEnhance={() => onToolModeChange?.('enhance')}
           />
 
-          {/* Empty-state value strip: fills unused space, stays minimal */}
+          {/* Empty-state value strip: compact bottom, not blocking upload */}
           {uploadedItems.length === 0 && !isProcessing && <FeatureStrip />}
 
           {uploadedItems.length > 0 && (
