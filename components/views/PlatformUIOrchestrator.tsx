@@ -65,9 +65,10 @@ export const PlatformUIOrchestrator: React.FC<WorkflowUIProps> = ({ state, actio
 
   return (
     <div className="w-full max-w-full min-w-0">
-      {/* Platform bar — hidden on landing (toolMode===null) to keep fold clean; dismissible */}
+      {/* Platform bar — dev affordance: hidden on landing AND on phones (<sm) where
+          forcing another platform's layout makes no sense. Dismissible. */}
       {toolMode !== null && !barDismissed && (
-      <div className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-slate-700/60 bg-slate-900/50 px-3 py-2 text-xs backdrop-blur-sm">
+      <div className="mb-4 hidden items-center justify-between gap-3 rounded-xl border border-slate-700/60 bg-slate-900/50 px-3 py-2 text-xs backdrop-blur-sm sm:flex">
         <div className="flex items-center gap-2.5">
           <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-slate-800 border border-slate-700">
             <Settings2 className="h-3.5 w-3.5 text-indigo-400" />
