@@ -90,6 +90,7 @@ export type EnhanceAction =
   | { type: 'PROCESS_PROGRESS'; progress: EnhanceProgress }
   | { type: 'PROCESS_COMPLETE'; results: EnhancePageResult[]; fileName: string }
   | { type: 'PROCESS_ERROR'; error: string }
+  | { type: 'PROCESS_CANCEL' }
   | { type: 'EXPORT_START' }
   | { type: 'EXPORT_COMPLETE'; blob: Blob; fileName: string }
   | { type: 'EXPORT_ERROR'; error: string };

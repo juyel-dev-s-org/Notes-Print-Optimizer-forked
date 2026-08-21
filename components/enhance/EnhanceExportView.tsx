@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { Loader2, Download, CheckCircle2, RotateCcw, SlidersHorizontal, AlertCircle } from 'lucide-react';
+import { Loader2, Download, CheckCircle2, RotateCcw, SlidersHorizontal, AlertCircle, Share2 } from 'lucide-react';
 import type { EnhanceWorkflow } from '@/lib/enhance/useEnhanceWorkflow';
 
 export const EnhanceExportView: React.FC<{ workflow: EnhanceWorkflow }> = ({ workflow }) => {
@@ -20,7 +20,7 @@ export const EnhanceExportView: React.FC<{ workflow: EnhanceWorkflow }> = ({ wor
   return (
     <div className="flex flex-col gap-4">
       <div className="flex flex-col items-center gap-3 rounded-2xl border border-slate-800/70 bg-slate-900/70 p-6 text-center">
-        <span className="flex h-14 w-14 items-center justify-center rounded-2xl bg-emerald-500/15 text-emerald-400 border border-emerald-500/30">
+        <span className="flex h-14 w-14 items-center justify-center rounded-2xl bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 animate-[scale-in_0.4s_ease-out]">
           <CheckCircle2 className="h-7 w-7" aria-hidden="true" />
         </span>
         <h2 className="text-base font-bold text-white">Print-Ready PDF</h2>
@@ -40,14 +40,38 @@ export const EnhanceExportView: React.FC<{ workflow: EnhanceWorkflow }> = ({ wor
         </button>
 
         {ready && (
-          <button
-            type="button"
-            onClick={handleDownload}
-            className="flex h-12 w-full max-w-sm items-center justify-center gap-2 rounded-xl border border-slate-700 bg-slate-900 text-sm font-bold text-white transition-transform duration-150 active:scale-[0.98]"
-          >
-            <Download className="h-4 w-4 text-[#a78bfa]" />
-            Save {state.fileName}
-          </button>
+          <>
+            <button
+              type="button"
+              onClick={handleDownload}
+              className="flex h-12 w-full max-w-sm items-center justify-center gap-2 rounded-xl border border-slate-700 bg-slate-900 text-sm font-bold text-white transition-transform duration-150 active:scale-[0.98]"
+            >
+              <Download className="h-4 w-4 text-[#a78bfa]" />
+              Save {state.fileName}
+            </button>
+            {typeof navigator !== 'undefined' && 'share' in navigator && (
+              <button
+                type="button"
+                onClick={async () => {
+                  if (!state.pdfBlob) return;
+                  try {
+                    const file = new File([state.pdfBlob], state.fileName, { type: 'application/pdf' });
+                    if (navigator.canShare?.({ files: [file] })) {
+                      await navigator.share({ files: [file], title: state.fileName });
+                    } else {
+                      await navigator.share({ title: state.fileName });
+                    }
+                  } catch {
+                    /* user cancelled */
+                  }
+                }}
+                className="flex h-11 w-full max-w-sm items-center justify-center gap-2 rounded-xl border border-slate-700/70 bg-slate-900/70 text-xs font-bold text-slate-200 transition-transform duration-150 active:scale-[0.98]"
+              >
+                <Share2 className="h-4 w-4 text-[#a78bfa]" />
+                Share PDF
+              </button>
+            )}
+          </>
         )}
       </div>
 

@@ -8,7 +8,7 @@
  * long jobs can be cancelled.
  */
 
-import { useCallback, useMemo, useReducer, useRef } from 'react';
+import { useCallback, useEffect, useMemo, useReducer, useRef } from 'react';
 import { isLikelyPdfFile, UploadService } from '@/lib/services/UploadService';
 import { buildEnhanceFileName, enhanceReducer } from './enhanceReducer';
 import { EnhanceExporter } from './enhanceExporter';
@@ -21,21 +21,36 @@ export function useEnhanceWorkflow() {
   const [state, dispatch] = useReducer(enhanceReducer, INITIAL_ENHANCE_STATE);
   const abortRef = useRef<AbortController | null>(null);
 
+  useEffect(() => () => {
+    abortRef.current?.abort();
+  }, []);
+
   const runProcessing = useCallback(async (items: Parameters<typeof EnhanceProcessor.process>[0], settings: EnhanceSettings) => {
     abortRef.current?.abort();
-    abortRef.current = new AbortController();
+    const controller = new AbortController();
+    abortRef.current = controller;
+    const { signal } = controller;
     dispatch({ type: 'PROCESS_START' });
     try {
       const results = await EnhanceProcessor.process(
         items,
         settings,
         (p) => dispatch({ type: 'PROCESS_PROGRESS', progress: p }),
-        abortRef.current.signal,
+        signal,
       );
+      if (signal.aborted) return;
       dispatch({ type: 'PROCESS_COMPLETE', results, fileName: buildEnhanceFileName(items) });
     } catch (err) {
+      if (signal.aborted) {
+        if (abortRef.current?.signal === signal) {
+          dispatch({ type: 'PROCESS_CANCEL' });
+        }
+        return;
+      }
       if (err instanceof Error && err.message === 'Processing cancelled.') {
-        dispatch({ type: 'RESET' });
+        if (abortRef.current?.signal === signal) {
+          dispatch({ type: 'PROCESS_CANCEL' });
+        }
         return;
       }
       dispatch({
