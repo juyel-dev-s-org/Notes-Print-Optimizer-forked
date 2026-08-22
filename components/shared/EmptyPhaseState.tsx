@@ -21,7 +21,7 @@ export const EmptyPhaseState: React.FC<EmptyPhaseStateProps> = ({
     <div className="flex h-12 w-12 items-center justify-center rounded-xl border border-elevated bg-surface-2 text-ink-muted">
       <FileQuestion className="h-6 w-6" aria-hidden="true" />
     </div>
-    <h3 className="text-sm font-bold text-white">{title}</h3>
+    <h3 className="text-sm font-bold text-ink">{title}</h3>
     <p className="max-w-sm text-xs leading-relaxed text-ink-muted">{message}</p>
     <button
       type="button"

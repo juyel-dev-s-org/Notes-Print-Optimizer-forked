@@ -188,14 +188,14 @@ export const InfoTooltip: React.FC<InfoTooltipProps> = ({
                   <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-primary/20 text-primary-soft border border-primary/30">
                     <Info className="h-4 w-4" />
                   </div>
-                  {title && <h4 className="text-sm font-bold text-white">{title}</h4>}
+                  {title && <h4 className="text-sm font-bold text-ink">{title}</h4>}
                 </div>
                 <button
                   ref={sheetCloseRef}
                   type="button"
                   onClick={() => setIsOpen(false)}
                   aria-label="Close information"
-                  className="flex h-9 w-9 items-center justify-center rounded-lg text-ink-muted hover:bg-surface-2 hover:text-white"
+                  className="flex h-9 w-9 items-center justify-center rounded-lg text-ink-muted hover:bg-surface-2 hover:text-ink"
                 >
                   <X className="h-4 w-4" />
                 </button>
@@ -228,7 +228,7 @@ export const InfoTooltip: React.FC<InfoTooltipProps> = ({
             role="tooltip"
           >
             {title && (
-              <div className="font-bold text-white mb-1 flex items-center gap-1.5">
+              <div className="font-bold text-ink mb-1 flex items-center gap-1.5">
                 <Info className="h-3.5 w-3.5 text-primary-soft shrink-0" />
                 <span>{title}</span>
               </div>

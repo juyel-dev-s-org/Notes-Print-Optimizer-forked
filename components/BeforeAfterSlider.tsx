@@ -155,7 +155,7 @@ export const BeforeAfterSlider: React.FC<BeforeAfterSliderProps> = ({ page, merg
             type="button"
             onClick={() => setZoom((z) => Math.min(2.5, z + 0.25))}
             aria-label="Zoom in"
-            className="flex h-10 w-10 items-center justify-center rounded-lg bg-surface-2 text-ink-muted hover:bg-elevated hover:text-white"
+            className="flex h-10 w-10 items-center justify-center rounded-lg bg-surface-2 text-ink-muted hover:bg-elevated hover:text-ink"
             title="Zoom In"
           >
             <ZoomIn className="h-4 w-4" />
@@ -164,7 +164,7 @@ export const BeforeAfterSlider: React.FC<BeforeAfterSliderProps> = ({ page, merg
             type="button"
             onClick={() => setZoom((z) => Math.max(0.75, z - 0.25))}
             aria-label="Zoom out"
-            className="flex h-10 w-10 items-center justify-center rounded-lg bg-surface-2 text-ink-muted hover:bg-elevated hover:text-white"
+            className="flex h-10 w-10 items-center justify-center rounded-lg bg-surface-2 text-ink-muted hover:bg-elevated hover:text-ink"
             title="Zoom Out"
           >
             <ZoomOut className="h-4 w-4" />
@@ -173,7 +173,7 @@ export const BeforeAfterSlider: React.FC<BeforeAfterSliderProps> = ({ page, merg
             type="button"
             onClick={() => { setZoom(1); setSliderPos(50); }}
             aria-label="Reset zoom"
-            className="flex h-10 w-10 items-center justify-center rounded-lg bg-surface-2 text-ink-muted hover:bg-elevated hover:text-white"
+            className="flex h-10 w-10 items-center justify-center rounded-lg bg-surface-2 text-ink-muted hover:bg-elevated hover:text-ink"
             title="Reset Zoom"
           >
             <RotateCcw className="h-4 w-4" />
@@ -258,4 +258,3 @@ export const BeforeAfterSlider: React.FC<BeforeAfterSliderProps> = ({ page, merg
     </div>
   );
 };
-

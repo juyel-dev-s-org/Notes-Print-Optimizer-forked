@@ -8,6 +8,7 @@ import {
   RefreshCw,
 } from 'lucide-react';
 import { AppLogo } from './AppLogo';
+import { ThemeToggle } from '@/components/ui/ThemeToggle';
 import { useDialogFocus } from '@/lib/ui/useDialogFocus';
 
 import type { WorkflowPhase } from '@/lib/workflow/types';
@@ -104,10 +105,10 @@ export const Header: React.FC<HeaderProps> = ({
 
   return (
     <>
-      <header id="app-header" className="sticky top-0 z-40 w-full bg-surface/95 backdrop-blur-md border-b border-surface-2 text-white pt-safe">
+      <header id="app-header" className="sticky top-0 z-40 w-full bg-surface/95 backdrop-blur-md border-b border-surface-2 text-ink pt-safe">
         <div className="mx-auto max-w-7xl px-3 py-2.5 sm:px-6 lg:py-3">
           <div className="flex items-center justify-between gap-2 lg:grid lg:grid-cols-[1fr_auto_1fr] lg:gap-4">
-            {/* Left: Hamburger Menu Button & Logo */}
+            {/* Left: Hamburger Menu Button, Theme Toggle & Logo */}
             <div className="flex items-center gap-2 lg:justify-self-start">
               <button
                 ref={hamburgerRef}
@@ -121,9 +122,11 @@ export const Header: React.FC<HeaderProps> = ({
                 {isMenuOpen ? <X className="h-5 w-5 text-warning" /> : <Menu className="h-5 w-5 text-primary-soft" />}
               </button>
 
+              <ThemeToggle />
+
               <div className="flex items-center gap-2.5">
                 <AppLogo className="h-9 w-9 text-primary-soft drop-shadow-md lg:h-10 lg:w-10" />
-                <h1 className="text-[15px] font-bold tracking-tight text-white sm:text-base">
+                <h1 className="text-[15px] font-bold tracking-tight text-ink sm:text-base">
                   Print Optimizer
                 </h1>
               </div>
@@ -131,7 +134,7 @@ export const Header: React.FC<HeaderProps> = ({
 
             {/* Middle: Stepper — landing has no stepper, after tool choose it appears */}
             {showStepper && (
-              <nav aria-label="Progress Stepper" className="hidden items-center gap-1 rounded-xl bg-slate-800/80 p-1 border border-slate-700/60 sm:flex lg:justify-self-center">
+              <nav aria-label="Progress Stepper" className="hidden items-center gap-1 rounded-xl bg-surface-2/80 p-1 border border-elevated/60 sm:flex lg:justify-self-center">
                 {steps.map((step) => {
                   const isActive = currentPhase === step.phase;
                   const isCompleted = currentPhase > step.phase;
@@ -149,10 +152,10 @@ export const Header: React.FC<HeaderProps> = ({
                       aria-label={`Step ${step.phase}: ${step.label}`}
                       className={`flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-semibold transition-all ${
                         isActive
-                          ? 'bg-indigo-600 text-white shadow-sm'
+                          ? 'bg-primary-strong text-white shadow-sm'
                           : isCompleted
-                          ? 'bg-emerald-500/15 text-emerald-300 hover:bg-emerald-500/25 border border-emerald-500/20'
-                          : 'text-slate-300 bg-slate-700/60 border border-slate-600/60 cursor-not-allowed'
+                          ? 'bg-success/15 text-success-soft hover:bg-success/25 border border-success/20'
+                          : 'text-ink bg-elevated/60 border border-elevated/60 cursor-not-allowed'
                       }`}
                     >
                       <span
@@ -160,8 +163,8 @@ export const Header: React.FC<HeaderProps> = ({
                           isActive
                             ? 'bg-white text-indigo-700 ring-white/20'
                             : isCompleted
-                            ? 'bg-emerald-500 text-white ring-emerald-400/30'
-                            : 'bg-slate-600 text-slate-100 ring-slate-500/40'
+                            ? 'bg-success-strong text-white ring-success/30'
+                            : 'bg-elevated text-ink ring-primary/20'
                         }`}
                       >
                         {isCompleted ? <CheckCircle2 className="h-3.5 w-3.5" /> : step.phase}
@@ -179,7 +182,7 @@ export const Header: React.FC<HeaderProps> = ({
                 <button
                   type="button"
                   onClick={onReset}
-                  className="flex h-9 items-center gap-1.5 rounded-lg border border-elevated bg-surface-2 px-3 text-xs font-medium text-ink-muted hover:bg-elevated hover:text-white transition-colors"
+                  className="flex h-9 items-center gap-1.5 rounded-lg border border-elevated bg-surface-2 px-3 text-xs font-medium text-ink-muted hover:bg-elevated hover:text-ink transition-colors"
                 >
                   <RefreshCw className="h-3.5 w-3.5" />
                   <span>Start Over</span>
@@ -223,7 +226,7 @@ export const Header: React.FC<HeaderProps> = ({
                 <div className="flex items-center gap-2.5">
                   <AppLogo className="h-8 w-8 text-primary-soft" />
                   <div>
-                    <h2 className="text-sm font-bold text-white">Print Optimizer</h2>
+                    <h2 className="text-sm font-bold text-ink">Print Optimizer</h2>
                     <p className="text-[11px] text-ink-muted">Settings &amp; Information</p>
                   </div>
                 </div>
@@ -231,7 +234,7 @@ export const Header: React.FC<HeaderProps> = ({
                   ref={drawerCloseRef}
                   type="button"
                   onClick={() => setIsMenuOpen(false)}
-                  className="flex h-11 w-11 items-center justify-center rounded-lg bg-surface-2 text-ink-muted hover:text-white"
+                  className="flex h-11 w-11 items-center justify-center rounded-lg bg-surface-2 text-ink-muted hover:text-ink"
                   aria-label="Close menu"
                 >
                   <X className="h-5 w-5" />
@@ -259,5 +262,4 @@ export const Header: React.FC<HeaderProps> = ({
     </>
   );
 };
-
 

@@ -8,8 +8,8 @@ import type { MetricsSnapshot } from '../../lib/metrics/types';
 function Row({ label, value }: { label: string; value: string | number }) {
   return (
     <div className="flex items-center justify-between">
-      <span className="text-slate-500">{label}</span>
-      <span className="text-slate-200 font-semibold">{value}</span>
+      <span className="text-ink-faint">{label}</span>
+      <span className="text-ink font-semibold">{value}</span>
     </div>
   );
 }
@@ -35,7 +35,7 @@ function MetricsPanel({ defaultOpen = false }: MetricsPanelProps) {
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className="fixed bottom-4 right-4 z-50 rounded-full bg-slate-800 px-3 py-1.5 text-xs font-mono text-slate-300 shadow-lg border border-slate-700 hover:bg-slate-700"
+        className="fixed bottom-4 right-4 z-50 rounded-full bg-surface-2 px-3 py-1.5 text-xs font-mono text-ink shadow-lg border border-elevated hover:bg-elevated"
       >
         Metrics
       </button>
@@ -43,13 +43,13 @@ function MetricsPanel({ defaultOpen = false }: MetricsPanelProps) {
   }
 
   return (
-    <div className="fixed bottom-4 right-4 z-50 w-72 rounded-xl border border-slate-700 bg-slate-900/95 p-3 shadow-2xl backdrop-blur-sm">
+    <div className="fixed bottom-4 right-4 z-50 w-72 rounded-xl border border-elevated bg-surface/95 p-3 shadow-2xl backdrop-blur-sm">
       <div className="mb-2 flex items-center justify-between">
-        <h3 className="text-xs font-bold text-slate-300">Metrics Panel</h3>
+        <h3 className="text-xs font-bold text-ink">Metrics Panel</h3>
         <button
           type="button"
           onClick={() => setOpen(false)}
-          className="rounded p-0.5 text-slate-500 hover:text-slate-300"
+          className="rounded p-0.5 text-ink-faint hover:text-ink"
         >
           <X className="h-3.5 w-3.5" />
         </button>
@@ -67,7 +67,7 @@ function MetricsPanel({ defaultOpen = false }: MetricsPanelProps) {
       <button
         type="button"
         onClick={() => metricsBus.clearHistory()}
-        className="mt-2 w-full rounded border border-slate-700 py-1 text-[10px] text-slate-500 hover:text-slate-300"
+        className="mt-2 w-full rounded border border-elevated py-1 text-[10px] text-ink-faint hover:text-ink"
       >
         Clear
       </button>

@@ -70,6 +70,71 @@
   --gradient-brand: linear-gradient(90deg, #243bff 0%, #5b35ff 55%, #a12cff 100%);
 }
 
+/* ------------------------------------------------------------------ */
+/* Light theme — same semantic names, paper-tuned values.              */
+/* data-theme is set pre-paint by the inline script in app/layout.tsx; */
+/* absence of the attribute = dark (the designed default).             */
+/* ------------------------------------------------------------------ */
+[data-theme='light'] {
+  --color-bg: #f4f6fb;
+  --color-surface: #ffffff;
+  --color-surface-2: #edf0f7;
+  --color-elevated: #d9deeb;
+  --color-line: #c9d0e0;
+
+  /* On light surfaces, "soft" accents must stay readable as text/icons,
+     so soft variants map to their deeper saturated stops. */
+  --color-primary: #4f46e5;
+  --color-primary-strong: #4338ca;
+  --color-primary-deep: #3730a3;
+  --color-primary-faint: #e0e7ff;
+  --color-primary-soft: #4f46e5;
+  --color-accent: #7c3aed;
+  --color-accent-soft: #6d28d9;
+  --color-accent-deep: #5b21b6;
+
+  --color-success: #059669;
+  --color-success-strong: #047857;
+  --color-success-deep: #065f46;
+  --color-success-soft: #047857;
+  --color-success-faint: #ecfdf5;
+  --color-warning: #b45309;
+  --color-warning-strong: #d97706;
+  --color-warning-soft: #92400e;
+  --color-warning-faint: #fffbeb;
+  --color-danger: #dc2626;
+  --color-danger-strong: #b91c1c;
+  --color-danger-deep: #991b1b;
+  --color-danger-soft: #b91c1c;
+  --color-danger-faint: #fef2f2;
+
+  --color-ink: #10192e;
+  --color-ink-muted: #475569;
+  --color-ink-faint: #64748b;
+
+  --shadow-card: 0 1px 2px rgb(16 24 40 / 0.06), 0 8px 24px -16px rgb(16 24 40 / 0.12);
+  --shadow-pop: 0 12px 32px -8px rgb(16 24 40 / 0.18), 0 4px 8px -4px rgb(16 24 40 / 0.08);
+  --shadow-float: 0 20px 50px -12px rgb(16 24 40 / 0.22);
+}
+
+[data-theme='light'] ::-webkit-scrollbar-thumb {
+  background: rgb(71 85 105 / 0.35);
+}
+[data-theme='light'] ::-webkit-scrollbar-thumb:hover {
+  background: rgb(71 85 105 / 0.55);
+}
+html[data-theme='light'] {
+  scrollbar-color: rgb(71 85 105 / 0.45) transparent;
+}
+
+@media (min-width: 1024px) {
+  [data-theme='light'] .app-shell-bg {
+    background-image:
+      radial-gradient(60rem 30rem at 50% -10%, rgba(79, 70, 229, 0.05), transparent 70%),
+      radial-gradient(50rem 26rem at 100% 112%, rgba(124, 58, 237, 0.04), transparent 70%);
+  }
+}
+
 @layer utilities {
   /* Safe area padding support for Android notches, camera cutouts & bottom gesture bars */
   .pt-safe {

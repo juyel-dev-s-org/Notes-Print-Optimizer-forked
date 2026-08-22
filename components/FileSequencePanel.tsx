@@ -179,7 +179,7 @@ export const FileSequencePanel: React.FC<FileSequencePanelProps> = ({
                   type="button"
                   onClick={() => onMoveItem(idx, 'UP')}
                   disabled={idx === 0 || isProcessing}
-                  className={`${btn} text-ink-muted hover:bg-surface-2 hover:text-white disabled:opacity-20`}
+                  className={`${btn} text-ink-muted hover:bg-surface-2 hover:text-ink disabled:opacity-20`}
                   title="Move Up"
                   aria-label={`Move ${item.name} up`}
                 >
@@ -189,7 +189,7 @@ export const FileSequencePanel: React.FC<FileSequencePanelProps> = ({
                   type="button"
                   onClick={() => onMoveItem(idx, 'DOWN')}
                   disabled={idx === items.length - 1 || isProcessing}
-                  className={`${btn} text-ink-muted hover:bg-surface-2 hover:text-white disabled:opacity-20`}
+                  className={`${btn} text-ink-muted hover:bg-surface-2 hover:text-ink disabled:opacity-20`}
                   title="Move Down"
                   aria-label={`Move ${item.name} down`}
                 >

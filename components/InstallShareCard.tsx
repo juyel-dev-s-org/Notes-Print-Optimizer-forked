@@ -84,7 +84,7 @@ export const InstallShareCard: React.FC = () => {
       type="button"
       onClick={() => setDismissed(true)}
       aria-label="Dismiss"
-      className="flex h-9 w-9 -m-1.5 shrink-0 items-center justify-center rounded-lg text-ink-muted transition-colors hover:bg-white/10 hover:text-white"
+      className="flex h-9 w-9 -m-1.5 shrink-0 items-center justify-center rounded-lg text-ink-muted transition-colors hover:bg-white/10 hover:text-ink"
     >
       <X className="h-3.5 w-3.5" />
     </button>
@@ -104,7 +104,7 @@ export const InstallShareCard: React.FC = () => {
                 <AppLogo className="h-7 w-7" />
               </div>
               <div>
-                <h3 className="text-sm font-bold text-white">Share this app</h3>
+                <h3 className="text-sm font-bold text-ink">Share this app</h3>
                 <p className="flex items-center gap-1 text-[11px] font-medium text-success-soft/90">
                   <Check className="h-3 w-3" /> Installed on your device
                 </p>
@@ -143,7 +143,7 @@ export const InstallShareCard: React.FC = () => {
               <AppLogo className="h-7 w-7" />
             </div>
             <div>
-              <h3 className="text-sm font-bold text-white">Install App</h3>
+              <h3 className="text-sm font-bold text-ink">Install App</h3>
               <p className="text-[11px] font-medium text-primary-soft/90">
                 One tap &middot; Home screen
               </p>

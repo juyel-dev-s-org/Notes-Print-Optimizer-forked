@@ -87,7 +87,7 @@ export const FullPdfViewerPreview: React.FC<FullPdfViewerPreviewProps> = ({
             <Layers className="h-4 w-4" />
           </div>
           <div>
-            <h3 className="text-xs sm:text-sm font-bold text-white flex items-center gap-2">
+            <h3 className="text-xs sm:text-sm font-bold text-ink flex items-center gap-2">
               <span>{title}</span>
               <span className="rounded-md bg-primary-strong/30 px-2 py-0.5 text-[10px] font-bold text-primary-soft border border-primary/30">
                 {layoutConfig.gridFormat} Grid
@@ -144,7 +144,7 @@ export const FullPdfViewerPreview: React.FC<FullPdfViewerPreviewProps> = ({
                 onClick={handleZoomOut}
                 disabled={zoomLevel <= 50}
                 aria-label="Zoom out"
-                className="flex h-8 w-8 items-center justify-center rounded-md text-ink-muted hover:text-white hover:bg-surface-2 disabled:opacity-30"
+                className="flex h-8 w-8 items-center justify-center rounded-md text-ink-muted hover:text-ink hover:bg-surface-2 disabled:opacity-30"
                 title="Zoom Out"
               >
                 <ZoomOut className="h-3.5 w-3.5" />
@@ -155,7 +155,7 @@ export const FullPdfViewerPreview: React.FC<FullPdfViewerPreviewProps> = ({
                 onClick={handleZoomIn}
                 disabled={zoomLevel >= 200}
                 aria-label="Zoom in"
-                className="flex h-8 w-8 items-center justify-center rounded-md text-ink-muted hover:text-white hover:bg-surface-2 disabled:opacity-30"
+                className="flex h-8 w-8 items-center justify-center rounded-md text-ink-muted hover:text-ink hover:bg-surface-2 disabled:opacity-30"
                 title="Zoom In"
               >
                 <ZoomIn className="h-3.5 w-3.5" />
@@ -165,7 +165,7 @@ export const FullPdfViewerPreview: React.FC<FullPdfViewerPreviewProps> = ({
                   type="button"
                   onClick={handleResetZoom}
                   aria-label="Reset zoom"
-                  className="flex h-8 w-8 items-center justify-center rounded-md text-ink-muted hover:text-white hover:bg-surface-2"
+                  className="flex h-8 w-8 items-center justify-center rounded-md text-ink-muted hover:text-ink hover:bg-surface-2"
                   title="Reset Zoom"
                 >
                   <RotateCcw className="h-3 w-3" />
@@ -180,7 +180,7 @@ export const FullPdfViewerPreview: React.FC<FullPdfViewerPreviewProps> = ({
             type="button"
             onClick={() => setIsFullscreen(true)}
             aria-label="Expand full screen PDF viewer"
-            className="flex items-center gap-1 rounded-lg border border-elevated bg-surface-2 px-2.5 py-1.5 text-[11px] font-bold text-ink hover:bg-elevated hover:text-white transition-all"
+            className="flex items-center gap-1 rounded-lg border border-elevated bg-surface-2 px-2.5 py-1.5 text-[11px] font-bold text-ink hover:bg-elevated hover:text-ink transition-all"
             title="Expand Full Screen PDF Viewer"
           >
             <Maximize2 className="h-3.5 w-3.5 text-primary-soft" />
@@ -225,7 +225,7 @@ export const FullPdfViewerPreview: React.FC<FullPdfViewerPreviewProps> = ({
               <button
                 type="button"
                 onClick={handlePrevSheet}
-                className="absolute left-2 top-1/2 -translate-y-1/2 flex h-10 w-10 items-center justify-center rounded-full border border-elevated bg-surface/90 text-white shadow-xl hover:bg-primary-strong hover:border-primary transition-all active:scale-95"
+                className="absolute left-2 top-1/2 -translate-y-1/2 flex h-10 w-10 items-center justify-center rounded-full border border-elevated bg-surface/90 text-ink shadow-xl hover:bg-primary-strong hover:border-primary transition-all active:scale-95"
                 aria-label="Previous Sheet"
               >
                 <ChevronLeft className="h-6 w-6" />
@@ -234,7 +234,7 @@ export const FullPdfViewerPreview: React.FC<FullPdfViewerPreviewProps> = ({
               <button
                 type="button"
                 onClick={handleNextSheet}
-                className="absolute right-2 top-1/2 -translate-y-1/2 flex h-10 w-10 items-center justify-center rounded-full border border-elevated bg-surface/90 text-white shadow-xl hover:bg-primary-strong hover:border-primary transition-all active:scale-95"
+                className="absolute right-2 top-1/2 -translate-y-1/2 flex h-10 w-10 items-center justify-center rounded-full border border-elevated bg-surface/90 text-ink shadow-xl hover:bg-primary-strong hover:border-primary transition-all active:scale-95"
                 aria-label="Next Sheet"
               >
                 <ChevronRight className="h-6 w-6" />

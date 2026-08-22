@@ -45,16 +45,16 @@ export const MarginSettings: React.FC<MarginSettingsProps> = ({
   };
 
   return (
-    <div className="flex flex-col gap-3 rounded-xl border border-slate-800 bg-slate-950/80 p-3.5 sm:p-4 text-xs">
-      <div className="flex items-center justify-between border-b border-slate-800 pb-2">
+    <div className="flex flex-col gap-3 rounded-xl border border-surface-2 bg-bg/80 p-3.5 sm:p-4 text-xs">
+      <div className="flex items-center justify-between border-b border-surface-2 pb-2">
         <div className="flex items-center gap-2">
-          <SlidersHorizontal className="h-4 w-4 text-indigo-400" />
-          <span className="font-bold text-white text-xs sm:text-sm">Custom Page Margins (mm)</span>
+          <SlidersHorizontal className="h-4 w-4 text-primary-soft" />
+          <span className="font-bold text-ink text-xs sm:text-sm">Custom Page Margins (mm)</span>
         </div>
         <button
           type="button"
           onClick={handleResetDefaults}
-          className="text-[10px] font-semibold text-indigo-400 hover:text-indigo-300 underline"
+          className="text-[10px] font-semibold text-primary-soft hover:text-primary-soft underline"
           title="Reset to default margins (Top:2, Left:5, Right:3, Bottom:2, Inner:1)"
         >
           Reset Defaults
@@ -65,15 +65,15 @@ export const MarginSettings: React.FC<MarginSettingsProps> = ({
         {/* Outer Margin Controls */}
         <div className="flex flex-col gap-2">
           <div className="flex items-center justify-between">
-            <span className="font-semibold text-slate-300 text-[11px]">Outer Margin</span>
-            <span className="text-[10px] text-slate-400">Space between content and page margin</span>
+            <span className="font-semibold text-ink text-[11px]">Outer Margin</span>
+            <span className="text-[10px] text-ink-muted">Space between content and page margin</span>
           </div>
 
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
             {/* Top */}
-            <div className="flex flex-col gap-1 rounded-lg bg-slate-900 border border-slate-800 p-2">
-              <label className="flex items-center gap-1 text-[10px] font-medium text-slate-400">
-                <ArrowUp className="h-3 w-3 text-indigo-400" />
+            <div className="flex flex-col gap-1 rounded-lg bg-surface border border-surface-2 p-2">
+              <label className="flex items-center gap-1 text-[10px] font-medium text-ink-muted">
+                <ArrowUp className="h-3 w-3 text-primary-soft" />
                 <span>Top</span>
               </label>
               <div className="flex items-center gap-1">
@@ -84,16 +84,16 @@ export const MarginSettings: React.FC<MarginSettingsProps> = ({
                   step={1}
                   value={outer.top}
                   onChange={(e) => handleOuterChange('top', Number(e.target.value))}
-                  className="w-full bg-slate-950 border border-slate-700 rounded-md px-2 py-1 text-xs font-bold text-white text-center focus:outline-none focus:border-indigo-500"
+                  className="w-full bg-bg border border-elevated rounded-md px-2 py-1 text-xs font-bold text-ink text-center focus:outline-none focus:border-primary"
                 />
-                <span className="text-[10px] text-slate-500 font-medium">mm</span>
+                <span className="text-[10px] text-ink-faint font-medium">mm</span>
               </div>
             </div>
 
             {/* Left */}
-            <div className="flex flex-col gap-1 rounded-lg bg-slate-900 border border-slate-800 p-2">
-              <label className="flex items-center gap-1 text-[10px] font-medium text-slate-400">
-                <ArrowLeft className="h-3 w-3 text-indigo-400" />
+            <div className="flex flex-col gap-1 rounded-lg bg-surface border border-surface-2 p-2">
+              <label className="flex items-center gap-1 text-[10px] font-medium text-ink-muted">
+                <ArrowLeft className="h-3 w-3 text-primary-soft" />
                 <span>Left</span>
               </label>
               <div className="flex items-center gap-1">
@@ -104,16 +104,16 @@ export const MarginSettings: React.FC<MarginSettingsProps> = ({
                   step={1}
                   value={outer.left}
                   onChange={(e) => handleOuterChange('left', Number(e.target.value))}
-                  className="w-full bg-slate-950 border border-slate-700 rounded-md px-2 py-1 text-xs font-bold text-white text-center focus:outline-none focus:border-indigo-500"
+                  className="w-full bg-bg border border-elevated rounded-md px-2 py-1 text-xs font-bold text-ink text-center focus:outline-none focus:border-primary"
                 />
-                <span className="text-[10px] text-slate-500 font-medium">mm</span>
+                <span className="text-[10px] text-ink-faint font-medium">mm</span>
               </div>
             </div>
 
             {/* Right */}
-            <div className="flex flex-col gap-1 rounded-lg bg-slate-900 border border-slate-800 p-2">
-              <label className="flex items-center gap-1 text-[10px] font-medium text-slate-400">
-                <ArrowRight className="h-3 w-3 text-indigo-400" />
+            <div className="flex flex-col gap-1 rounded-lg bg-surface border border-surface-2 p-2">
+              <label className="flex items-center gap-1 text-[10px] font-medium text-ink-muted">
+                <ArrowRight className="h-3 w-3 text-primary-soft" />
                 <span>Right</span>
               </label>
               <div className="flex items-center gap-1">
@@ -124,16 +124,16 @@ export const MarginSettings: React.FC<MarginSettingsProps> = ({
                   step={1}
                   value={outer.right}
                   onChange={(e) => handleOuterChange('right', Number(e.target.value))}
-                  className="w-full bg-slate-950 border border-slate-700 rounded-md px-2 py-1 text-xs font-bold text-white text-center focus:outline-none focus:border-indigo-500"
+                  className="w-full bg-bg border border-elevated rounded-md px-2 py-1 text-xs font-bold text-ink text-center focus:outline-none focus:border-primary"
                 />
-                <span className="text-[10px] text-slate-500 font-medium">mm</span>
+                <span className="text-[10px] text-ink-faint font-medium">mm</span>
               </div>
             </div>
 
             {/* Bottom */}
-            <div className="flex flex-col gap-1 rounded-lg bg-slate-900 border border-slate-800 p-2">
-              <label className="flex items-center gap-1 text-[10px] font-medium text-slate-400">
-                <ArrowDown className="h-3 w-3 text-indigo-400" />
+            <div className="flex flex-col gap-1 rounded-lg bg-surface border border-surface-2 p-2">
+              <label className="flex items-center gap-1 text-[10px] font-medium text-ink-muted">
+                <ArrowDown className="h-3 w-3 text-primary-soft" />
                 <span>Bottom</span>
               </label>
               <div className="flex items-center gap-1">
@@ -144,9 +144,9 @@ export const MarginSettings: React.FC<MarginSettingsProps> = ({
                   step={1}
                   value={outer.bottom}
                   onChange={(e) => handleOuterChange('bottom', Number(e.target.value))}
-                  className="w-full bg-slate-950 border border-slate-700 rounded-md px-2 py-1 text-xs font-bold text-white text-center focus:outline-none focus:border-indigo-500"
+                  className="w-full bg-bg border border-elevated rounded-md px-2 py-1 text-xs font-bold text-ink text-center focus:outline-none focus:border-primary"
                 />
-                <span className="text-[10px] text-slate-500 font-medium">mm</span>
+                <span className="text-[10px] text-ink-faint font-medium">mm</span>
               </div>
             </div>
           </div>
@@ -155,18 +155,18 @@ export const MarginSettings: React.FC<MarginSettingsProps> = ({
         {/* Inner Margin / Spacing Control */}
         <div className="flex flex-col gap-2">
           <div className="flex items-center justify-between">
-            <span className="font-semibold text-slate-300 text-[11px]">Inner Margin</span>
-            <span className="text-[10px] text-slate-400">The space between the pages</span>
+            <span className="font-semibold text-ink text-[11px]">Inner Margin</span>
+            <span className="text-[10px] text-ink-muted">The space between the pages</span>
           </div>
 
-          <div className="flex items-center gap-3 rounded-lg bg-slate-900 border border-slate-800 p-2.5">
-            <div className="flex h-8 w-8 items-center justify-center rounded-md bg-indigo-500/20 text-indigo-400 shrink-0">
+          <div className="flex items-center gap-3 rounded-lg bg-surface border border-surface-2 p-2.5">
+            <div className="flex h-8 w-8 items-center justify-center rounded-md bg-primary/20 text-primary-soft shrink-0">
               <Grid className="h-4 w-4" />
             </div>
             <div className="flex-1 flex items-center justify-between gap-2">
               <div>
-                <span className="text-xs font-bold text-white block">Inner Page Spacing</span>
-                <span className="text-[10px] text-slate-400">Space between grid pages</span>
+                <span className="text-xs font-bold text-ink block">Inner Page Spacing</span>
+                <span className="text-[10px] text-ink-muted">Space between grid pages</span>
               </div>
               <div className="flex items-center gap-1 w-24">
                 <input
@@ -176,9 +176,9 @@ export const MarginSettings: React.FC<MarginSettingsProps> = ({
                   step={1}
                   value={inner}
                   onChange={(e) => handleInnerChange(Number(e.target.value))}
-                  className="w-full bg-slate-950 border border-slate-700 rounded-md px-2 py-1 text-xs font-bold text-white text-center focus:outline-none focus:border-indigo-500"
+                  className="w-full bg-bg border border-elevated rounded-md px-2 py-1 text-xs font-bold text-ink text-center focus:outline-none focus:border-primary"
                 />
-                <span className="text-[10px] text-slate-500 font-medium">mm</span>
+                <span className="text-[10px] text-ink-faint font-medium">mm</span>
               </div>
             </div>
           </div>

@@ -21,11 +21,11 @@ export const EnhanceUploadView: React.FC<{ workflow: EnhanceWorkflow }> = ({ wor
     onFiles={(files) => workflow.handleUpload(files)}
     footer={
       <>
-        <span className="flex items-center gap-1 font-semibold text-emerald-400">
+        <span className="flex items-center gap-1 font-semibold text-success">
           <ShieldCheck className="h-3.5 w-3.5" />
           100% Private On-Device
         </span>
-        <span aria-hidden="true" className="text-slate-600">•</span>
+        <span aria-hidden="true" className="text-ink-faint">•</span>
         <span>Up to {MAX_FILES} PDFs · {MAX_FILE_SIZE_MB} MB each</span>
       </>
     }
