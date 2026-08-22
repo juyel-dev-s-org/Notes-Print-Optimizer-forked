@@ -98,7 +98,7 @@ export const Header: React.FC<HeaderProps> = ({
 
   const steps = [
     { phase: 1 as WorkflowPhase, label: 'Upload' },
-    { phase: 2 as WorkflowPhase, label: 'Optimize' },
+    { phase: 2 as WorkflowPhase, label: 'Whiten' },
     { phase: 3 as WorkflowPhase, label: 'Layout' },
     { phase: 4 as WorkflowPhase, label: 'Download' },
   ];

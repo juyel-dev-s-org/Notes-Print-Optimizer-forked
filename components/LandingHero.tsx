@@ -24,7 +24,7 @@ export const LandingHero: React.FC = () => (
     <div aria-hidden="true" className="pointer-events-none absolute -bottom-32 -right-16 h-72 w-72 rounded-full bg-[#A12CFF]/12 blur-3xl" />
 
     <div className="relative flex flex-col items-center gap-3.5">
-      <span className="inline-flex items-center gap-1.5 rounded-full border border-[#5B35FF]/40 bg-[#5B35FF]/10 px-3 py-1 text-[11px] font-bold tracking-wide text-[#a78bfa]">
+      <span className="inline-flex items-center gap-1.5 rounded-full border border-accent/40 bg-accent/10 px-3 py-1 text-xs font-bold tracking-wide text-accent-soft">
         <span className="relative flex h-1.5 w-1.5">
           <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-success opacity-75" />
           <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-success" />

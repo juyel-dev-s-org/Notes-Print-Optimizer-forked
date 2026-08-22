@@ -30,7 +30,7 @@ export const ToolCard: React.FC<ToolCardProps> = ({
     type="button"
     onClick={onClick}
     aria-label={`${title} — ${description}`}
-    className="group relative w-full min-h-[168px] min-[375px]:min-h-[148px] h-full rounded-2xl bg-gradient-to-br p-[1.5px] text-left transition-all duration-200 ease-out hover:-translate-y-0.5 hover:shadow-xl hover:shadow-primary/15 active:scale-[0.98] active:translate-y-0 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#818cf8]"
+    className="group relative w-full min-h-[168px] min-[375px]:min-h-[148px] h-full rounded-2xl bg-gradient-to-br p-[1.5px] text-left transition-all duration-200 ease-out hover:-translate-y-0.5 hover:shadow-xl hover:shadow-primary/15 active:scale-[0.98] active:translate-y-0 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-soft"
     style={{ backgroundImage: gradient }}
   >
     <span className="absolute -right-10 -top-10 h-28 w-28 rounded-full bg-white/10 blur-2xl transition-opacity duration-300 opacity-0 group-hover:opacity-60 group-active:opacity-100" aria-hidden="true" />
