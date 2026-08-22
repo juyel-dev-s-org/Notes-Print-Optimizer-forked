@@ -108,7 +108,8 @@ export function enhanceReducer(state: EnhanceState, action: EnhanceAction): Enha
       return { ...state, exportBusy: true, error: null };
 
     case 'EXPORT_COMPLETE':
-      return { ...state, exportBusy: false, pdfBlob: action.blob, fileName: action.fileName, step: 'export' };
+      // Stays on the workbench — the hook triggers the browser download.
+      return { ...state, exportBusy: false, pdfBlob: action.blob, fileName: action.fileName };
 
     case 'EXPORT_ERROR':
       return { ...state, exportBusy: false, error: action.error };

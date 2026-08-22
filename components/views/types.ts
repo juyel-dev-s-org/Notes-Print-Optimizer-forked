@@ -95,4 +95,8 @@ export interface WorkflowUIProps {
   /** Active tool selection — null means landing (no tool chosen yet) */
   toolMode?: ToolMode | null;
   onToolModeChange?: (mode: ToolMode | null) => void;
+  /** Inside the N-Up stage reached from the enhance tool — hides pipeline chrome. */
+  enhanceHandoffActive?: boolean;
+  /** Escape hatch back to the enhance workbench from the handoff stage. */
+  onBackToEnhance?: () => void;
 }
