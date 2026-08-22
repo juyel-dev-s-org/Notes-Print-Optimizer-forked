@@ -97,8 +97,8 @@ export const PageSequencePreview: React.FC<PageSequencePreviewProps> = ({ pageUr
         <h4 className="text-xs font-bold text-ink-muted truncate">
           Page Sequence Preview ({pageUrls.length} Pages)
         </h4>
-        <span className="text-[10px] text-ink-muted sm:hidden font-mono shrink-0">
-          1 Column Ã¢â‚¬Â¢ RAM Virtualized
+        <span className="text-xs text-ink-muted sm:hidden font-mono shrink-0">
+          1 Column · RAM Virtualized
         </span>
       </div>
 

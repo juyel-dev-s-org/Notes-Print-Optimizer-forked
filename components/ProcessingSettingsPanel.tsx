@@ -159,7 +159,7 @@ export const ProcessingSettingsPanel: React.FC<ProcessingSettingsPanelProps> = (
     previewTimerRef.current = setTimeout(() => {
       onPreviewReprocessRef.current();
     }, 300);
-  }, []);   // stable Ã¢â‚¬” reads from ref
+  }, []);   // stable — reads from ref
 
   useEffect(() => {
     return () => {
