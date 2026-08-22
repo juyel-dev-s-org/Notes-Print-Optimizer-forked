@@ -1,10 +1,16 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { Loader2, Download, CheckCircle2, RotateCcw, SlidersHorizontal, AlertCircle, Share2 } from 'lucide-react';
+import { Loader2, Download, CheckCircle2, RotateCcw, SlidersHorizontal, AlertCircle, Share2, LayoutGrid } from 'lucide-react';
 import type { EnhanceWorkflow } from '@/lib/enhance/useEnhanceWorkflow';
 
-export const EnhanceExportView: React.FC<{ workflow: EnhanceWorkflow }> = ({ workflow }) => {
+export interface EnhanceExportViewProps {
+  workflow: EnhanceWorkflow;
+  /** Bridges the enhanced pages into the main pipeline's N-Up layout. */
+  onChooseLayout?: () => void;
+}
+
+export const EnhanceExportView: React.FC<EnhanceExportViewProps> = ({ workflow, onChooseLayout }) => {
   const { state, handleExport, handleDownload, handleBackToWorkbench, handleReset } = workflow;
   const [sizeMb, setSizeMb] = useState<number | null>(null);
 
@@ -77,6 +83,16 @@ export const EnhanceExportView: React.FC<{ workflow: EnhanceWorkflow }> = ({ wor
       </div>
 
       <div className="flex flex-col gap-2">
+        {ready && onChooseLayout && (
+          <button
+            type="button"
+            onClick={onChooseLayout}
+            className="flex h-12 items-center justify-center gap-2 rounded-xl border border-primary/40 bg-primary-faint/60 text-sm font-bold text-primary-soft shadow-sm transition-transform duration-150 hover:bg-primary-faint active:scale-[0.98]"
+          >
+            <LayoutGrid className="h-4 w-4" aria-hidden="true" />
+            Choose Layout (N-Up)
+          </button>
+        )}
         <button
           type="button"
           onClick={handleBackToWorkbench}

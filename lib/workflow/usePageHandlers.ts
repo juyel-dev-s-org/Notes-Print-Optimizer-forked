@@ -90,6 +90,7 @@ export function usePageHandlers() {
   return {
     state, actions,
     handleResetWorkflow: session.handleResetWorkflow,
+    handleEnhanceLayoutHandoff: session.handleEnhanceLayoutHandoff,
     handleFilesUpload: fileQueue.handleFilesUpload,
     handleMoveItem: fileQueue.handleMoveItem,
     handleRemoveItem: fileQueue.handleRemoveItem,

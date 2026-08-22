@@ -11,6 +11,8 @@ import { EnhanceExportView } from './EnhanceExportView';
 
 export interface EnhanceToolViewProps {
   onBack: () => void;
+  /** Enhance results -> main pipeline N-Up layout (optional bridge). */
+  onHandoffToLayout?: (pages: Array<{ dataUrl: string; width: number; height: number }>) => void;
 }
 
 const STEP_LABEL: Record<EnhanceStep, string> = {
@@ -25,7 +27,7 @@ const STEP_LABEL: Record<EnhanceStep, string> = {
  * Own top bar (back arrow exits to the landing tools box) and its own
  * internal state machine via useEnhanceWorkflow.
  */
-export const EnhanceToolView: React.FC<EnhanceToolViewProps> = ({ onBack }) => {
+export const EnhanceToolView: React.FC<EnhanceToolViewProps> = ({ onBack, onHandoffToLayout }) => {
   const workflow = useEnhanceWorkflow();
   const { state } = workflow;
 
@@ -52,7 +54,19 @@ export const EnhanceToolView: React.FC<EnhanceToolViewProps> = ({ onBack }) => {
       {state.step === 'upload' && <EnhanceUploadView workflow={workflow} />}
       {state.step === 'arrange' && <EnhanceArrangeView workflow={workflow} />}
       {state.step === 'enhance' && <EnhanceWorkbenchView workflow={workflow} />}
-      {state.step === 'export' && <EnhanceExportView workflow={workflow} />}
+      {state.step === 'export' && (
+        <EnhanceExportView
+          workflow={workflow}
+          onChooseLayout={
+            onHandoffToLayout
+              ? () =>
+                  onHandoffToLayout(
+                    state.results.map((r) => ({ dataUrl: r.dataUrl, width: r.width, height: r.height })),
+                  )
+              : undefined
+          }
+        />
+      )}
     </div>
   );
 };
