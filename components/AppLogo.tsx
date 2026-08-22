@@ -2,112 +2,104 @@
 
 import React from 'react';
 
+/**
+ * Brand mark — mirrors public/icon.svg exactly so the in-app logo,
+ * favicon and installed PWA icon are one identical artwork.
+ */
 export function AppLogo({ className = 'h-10 w-10' }: { className?: string }) {
   return (
     <svg
       xmlns="http://www.w3.org/2000/svg"
-      viewBox="0 0 256 256"
+      viewBox="0 0 1024 1024"
       className={className}
       fill="none"
+      aria-hidden="true"
     >
       <defs>
-        <linearGradient id="pw_bg" x1="24" y1="20" x2="232" y2="236">
-          <stop offset="0%" stopColor="#3B82F6" />
-          <stop offset="55%" stopColor="#1D4ED8" />
-          <stop offset="100%" stopColor="#0B1220" />
+        <linearGradient id="po-bg" x1="120" y1="80" x2="900" y2="950" gradientUnits="userSpaceOnUse">
+          <stop offset="0%" stopColor="#243BFF" />
+          <stop offset="45%" stopColor="#5B35FF" />
+          <stop offset="100%" stopColor="#A12CFF" />
         </linearGradient>
 
-        <linearGradient id="pw_glass" x1="0" y1="0" x2="0" y2="1">
+        <linearGradient id="po-shine" x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0%" stopColor="#FFFFFF" stopOpacity="0.42" />
+          <stop offset="48%" stopColor="#FFFFFF" stopOpacity="0.08" />
+          <stop offset="100%" stopColor="#FFFFFF" stopOpacity="0" />
+        </linearGradient>
+
+        <linearGradient id="po-paper" x1="250" y1="250" x2="770" y2="780">
           <stop offset="0%" stopColor="#FFFFFF" />
-          <stop offset="100%" stopColor="#E5E7EB" />
+          <stop offset="100%" stopColor="#EDEFFF" />
         </linearGradient>
 
-        <linearGradient id="pw_gold" x1="0" y1="0" x2="1" y2="1">
-          <stop offset="0%" stopColor="#FFF7C2" />
-          <stop offset="100%" stopColor="#F59E0B" />
-        </linearGradient>
-
-        <radialGradient id="pw_glow">
-          <stop offset="0%" stopColor="#60A5FA" stopOpacity=".45" />
-          <stop offset="100%" stopColor="#60A5FA" stopOpacity="0" />
-        </radialGradient>
-
-        <filter id="pw_shadow" x="-50%" y="-50%" width="200%" height="200%">
-          <feDropShadow
-            dx="0"
-            dy="14"
-            stdDeviation="14"
-            floodColor="#020617"
-            floodOpacity=".45"
-          />
+        <filter id="po-shadow" x="-30%" y="-30%" width="160%" height="160%">
+          <feDropShadow dx="0" dy="14" stdDeviation="14" floodColor="#000000" floodOpacity="0.25" />
         </filter>
+
+        <filter id="po-glow" x="-40%" y="-40%" width="180%" height="180%">
+          <feGaussianBlur stdDeviation="10" />
+        </filter>
+
+        <clipPath id="po-icon-clip">
+          <rect x="72" y="72" width="880" height="880" rx="210" />
+        </clipPath>
       </defs>
 
-      {/* Background */}
-      <rect x="16" y="16" width="224" height="224" rx="56" fill="url(#pw_bg)" />
+      {/* Rounded app-icon background */}
+      <rect x="72" y="72" width="880" height="880" rx="210" fill="url(#po-bg)" />
 
-      {/* Ambient Glow */}
-      <circle cx="128" cy="128" r="90" fill="url(#pw_glow)" />
+      {/* Ambient glow */}
+      <circle cx="760" cy="230" r="230" fill="#FFFFFF" opacity="0.12" filter="url(#po-glow)" />
 
-      {/* Top Shine */}
-      <path
-        d="M32 48 Q128 -8 224 48 L224 74 Q128 32 32 74Z"
-        fill="#fff"
-        opacity=".09"
-      />
+      {/* Glass surface */}
+      <rect x="72" y="72" width="880" height="880" rx="210" fill="url(#po-shine)" />
 
-      {/* Premium Printer */}
-      <g filter="url(#pw_shadow)">
-        {/* Paper */}
-        <rect x="80" y="44" width="96" height="54" rx="12" fill="url(#pw_glass)" />
-
-        {/* Printer */}
-        <rect x="56" y="82" width="144" height="102" rx="24" fill="#111827" />
-
-        {/* Top Panel */}
-        <rect x="72" y="96" width="112" height="16" rx="8" fill="#374151" />
-
-        {/* Output */}
-        <rect x="76" y="140" width="104" height="54" rx="10" fill="url(#pw_glass)" />
-
-        {/* Print */}
-        <rect x="94" y="154" width="68" height="5" rx="3" fill="#94A3B8" />
-        <rect x="94" y="166" width="56" height="5" rx="3" fill="#CBD5E1" />
-
-        {/* Status */}
-        <circle cx="176" cy="104" r="5" fill="#22C55E" />
+      {/* Paper sheet with folded corner */}
+      <g filter="url(#po-shadow)">
+        <path
+          d="M300 222 H650 L770 342 V790 C770 826 741 854 705 854 H300 C264 854 236 826 236 790 V286 C236 250 264 222 300 222 Z"
+          fill="url(#po-paper)"
+        />
+        <path d="M650 222 V314 C650 334 666 350 686 350 H770 Z" fill="#D9DEFF" />
+        <path d="M650 222 L770 342 H688 C667 342 650 325 650 304 Z" fill="#FFFFFF" opacity="0.85" />
       </g>
 
-      {/* Optimization Orbit */}
-      <circle
-        cx="128"
-        cy="128"
-        r="84"
+      {/* Print lines */}
+      <rect x="330" y="420" width="330" height="30" rx="15" fill="#5B35FF" opacity="0.9" />
+      <rect x="330" y="490" width="260" height="30" rx="15" fill="#7A68FF" opacity="0.75" />
+      <rect x="330" y="560" width="300" height="30" rx="15" fill="#9A8CFF" opacity="0.58" />
+
+      {/* Optimization checkmark badge */}
+      <g transform="translate(430 635)">
+        <circle cx="82" cy="82" r="82" fill="#5B35FF" />
+        <path
+          d="M48 88 L70 110 L118 54"
+          fill="none"
+          stroke="#FFFFFF"
+          strokeWidth="20"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
+      </g>
+
+      {/* Top glass reflection */}
+      <g clipPath="url(#po-icon-clip)">
+        <path d="M20 120 C220 20 520 45 1000 240 V40 H20 Z" fill="#FFFFFF" opacity="0.11" />
+      </g>
+
+      {/* Subtle border */}
+      <rect
+        x="73.5"
+        y="73.5"
+        width="877"
+        height="877"
+        rx="208.5"
+        fill="none"
         stroke="#FFFFFF"
-        strokeOpacity=".08"
+        strokeOpacity="0.16"
         strokeWidth="3"
       />
-      <circle
-        cx="128"
-        cy="128"
-        r="64"
-        stroke="#FFFFFF"
-        strokeOpacity=".05"
-        strokeWidth="2"
-      />
-
-      {/* Orbit Accent */}
-      <circle cx="188" cy="78" r="6" fill="#60A5FA" />
-
-      {/* Premium Spark */}
-      <g transform="translate(174 38)">
-        <path
-          fill="url(#pw_gold)"
-          d="M18 0 L22 10 L32 14 L22 18 L18 28 L14 18 L4 14 L14 10 Z"
-        />
-        <circle cx="3" cy="5" r="2" fill="#fff" />
-        <circle cx="31" cy="29" r="2" fill="#fff" />
-      </g>
     </svg>
   );
 }
