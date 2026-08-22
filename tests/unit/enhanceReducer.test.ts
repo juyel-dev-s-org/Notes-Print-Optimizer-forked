@@ -7,6 +7,7 @@ import { describe, expect, it } from 'vitest';
 import { enhanceReducer, buildEnhanceFileName } from '@/lib/enhance/enhanceReducer';
 import { INITIAL_ENHANCE_STATE } from '@/lib/enhance/types';
 import type { EnhancePageResult, EnhanceSettings } from '@/lib/enhance/types';
+import type { UploadedPdfItem } from '@/lib/workflow/types';
 
 const settings: EnhanceSettings = { darken: 45, contrast: 35, sharpen: 25, cleanBackground: true, grayscale: false };
 
@@ -16,6 +17,23 @@ const page = (index: number): EnhancePageResult => ({
   height: 140,
   dataUrl: `data:image/jpeg;base64,enhanced${index}`,
   originalDataUrl: `data:image/jpeg;base64,original${index}`,
+});
+
+const pdfFile = (n: number): UploadedPdfItem => ({
+  id: `file-${n}`,
+  file: null as unknown as File,
+  name: `${n}-notes.pdf`,
+  sizeMB: '1.0',
+  arrayBuffer: new ArrayBuffer(0),
+});
+
+/** Three files [0,1,2] plus stale enhanced output to prove invalidation. */
+const arrangeState = () => ({
+  ...INITIAL_ENHANCE_STATE,
+  step: 'arrange' as const,
+  files: [pdfFile(0), pdfFile(1), pdfFile(2)],
+  results: [page(0)],
+  pdfBlob: new Blob(['%PDF']),
 });
 
 describe('buildEnhanceFileName', () => {
@@ -106,5 +124,60 @@ describe('enhanceReducer', () => {
     expect(s.exportBusy).toBe(false);
     expect(s.results).toHaveLength(1);
     expect(s.error).toBe('Build failed.');
+  });
+
+  it('MOVE_FILE swaps adjacent files and invalidates stale output', () => {
+    const s = enhanceReducer(arrangeState(), { type: 'MOVE_FILE', index: 2, direction: 'UP' });
+    expect(s.files.map((f) => f.name)).toEqual(['0-notes.pdf', '2-notes.pdf', '1-notes.pdf']);
+    expect(s.results).toEqual([]);
+    expect(s.pdfBlob).toBeNull();
+  });
+
+  it('MOVE_FILE at list boundaries is a no-op', () => {
+    const before = arrangeState();
+    const up = enhanceReducer(before, { type: 'MOVE_FILE', index: 0, direction: 'UP' });
+    const down = enhanceReducer(before, { type: 'MOVE_FILE', index: 2, direction: 'DOWN' });
+    expect(up.files).toEqual(before.files);
+    expect(down.files).toEqual(before.files);
+  });
+
+  it('REORDER_FILES moves a file across the list (drag & drop)', () => {
+    const s = enhanceReducer(arrangeState(), { type: 'REORDER_FILES', fromIndex: 0, toIndex: 2 });
+    expect(s.files.map((f) => f.name)).toEqual(['1-notes.pdf', '2-notes.pdf', '0-notes.pdf']);
+    // Same-position drop returns state untouched.
+    const same = enhanceReducer(s, { type: 'REORDER_FILES', fromIndex: 1, toIndex: 1 });
+    expect(same).toBe(s);
+  });
+
+  it('REMOVE_FILE deletes one file; removing the last returns to upload keeping settings', () => {
+    const s = enhanceReducer(arrangeState(), { type: 'REMOVE_FILE', index: 1 });
+    expect(s.files.map((f) => f.name)).toEqual(['0-notes.pdf', '2-notes.pdf']);
+
+    const single = { ...INITIAL_ENHANCE_STATE, step: 'arrange' as const, files: [pdfFile(9)], settings: { ...settings, darken: 90 } };
+    const empty = enhanceReducer(single, { type: 'REMOVE_FILE', index: 0 });
+    expect(empty.step).toBe('upload');
+    expect(empty.files).toEqual([]);
+    expect(empty.results).toEqual([]);
+    expect(empty.settings.darken).toBe(90);
+  });
+
+  it('SMART_ARRANGE replaces the order and clears stale output', () => {
+    const reordered = [pdfFile(2), pdfFile(0), pdfFile(1)];
+    const s = enhanceReducer(arrangeState(), { type: 'SMART_ARRANGE', files: reordered });
+    expect(s.files).toBe(reordered);
+    expect(s.results).toEqual([]);
+    expect(s.pdfBlob).toBeNull();
+  });
+
+  it('BACK_TO_ARRANGE discards results and lands on the arrange step', () => {
+    const s = enhanceReducer(
+      { ...INITIAL_ENHANCE_STATE, step: 'export', results: [page(0)], pdfBlob: new Blob(['%PDF']), error: 'boom' },
+      { type: 'BACK_TO_ARRANGE' },
+    );
+    expect(s.step).toBe('arrange');
+    expect(s.results).toHaveLength(0);
+    expect(s.selectedIndex).toBe(0);
+    expect(s.pdfBlob).toBeNull();
+    expect(s.error).toBeNull();
   });
 });

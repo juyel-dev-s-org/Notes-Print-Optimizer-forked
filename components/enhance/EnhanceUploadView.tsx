@@ -4,9 +4,8 @@ import React from 'react';
 import { ShieldCheck } from 'lucide-react';
 import { MAX_FILE_SIZE_MB } from '@/lib/services/UploadService';
 import { PdfDropzone } from '@/components/ui/PdfDropzone';
+import { MAX_ENHANCE_FILES } from '@/lib/enhance/types';
 import type { EnhanceWorkflow } from '@/lib/enhance/useEnhanceWorkflow';
-
-const MAX_FILES = 10;
 
 /** Enhance Light PDF upload screen. Thin wrapper over the shared PdfDropzone. */
 export const EnhanceUploadView: React.FC<{ workflow: EnhanceWorkflow }> = ({ workflow }) => (
@@ -16,7 +15,7 @@ export const EnhanceUploadView: React.FC<{ workflow: EnhanceWorkflow }> = ({ wor
     ctaLabel="Select PDF Files"
     ariaLabel="Upload PDF files to enhance"
     multiple
-    maxFiles={MAX_FILES}
+    maxFiles={MAX_ENHANCE_FILES}
     minHeights="min-h-[260px]"
     onFiles={(files) => workflow.handleUpload(files)}
     footer={
@@ -26,7 +25,7 @@ export const EnhanceUploadView: React.FC<{ workflow: EnhanceWorkflow }> = ({ wor
           100% Private On-Device
         </span>
         <span aria-hidden="true" className="text-ink-faint">•</span>
-        <span>Up to {MAX_FILES} PDFs · {MAX_FILE_SIZE_MB} MB each</span>
+        <span>Up to {MAX_ENHANCE_FILES} PDFs · {MAX_FILE_SIZE_MB} MB each</span>
       </>
     }
   />

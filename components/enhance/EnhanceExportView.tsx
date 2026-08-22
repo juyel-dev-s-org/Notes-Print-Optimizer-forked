@@ -33,7 +33,8 @@ export const EnhanceExportView: React.FC<{ workflow: EnhanceWorkflow }> = ({ wor
           type="button"
           onClick={handleExport}
           disabled={busy}
-          className="flex h-12 w-full max-w-sm items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-[#243BFF] via-[#5B35FF] to-[#A12CFF] text-sm font-bold text-white shadow-md shadow-[#5B35FF]/25 transition-transform duration-150 active:scale-[0.98] disabled:opacity-50"
+          style={{ background: 'var(--gradient-brand)' }}
+          className="flex h-12 w-full max-w-sm items-center justify-center gap-2 rounded-xl text-sm font-bold text-white shadow-md shadow-primary/25 transition-transform duration-150 active:scale-[0.98] disabled:opacity-50"
         >
           {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
           {busy ? 'Building PDF…' : ready ? 'Download Again' : 'Build Print-Ready PDF'}

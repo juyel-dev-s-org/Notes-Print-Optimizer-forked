@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { Ban, Check, Download, Loader2, Wand2 } from 'lucide-react';
+import { ArrowLeft, Ban, Check, Download, Loader2, Wand2 } from 'lucide-react';
 import { ENHANCE_SETTING_RANGE, type EnhanceSettings } from '@/lib/enhance/types';
 import type { EnhanceWorkflow } from '@/lib/enhance/useEnhanceWorkflow';
 import { Button } from '@/components/ui/Button';
@@ -9,7 +9,7 @@ import { SliderRow } from '@/components/ui/Slider';
 import { ToggleRow } from '@/components/ui/Toggle';
 
 export const EnhanceWorkbenchView: React.FC<{ workflow: EnhanceWorkflow }> = ({ workflow }) => {
-  const { state, handleSetSettings, handleSetSelected, handleApplySettings, handleCancelProcessing, handleExport } = workflow;
+  const { state, handleSetSettings, handleSetSelected, handleApplySettings, handleCancelProcessing, handleExport, handleBackToArrange } = workflow;
   const [showBefore, setShowBefore] = useState(false);
   const [appliedSettings, setAppliedSettings] = useState<EnhanceSettings>(state.settings);
   const selected = state.results[state.selectedIndex];
@@ -35,6 +35,18 @@ export const EnhanceWorkbenchView: React.FC<{ workflow: EnhanceWorkflow }> = ({ 
 
   return (
     <div className="flex flex-col gap-4">
+      {/* Escape hatch back to the arrange stage (invalidates stale results) */}
+      {!state.isProcessing && (
+        <button
+          type="button"
+          onClick={handleBackToArrange}
+          className="flex h-9 items-center justify-center gap-1.5 self-start rounded-lg border border-elevated/60 bg-surface/70 px-3 text-[11px] font-bold text-ink-muted transition-colors hover:border-primary/50 hover:text-primary-soft focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-soft"
+        >
+          <ArrowLeft className="h-3.5 w-3.5" aria-hidden="true" />
+          Adjust File Order
+        </button>
+      )}
+
       {/* Processing progress */}
       {state.isProcessing && state.results.length === 0 && (
         <div className="flex flex-col gap-3 rounded-2xl border border-surface-2 bg-surface/80 p-5 animate-enter">

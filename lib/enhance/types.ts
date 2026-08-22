@@ -11,7 +11,10 @@ import type { UploadedPdfItem } from '@/lib/workflow/types';
 /** App-level tool selection (landing tools box). */
 export type ToolMode = 'dark-print' | 'enhance';
 
-export type EnhanceStep = 'upload' | 'enhance' | 'export';
+export type EnhanceStep = 'upload' | 'arrange' | 'enhance' | 'export';
+
+/** Hard cap on PDFs per enhance session (mirrors the main flow's queue cap). */
+export const MAX_ENHANCE_FILES = 10;
 
 export interface EnhanceSettings {
   /** 0-100 — how much faint ink is pushed toward black. */
@@ -86,6 +89,16 @@ export type EnhanceAction =
   | { type: 'SET_FILES'; files: UploadedPdfItem[]; step: EnhanceStep }
   | { type: 'SET_SETTINGS'; settings: EnhanceSettings }
   | { type: 'SET_SELECTED'; index: number }
+  /** Arrange stage: adjacent swap (accessible fallback for touch). */
+  | { type: 'MOVE_FILE'; index: number; direction: 'UP' | 'DOWN' }
+  /** Arrange stage: drag & drop — move item at fromIndex into toIndex. */
+  | { type: 'REORDER_FILES'; fromIndex: number; toIndex: number }
+  /** Arrange stage: delete one uploaded PDF. */
+  | { type: 'REMOVE_FILE'; index: number }
+  /** Arrange stage: replace the whole order with a Smart Arrange plan. */
+  | { type: 'SMART_ARRANGE'; files: UploadedPdfItem[] }
+  /** Workbench/export → back to arrange (invalidates stale results). */
+  | { type: 'BACK_TO_ARRANGE' }
   | { type: 'PROCESS_START' }
   | { type: 'PROCESS_PROGRESS'; progress: EnhanceProgress }
   | { type: 'PROCESS_COMPLETE'; results: EnhancePageResult[]; fileName: string }
