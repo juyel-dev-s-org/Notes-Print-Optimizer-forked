@@ -79,7 +79,7 @@ export const GridFormatPicker: React.FC<GridFormatPickerProps> = ({ gridFormat, 
                   Recommended
                 </span>
               )}
-              <h4 className="text-xs font-bold text-white sm:text-sm">{item.label}</h4>
+              <h4 className="text-xs font-bold text-ink sm:text-sm">{item.label}</h4>
               <p className="mt-0.5 text-xs text-ink-muted">{item.desc}</p>
             </div>
             {selected && (

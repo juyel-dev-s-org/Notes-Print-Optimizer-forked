@@ -98,7 +98,7 @@ export const PdfDropzone: React.FC<PdfDropzoneProps> = ({
         className={`group relative flex cursor-pointer flex-col items-center justify-center overflow-hidden rounded-2xl border-2 border-dashed p-6 text-center transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-soft ${minHeights} ${
           isDragging
             ? 'border-solid border-primary bg-primary-faint/40'
-            : 'border-slate-700 bg-slate-900/90 shadow-lg hover:border-indigo-500/70 hover:bg-slate-800/80'
+            : 'border-elevated bg-surface/90 shadow-lg hover:border-primary/70 hover:bg-surface-2/80'
         }`}
       >
         <input
@@ -113,13 +113,13 @@ export const PdfDropzone: React.FC<PdfDropzoneProps> = ({
           className="hidden"
         />
 
-        <div className="relative flex h-16 w-16 items-center justify-center rounded-2xl border border-indigo-500/40 bg-gradient-to-br from-indigo-500/25 to-violet-500/15 text-indigo-400 shadow-lg transition-all duration-200 group-hover:scale-105 group-hover:text-white">
+        <div className="relative flex h-16 w-16 items-center justify-center rounded-2xl border border-primary/40 bg-gradient-to-br from-primary/25 to-accent/15 text-primary-soft shadow-lg transition-all duration-200 group-hover:scale-105 group-hover:text-ink">
           <FileUp className="h-8 w-8" />
         </div>
 
         <div className="relative mt-4 flex flex-col items-center gap-1.5">
-          <h2 className="text-base font-bold text-white">{title}</h2>
-          <p className="max-w-sm text-xs leading-relaxed text-slate-400 lg:max-w-md lg:text-sm">{description}</p>
+          <h2 className="text-base font-bold text-ink">{title}</h2>
+          <p className="max-w-sm text-xs leading-relaxed text-ink-muted lg:max-w-md lg:text-sm">{description}</p>
         </div>
 
         {/* Real button (not a decorative span) — stops click bubbling to the zone */}
@@ -135,7 +135,7 @@ export const PdfDropzone: React.FC<PdfDropzoneProps> = ({
         </button>
 
         {footer && (
-          <div className="relative mt-6 flex flex-wrap items-center justify-center gap-2.5 border-t border-slate-800 pt-4 text-xs text-slate-400">
+          <div className="relative mt-6 flex flex-wrap items-center justify-center gap-2.5 border-t border-surface-2 pt-4 text-xs text-ink-muted">
             {footer}
           </div>
         )}

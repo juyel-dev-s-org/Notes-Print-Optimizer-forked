@@ -224,7 +224,7 @@ export const ProcessingSettingsPanel: React.FC<ProcessingSettingsPanelProps> = (
             <SlidersHorizontal className="h-4 w-4" />
           </div>
           <div>
-            <span className="block text-xs font-bold text-white sm:text-sm">
+            <span className="block text-xs font-bold text-ink sm:text-sm">
               Processing Settings
             </span>
             <span className="block text-[10px] text-ink-muted">
@@ -257,7 +257,7 @@ export const ProcessingSettingsPanel: React.FC<ProcessingSettingsPanelProps> = (
             <select
               value={params.preset}
               onChange={(e) => handlePresetChange(e.target.value as ProcessingParameters['preset'])}
-              className="w-full rounded-lg border border-elevated bg-bg px-3 py-2 text-xs font-bold text-white focus:outline-none focus:border-primary"
+              className="w-full rounded-lg border border-elevated bg-bg px-3 py-2 text-xs font-bold text-ink focus:outline-none focus:border-primary"
             >
               {Object.entries(PRESET_LABELS).map(([value, label]) => (
                 <option key={value} value={value}>
@@ -290,7 +290,7 @@ export const ProcessingSettingsPanel: React.FC<ProcessingSettingsPanelProps> = (
                       </span>
                       <span
                         className={`text-[11px] font-bold ${
-                          isOn ? 'text-white' : 'text-ink-muted'
+                          isOn ? 'text-ink' : 'text-ink-muted'
                         }`}
                       >
                         {slider.label}
@@ -352,7 +352,7 @@ export const ProcessingSettingsPanel: React.FC<ProcessingSettingsPanelProps> = (
             <button
               type="button"
               onClick={handleReset}
-              className="flex h-10 items-center gap-1.5 rounded-xl border border-elevated bg-surface-2 px-3.5 text-[11px] font-bold text-ink-muted hover:bg-elevated hover:text-white transition-colors"
+              className="flex h-10 items-center gap-1.5 rounded-xl border border-elevated bg-surface-2 px-3.5 text-[11px] font-bold text-ink-muted hover:bg-elevated hover:text-ink transition-colors"
             >
               <RotateCcw className="h-3.5 w-3.5" />
               <span>Reset Defaults</span>

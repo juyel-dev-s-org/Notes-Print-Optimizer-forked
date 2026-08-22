@@ -162,7 +162,7 @@ export default function AppShell() {
             </button>
             <button
               onClick={() => setSwUpdateAvailable(false)}
-              className="p-2 hover:text-white text-primary-soft transition"
+              className="p-2 hover:text-ink text-primary-soft transition"
               aria-label="Dismiss update alert"
             >
               <X className="w-3.5 h-3.5" />
@@ -175,7 +175,7 @@ export default function AppShell() {
           <div className="flex-1 text-center">{state.errorMessage}</div>
           <button
             onClick={() => actions.setError(null)}
-            className="p-2 hover:text-white text-danger-soft transition"
+            className="p-2 hover:text-ink text-danger-soft transition"
             aria-label="Dismiss error"
           >
             <X className="w-4 h-4" />

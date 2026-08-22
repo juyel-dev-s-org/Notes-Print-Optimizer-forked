@@ -38,7 +38,7 @@ export const EnhanceWorkbenchView: React.FC<{ workflow: EnhanceWorkflow }> = ({ 
       {/* Processing progress */}
       {state.isProcessing && state.results.length === 0 && (
         <div className="flex flex-col gap-3 rounded-2xl border border-surface-2 bg-surface/80 p-5 animate-enter">
-          <div className="flex items-center gap-2 text-sm font-bold text-white">
+          <div className="flex items-center gap-2 text-sm font-bold text-ink">
             <Loader2 className="h-4 w-4 animate-spin text-primary-soft" aria-hidden="true" />
             Enhancing pages…
           </div>
@@ -67,11 +67,11 @@ export const EnhanceWorkbenchView: React.FC<{ workflow: EnhanceWorkflow }> = ({ 
 
       {/* Settings */}
       <div className="flex flex-col gap-4 rounded-2xl border border-surface-2 bg-surface/80 p-4">
-        <h3 className="text-sm font-bold tracking-wide text-white">Enhancement Settings</h3>
+        <h3 className="text-sm font-bold tracking-wide text-ink">Enhancement Settings</h3>
         <SliderRow label="Darken Ink" hint="Push faint pencil/ink toward black" value={state.settings.darken} min={ENHANCE_SETTING_RANGE.darken[0]} max={ENHANCE_SETTING_RANGE.darken[1]} onChange={(v) => updateSetting('darken', v)} />
         <SliderRow label="Contrast" hint="Remove flat gray from scanned paper" value={state.settings.contrast} min={ENHANCE_SETTING_RANGE.contrast[0]} max={ENHANCE_SETTING_RANGE.contrast[1]} onChange={(v) => updateSetting('contrast', v)} />
         <SliderRow label="Sharpen" hint="Crisp handwriting edges" value={state.settings.sharpen} min={ENHANCE_SETTING_RANGE.sharpen[0]} max={ENHANCE_SETTING_RANGE.sharpen[1]} onChange={(v) => updateSetting('sharpen', v)} />
-        <div className="flex flex-col divide-y divide-slate-800/70 border-t border-slate-800/70 pt-2">
+        <div className="flex flex-col divide-y divide-surface-2/70 border-t border-surface-2/70 pt-2">
           <ToggleRow label="Clean Background" hint="Map paper tint & camera shadows to pure white" enabled={state.settings.cleanBackground} onChange={(v) => updateSetting('cleanBackground', v)} />
           <ToggleRow label="Grayscale" hint="Monochrome output — maximum print contrast" enabled={state.settings.grayscale} onChange={(v) => updateSetting('grayscale', v)} />
         </div>
@@ -91,7 +91,7 @@ export const EnhanceWorkbenchView: React.FC<{ workflow: EnhanceWorkflow }> = ({ 
       {selected && (
         <div className="flex flex-col gap-3">
           <div className="flex items-center justify-between">
-            <h3 className="text-sm font-bold tracking-wide text-white">
+            <h3 className="text-sm font-bold tracking-wide text-ink">
               Preview <span className="font-normal text-ink-muted">· page {selected.index + 1} of {state.results.length}</span>
             </h3>
             <button
@@ -101,7 +101,7 @@ export const EnhanceWorkbenchView: React.FC<{ workflow: EnhanceWorkflow }> = ({ 
               className={`inline-flex h-11 items-center rounded-full border px-3.5 text-xs font-bold transition-colors ${
                 showBefore
                   ? 'border-primary/50 bg-primary-faint text-primary-soft'
-                  : 'border-slate-700 bg-slate-900 text-slate-300'
+                  : 'border-elevated bg-surface text-ink'
               }`}
             >
               {showBefore ? 'Showing BEFORE' : 'Showing AFTER'}
@@ -130,7 +130,7 @@ export const EnhanceWorkbenchView: React.FC<{ workflow: EnhanceWorkflow }> = ({ 
             >
               {showBefore ? 'BEFORE' : 'AFTER'}
             </span>
-            <span className="absolute bottom-3 right-3 rounded-full bg-slate-900/80 px-2 py-1 text-xs font-medium text-slate-300 backdrop-blur">
+            <span className="absolute bottom-3 right-3 rounded-full bg-surface/80 px-2 py-1 text-xs font-medium text-ink backdrop-blur">
               Hold to see before
             </span>
           </div>
@@ -145,7 +145,7 @@ export const EnhanceWorkbenchView: React.FC<{ workflow: EnhanceWorkflow }> = ({ 
                   aria-selected={state.selectedIndex === page.index}
                   onClick={() => { handleSetSelected(page.index); setShowBefore(false); }}
                   className={`relative h-16 w-12 shrink-0 overflow-hidden rounded-lg border-2 transition-colors ${
-                    state.selectedIndex === page.index ? 'border-primary' : 'border-slate-700/80'
+                    state.selectedIndex === page.index ? 'border-primary' : 'border-elevated/80'
                   }`}
                 >
                   <img src={page.dataUrl} alt={`Page ${page.index + 1} thumbnail`} className="h-full w-full object-cover" loading="lazy" />

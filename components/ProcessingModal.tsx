@@ -32,7 +32,7 @@ export const ProcessingModal: React.FC<ProcessingModalProps> = ({ progress, phas
       aria-labelledby="processing-modal-title"
       className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-bg/80 p-0 sm:p-4 backdrop-blur-sm pb-safe animate-fade-in"
     >
-      <div className="relative flex w-full max-w-md flex-col rounded-t-3xl sm:rounded-2xl border border-surface-2 bg-surface p-6 shadow-2xl text-white animate-slide-up">
+      <div className="relative flex w-full max-w-md flex-col rounded-t-3xl sm:rounded-2xl border border-surface-2 bg-surface p-6 shadow-2xl text-ink animate-slide-up">
           <div className="flex items-center gap-3">
             <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-primary-strong/20 text-primary-soft border border-primary/30">
               <Loader2 className="h-6 w-6 animate-spin" />
@@ -41,7 +41,7 @@ export const ProcessingModal: React.FC<ProcessingModalProps> = ({ progress, phas
               <span className="text-[10px] font-bold tracking-wider uppercase text-primary-soft">
                 {phaseTitle || 'Processing Workflow'}
               </span>
-              <h3 id="processing-modal-title" className="text-sm font-bold text-white truncate">
+              <h3 id="processing-modal-title" className="text-sm font-bold text-ink truncate">
                 {progress.currentAction || 'Processing Document...'}
               </h3>
             </div>

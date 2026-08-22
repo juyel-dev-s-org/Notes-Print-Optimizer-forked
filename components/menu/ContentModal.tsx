@@ -61,13 +61,13 @@ export const ContentModal: React.FC<ContentModalProps> = ({ contentId, onClose }
           <span>{error}</span>
         </div>
       ) : html === null ? (
-        <div className="flex items-center justify-center gap-2 py-10 text-xs text-slate-400">
+        <div className="flex items-center justify-center gap-2 py-10 text-xs text-ink-muted">
           <Loader2 className="h-4 w-4 animate-spin" />
           <span>Loading…</span>
         </div>
       ) : (
         <div
-          className="text-[13px] leading-relaxed text-slate-300"
+          className="text-[13px] leading-relaxed text-ink"
           // Safe: markdownToHtml escapes all input before applying a whitelist.
           dangerouslySetInnerHTML={{ __html: html }}
         />

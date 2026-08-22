@@ -45,7 +45,7 @@ export const Modal: React.FC<ModalProps> = ({ title, subtitle, onClose, children
   return createPortal(
     <div className="fixed inset-0 z-[60] flex items-end justify-center sm:items-center sm:p-4">
       <div
-        className="absolute inset-0 bg-slate-950/80 backdrop-blur-sm"
+        className="absolute inset-0 bg-bg/80 backdrop-blur-sm"
         onClick={onClose}
         aria-hidden="true"
       />
@@ -58,19 +58,19 @@ export const Modal: React.FC<ModalProps> = ({ title, subtitle, onClose, children
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0, y: 24 }}
           transition={{ duration: 0.18, ease: 'easeOut' }}
-          className="relative flex max-h-[85vh] w-full flex-col rounded-t-2xl border border-slate-700 bg-slate-900 shadow-2xl sm:max-w-2xl sm:rounded-2xl"
+          className="relative flex max-h-[85vh] w-full flex-col rounded-t-2xl border border-elevated bg-surface shadow-2xl sm:max-w-2xl sm:rounded-2xl"
         >
-        <div className="flex items-center justify-between border-b border-slate-800 px-4 py-3">
+        <div className="flex items-center justify-between border-b border-surface-2 px-4 py-3">
           <div className="min-w-0">
-            <h2 className="truncate text-sm font-bold text-white">{title}</h2>
-            {subtitle && <p className="truncate text-[11px] text-slate-400">{subtitle}</p>}
+            <h2 className="truncate text-sm font-bold text-ink">{title}</h2>
+            {subtitle && <p className="truncate text-[11px] text-ink-muted">{subtitle}</p>}
           </div>
           <button
             ref={closeRef}
             type="button"
             onClick={onClose}
             aria-label="Close dialog"
-            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-slate-800 text-slate-300 transition-colors hover:text-white"
+            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-surface-2 text-ink transition-colors hover:text-ink"
           >
             <X className="h-4 w-4" />
           </button>

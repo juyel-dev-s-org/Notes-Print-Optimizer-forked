@@ -100,7 +100,7 @@ const LazyPageCard: React.FC<{
         )}
 
         {/* Hover / Tap overlay button */}
-        <div aria-hidden="true" className="pointer-events-none absolute inset-0 bg-bg/70 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-1 text-white backdrop-blur-2xs">
+        <div aria-hidden="true" className="pointer-events-none absolute inset-0 bg-bg/70 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-1 text-ink backdrop-blur-2xs">
           <Eye className="h-4 w-4 text-primary-soft" />
           <span className="text-[11px] font-bold">Inspect</span>
         </div>
@@ -134,7 +134,7 @@ export const PageGrid: React.FC<PageGridProps> = ({
       <div className="flex flex-wrap items-center justify-between gap-2 border-b border-surface-2 pb-3">
         <div>
           <div className="flex items-center gap-1.5">
-            <h3 className="text-sm font-bold text-white">Document Page Thumbnails</h3>
+            <h3 className="text-sm font-bold text-ink">Document Page Thumbnails</h3>
             <InfoTooltip
               title="Selective Page Exclusion"
               content="Skip pages you don't need to print — like promo slides, chapter covers, or breaks."
@@ -188,4 +188,3 @@ export const PageGrid: React.FC<PageGridProps> = ({
     </div>
   );
 };
-

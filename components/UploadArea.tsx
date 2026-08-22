@@ -21,13 +21,13 @@ export const UploadArea: React.FC<UploadAreaProps> = ({ onFilesUpload }) => (
     onFiles={onFilesUpload}
     footer={
       <>
-        <span className="flex items-center gap-1 font-semibold text-emerald-400">
+        <span className="flex items-center gap-1 font-semibold text-success">
           <ShieldCheck className="h-3.5 w-3.5" />
           100% Private On-Device
         </span>
-        <span aria-hidden="true" className="text-slate-600">•</span>
+        <span aria-hidden="true" className="text-ink-faint">•</span>
         <span>Saves 80% Paper &amp; Ink</span>
-        <span aria-hidden="true" className="text-slate-600">•</span>
+        <span aria-hidden="true" className="text-ink-faint">•</span>
         <span>Up to {MAX_TOTAL_SIZE_MB} MB total · {MAX_FILE_SIZE_MB} MB each</span>
       </>
     }

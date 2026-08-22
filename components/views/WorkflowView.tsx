@@ -138,7 +138,7 @@ export const WorkflowView: React.FC<WorkflowUIProps> = ({ state, actions, handle
               <>
                 <section className="flex flex-col gap-3 rounded-2xl border border-surface-2 bg-surface/90 p-3.5 shadow-lg sm:p-4 lg:p-5 sm:gap-4 sm:shadow-xl">
                   <div className="border-b border-surface-2 pb-2 sm:pb-3">
-                    <h3 className="text-xs font-bold text-white sm:text-sm">
+                    <h3 className="text-xs font-bold text-ink sm:text-sm">
                       PDF Sequence ({uploadedItems.length})
                     </h3>
                     <p className="mt-0.5 text-xs text-ink-muted">
@@ -267,7 +267,7 @@ export const WorkflowView: React.FC<WorkflowUIProps> = ({ state, actions, handle
               <section className="flex flex-col gap-4 rounded-2xl border border-surface-2 bg-surface/90 p-3.5 shadow-lg sm:p-4 lg:p-5 sm:shadow-xl">
                 <div className="border-b border-surface-2 pb-2 sm:pb-3">
                   <div className="flex items-center gap-1.5">
-                    <h3 className="text-xs font-bold text-white sm:text-sm">N-Up Grid Format</h3>
+                    <h3 className="text-xs font-bold text-ink sm:text-sm">N-Up Grid Format</h3>
                     <InfoTooltip
                       title="Grid Layout Benefits"
                       content="Put several slides on one sheet to save paper and printing cost."
@@ -392,7 +392,7 @@ export const WorkflowView: React.FC<WorkflowUIProps> = ({ state, actions, handle
                   <CheckCircle2 className="h-8 w-8 sm:h-10 sm:w-10" />
                 </div>
 
-                <h2 className="mt-1 text-xl font-bold text-white sm:text-display">Your PDF is Print-Ready!</h2>
+                <h2 className="mt-1 text-xl font-bold text-ink sm:text-display">Your PDF is Print-Ready!</h2>
                 <p className="max-w-md text-xs leading-relaxed text-ink-muted sm:text-sm">
                   Your notes have been stripped of dark backgrounds, sharpened, and formatted for paper-saving printouts.
                 </p>

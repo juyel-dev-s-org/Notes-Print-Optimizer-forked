@@ -19,12 +19,12 @@ export const EnhanceExportView: React.FC<{ workflow: EnhanceWorkflow }> = ({ wor
 
   return (
     <div className="flex flex-col gap-4">
-      <div className="flex flex-col items-center gap-3 rounded-2xl border border-slate-800/70 bg-slate-900/70 p-6 text-center">
-        <span className="flex h-14 w-14 items-center justify-center rounded-2xl bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 animate-[scale-in_0.4s_ease-out]">
+      <div className="flex flex-col items-center gap-3 rounded-2xl border border-surface-2/70 bg-surface/70 p-6 text-center">
+        <span className="flex h-14 w-14 items-center justify-center rounded-2xl bg-success-faint text-success border border-success/30 animate-[scale-in_0.4s_ease-out]">
           <CheckCircle2 className="h-7 w-7" aria-hidden="true" />
         </span>
-        <h2 className="text-base font-bold text-white">Print-Ready PDF</h2>
-        <p className="text-xs leading-relaxed text-slate-400">
+        <h2 className="text-base font-bold text-ink">Print-Ready PDF</h2>
+        <p className="text-xs leading-relaxed text-ink-muted">
           {state.results.length} page{state.results.length === 1 ? '' : 's'} enhanced
           {sizeMb !== null ? ` · ${sizeMb < 0.01 ? '<0.01' : sizeMb.toFixed(2)} MB` : ''} · ready to download
         </p>
@@ -44,7 +44,7 @@ export const EnhanceExportView: React.FC<{ workflow: EnhanceWorkflow }> = ({ wor
             <button
               type="button"
               onClick={handleDownload}
-              className="flex h-12 w-full max-w-sm items-center justify-center gap-2 rounded-xl border border-slate-700 bg-slate-900 text-sm font-bold text-white transition-transform duration-150 active:scale-[0.98]"
+              className="flex h-12 w-full max-w-sm items-center justify-center gap-2 rounded-xl border border-elevated bg-surface text-sm font-bold text-ink transition-transform duration-150 active:scale-[0.98]"
             >
               <Download className="h-4 w-4 text-[#a78bfa]" />
               Save {state.fileName}
@@ -65,7 +65,7 @@ export const EnhanceExportView: React.FC<{ workflow: EnhanceWorkflow }> = ({ wor
                     /* user cancelled */
                   }
                 }}
-                className="flex h-11 w-full max-w-sm items-center justify-center gap-2 rounded-xl border border-slate-700/70 bg-slate-900/70 text-xs font-bold text-slate-200 transition-transform duration-150 active:scale-[0.98]"
+                className="flex h-11 w-full max-w-sm items-center justify-center gap-2 rounded-xl border border-elevated/70 bg-surface/70 text-xs font-bold text-ink transition-transform duration-150 active:scale-[0.98]"
               >
                 <Share2 className="h-4 w-4 text-[#a78bfa]" />
                 Share PDF
@@ -79,7 +79,7 @@ export const EnhanceExportView: React.FC<{ workflow: EnhanceWorkflow }> = ({ wor
         <button
           type="button"
           onClick={handleBackToWorkbench}
-          className="flex h-11 items-center justify-center gap-2 rounded-xl border border-slate-700/70 bg-slate-900/70 text-xs font-bold text-slate-200 transition-transform duration-150 active:scale-[0.98]"
+          className="flex h-11 items-center justify-center gap-2 rounded-xl border border-elevated/70 bg-surface/70 text-xs font-bold text-ink transition-transform duration-150 active:scale-[0.98]"
         >
           <SlidersHorizontal className="h-4 w-4 text-[#a78bfa]" />
           Adjust Enhancement Settings
@@ -87,7 +87,7 @@ export const EnhanceExportView: React.FC<{ workflow: EnhanceWorkflow }> = ({ wor
         <button
           type="button"
           onClick={handleReset}
-          className="flex h-11 items-center justify-center gap-2 rounded-xl border border-slate-700/70 bg-slate-900/70 text-xs font-bold text-slate-200 transition-transform duration-150 active:scale-[0.98]"
+          className="flex h-11 items-center justify-center gap-2 rounded-xl border border-elevated/70 bg-surface/70 text-xs font-bold text-ink transition-transform duration-150 active:scale-[0.98]"
         >
           <RotateCcw className="h-4 w-4 text-[#a78bfa]" />
           Start Over with New PDFs

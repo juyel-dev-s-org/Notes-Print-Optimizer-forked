@@ -246,7 +246,7 @@ export const FeedbackSection: React.FC<FeedbackSectionProps> = ({
       <div className="flex items-center justify-between border-b border-surface-2 pb-3">
         <div className="flex items-center gap-2">
           <Star className="h-5 w-5 text-warning fill-warning" />
-          <h3 className="text-sm font-bold text-white">Rate Your Experience & Feedback</h3>
+          <h3 className="text-sm font-bold text-ink">Rate Your Experience & Feedback</h3>
         </div>
         <div className="flex items-center gap-1.5 text-[11px] font-semibold text-success bg-success-faint/60 border border-success-strong/30 px-2.5 py-1 rounded-full">
           <ShieldCheck className="h-3.5 w-3.5" />
@@ -302,7 +302,7 @@ export const FeedbackSection: React.FC<FeedbackSectionProps> = ({
                   onClick={() => setCategory(cat.id)}
                   className={`flex items-center justify-center gap-1.5 py-2.5 px-3 rounded-xl border text-xs font-medium transition-all ${
                     category === cat.id
-                      ? 'bg-primary-strong/30 border-primary text-white font-bold shadow-sm'
+                      ? 'bg-primary-strong/30 border-primary text-ink font-bold shadow-sm'
                       : 'bg-bg/80 border-surface-2 text-ink-muted hover:text-ink hover:border-elevated'
                   }`}
                 >
@@ -431,7 +431,7 @@ export const FeedbackSection: React.FC<FeedbackSectionProps> = ({
               setIsSubmitted(false);
               setFeedbackText('');
             }}
-            className="mt-2 text-xs font-semibold text-ink-muted hover:text-white underline cursor-pointer"
+            className="mt-2 text-xs font-semibold text-ink-muted hover:text-ink underline cursor-pointer"
           >
             Send another response
           </button>
@@ -452,14 +452,14 @@ export const FeedbackSection: React.FC<FeedbackSectionProps> = ({
             <div className="flex items-center justify-between border-b border-surface-2 p-4">
               <div className="flex items-center gap-2">
                 <Code className="h-5 w-5 text-primary-soft" />
-                <h3 className="text-sm font-bold text-white">Feedback Architecture & Apps Script Setup</h3>
+                <h3 className="text-sm font-bold text-ink">Feedback Architecture & Apps Script Setup</h3>
               </div>
               <button
                 ref={devModalCloseRef}
                 type="button"
                 onClick={() => setShowDeveloperModal(false)}
                 aria-label="Close dialog"
-                className="flex h-9 w-9 items-center justify-center rounded-lg text-ink-muted hover:text-white hover:bg-surface-2 cursor-pointer"
+                className="flex h-9 w-9 items-center justify-center rounded-lg text-ink-muted hover:text-ink hover:bg-surface-2 cursor-pointer"
               >
                 <X className="h-4 w-4" />
               </button>
@@ -529,7 +529,7 @@ export const FeedbackSection: React.FC<FeedbackSectionProps> = ({
               {activeTab === 'gas' && (
                 <div className="flex flex-col gap-3 font-sans">
                   <div className="flex items-center justify-between rounded-xl bg-primary-faint/50 border border-primary/30 p-3">
-                    <span className="text-xs text-indigo-200">
+                    <span className="text-xs text-primary-soft">
                       Copy this lightweight, zero-dependency Apps Script code into your Google Apps Script editor.
                     </span>
                     <button
@@ -554,7 +554,7 @@ export const FeedbackSection: React.FC<FeedbackSectionProps> = ({
               <button
                 type="button"
                 onClick={() => setShowDeveloperModal(false)}
-                className="rounded-xl bg-surface-2 px-4 py-2 text-xs font-semibold text-white hover:bg-elevated cursor-pointer"
+                className="rounded-xl bg-surface-2 px-4 py-2 text-xs font-semibold text-ink hover:bg-elevated cursor-pointer"
               >
                 Close
               </button>

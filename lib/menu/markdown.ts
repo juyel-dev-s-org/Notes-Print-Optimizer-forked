@@ -26,7 +26,7 @@ function renderInline(escaped: string): string {
   out = out.replace(/\[([^\]]+)\]\(([^)\s]+)\)/g, (_m, text: string, href: string) => {
     const safe = SAFE_LINK.test(href) ? href : '#';
     const target = safe.startsWith('http') ? ' target="_blank" rel="noopener noreferrer"' : '';
-    return `<a href="${safe}"${target} class="text-indigo-400 underline underline-offset-2 hover:text-indigo-300">${text}</a>`;
+    return `<a href="${safe}"${target} class="text-primary-soft underline underline-offset-2 hover:text-primary-soft">${text}</a>`;
   });
   // bold then italic
   out = out.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
@@ -70,13 +70,13 @@ export function markdownToHtml(markdown: string): string {
       flushPara(); closeLists();
       const level = heading[1].length;
       const sizes = ['text-2xl', 'text-xl', 'text-lg', 'text-base', 'text-sm', 'text-xs'];
-      html.push(`<h${level} class="font-bold text-white mt-5 mb-2 ${sizes[level - 1]}">${renderInline(heading[2])}</h${level}>`);
+      html.push(`<h${level} class="font-bold text-ink mt-5 mb-2 ${sizes[level - 1]}">${renderInline(heading[2])}</h${level}>`);
       continue;
     }
 
     if (/^(-{3,}|\*{3,}|_{3,})$/.test(trimmed)) {
       flushPara(); closeLists();
-      html.push('<hr class="my-4 border-slate-700" />');
+      html.push('<hr class="my-4 border-elevated" />');
       continue;
     }
 
@@ -105,7 +105,7 @@ export function markdownToHtml(markdown: string): string {
       flushPara();
       if (inUl) { html.push('</ul>'); inUl = false; }
       if (inOl) { html.push('</ol>'); inOl = false; }
-      if (!inQuote) { html.push('<blockquote class="border-l-2 border-indigo-500/50 pl-3 my-2 text-slate-400">'); inQuote = true; }
+      if (!inQuote) { html.push('<blockquote class="border-l-2 border-primary/50 pl-3 my-2 text-ink-muted">'); inQuote = true; }
       html.push(`<p>${renderInline(quote[1])}</p>`);
       continue;
     }

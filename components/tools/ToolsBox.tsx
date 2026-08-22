@@ -19,8 +19,8 @@ const ENHANCE_GRADIENT = 'linear-gradient(135deg, #5B35FF 0%, #A12CFF 55%, #EC48
 export const ToolsBox: React.FC<ToolsBoxProps> = ({ onSelectDarkPrint, onSelectEnhance }) => (
   <section aria-label="Choose a tool" className="flex flex-col gap-3 animate-slide-up" style={{ animationDelay: '80ms' }}>
     <div className="flex items-center justify-between px-1">
-      <h2 className="text-sm font-bold tracking-wide text-white">Choose a Tool</h2>
-      <span className="text-[10px] font-medium text-slate-500">Free · No sign-up</span>
+      <h2 className="text-sm font-bold tracking-wide text-ink">Choose a Tool</h2>
+      <span className="text-[10px] font-medium text-ink-faint">Free · No sign-up</span>
     </div>
 
     <div className="grid grid-cols-1 gap-3 min-[375px]:grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 auto-rows-fr">

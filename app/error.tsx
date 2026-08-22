@@ -24,7 +24,7 @@ export default function ErrorBoundary({ error, reset }: ErrorProps) {
         <button
           type="button"
           onClick={reset}
-          className="rounded-xl bg-danger-deep px-6 py-3 text-sm font-semibold text-white hover:bg-danger-strong transition-colors"
+          className="rounded-xl bg-danger-deep px-6 py-3 text-sm font-semibold text-ink hover:bg-danger-strong transition-colors"
         >
           Try again
         </button>
