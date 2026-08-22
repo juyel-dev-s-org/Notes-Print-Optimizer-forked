@@ -188,8 +188,11 @@ html, body {
   animation: toast-in 0.22s cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 @keyframes enter-soft {
-  from { opacity: 0; transform: translateY(8px); }
-  to { opacity: 1; transform: translateY(0); }
+  /* Opacity only — ANY retained/interpolated transform (even identity) makes
+     the container a containing block, which breaks position:fixed children
+     such as the sub-md action bars anchored inside animated phase wrappers. */
+  from { opacity: 0; }
+  to { opacity: 1; }
 }
 /* The ONE entrance animation. Replaces the animate-in/slide-up/scale-in mix. */
 .animate-enter {

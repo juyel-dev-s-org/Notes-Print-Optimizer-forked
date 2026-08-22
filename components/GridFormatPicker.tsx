@@ -22,26 +22,15 @@ const GRID_FORMATS: GridFormatItem[] = [
 
 interface GridFormatPickerProps {
   gridFormat: LayoutConfig['gridFormat'];
-  /** Column layout per viewport: 2 = mobile, 3 = tablet, 6 = desktop. */
-  columns: 2 | 3 | 6;
   onSelect: (format: LayoutConfig['gridFormat']) => void;
 }
 
-const COLUMNS: Record<GridFormatPickerProps['columns'], string> = {
-  2: 'grid-cols-2',
-  3: 'grid-cols-3',
-  6: 'grid-cols-6',
-};
-
 /**
- * Shared N-Up grid format picker used by all three platform UIs.
- * Single source of truth for the format list, keyboard interaction and the
- * recommended badge - previously duplicated with drifting copy/badges.
+ * Shared N-Up grid format picker — one responsive grid (2 cols mobile,
+ * 3 tablet, 6 desktop). Single source of truth for the format list,
+ * keyboard interaction and the recommended badge.
  */
-export const GridFormatPicker: React.FC<GridFormatPickerProps> = ({ gridFormat, columns, onSelect }) => {
-  const cardSize = columns === 2 ? 'p-2.5' : 'p-3';
-  const descSize = columns === 6 ? 'text-[11px]' : 'text-[10px]';
-
+export const GridFormatPicker: React.FC<GridFormatPickerProps> = ({ gridFormat, onSelect }) => {
   const isSelected = (format: string) =>
     gridFormat === format || (format === '2x2' && gridFormat === '4up');
 
@@ -51,7 +40,11 @@ export const GridFormatPicker: React.FC<GridFormatPickerProps> = ({ gridFormat, 
   };
 
   return (
-    <div role="radiogroup" aria-label="Grid format" className={`grid ${COLUMNS[columns]} gap-3`}>
+    <div
+      role="radiogroup"
+      aria-label="Grid format"
+      className="grid grid-cols-2 gap-2 sm:gap-3 sm:grid-cols-3 xl:grid-cols-6"
+    >
       {GRID_FORMATS.map((item, idx) => {
         const selected = isSelected(item.format);
         return (
@@ -74,20 +67,20 @@ export const GridFormatPicker: React.FC<GridFormatPickerProps> = ({ gridFormat, 
                 selectByIndex(idx - 1);
               }
             }}
-            className={`flex flex-col justify-between rounded-xl border text-left cursor-pointer transition-all active:scale-98 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-soft ${
+            className={`flex flex-col justify-between rounded-xl border p-3 text-left cursor-pointer transition-all active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-soft ${
               selected
                 ? 'border-primary bg-primary-faint/60 ring-2 ring-primary shadow-md'
                 : 'border-surface-2 bg-bg/60 hover:border-elevated'
-            } ${cardSize}`}
+            }`}
           >
             <div>
               {item.recommended && (
-                <span className="mb-1 inline-block rounded-xs bg-primary-strong px-1.5 py-0.5 text-[9px] font-bold text-white">
-                  RECOMMENDED
+                <span className="mb-1 inline-block rounded-xs bg-primary-strong px-1.5 py-0.5 text-xs font-bold text-white">
+                  Recommended
                 </span>
               )}
-              <h4 className="text-xs font-bold text-white">{item.label}</h4>
-              <p className={`mt-0.5 text-ink-muted ${descSize}`}>{item.desc}</p>
+              <h4 className="text-xs font-bold text-white sm:text-sm">{item.label}</h4>
+              <p className="mt-0.5 text-xs text-ink-muted">{item.desc}</p>
             </div>
             {selected && (
               <div className="mt-2 flex justify-end">

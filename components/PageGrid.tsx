@@ -137,7 +137,7 @@ export const PageGrid: React.FC<PageGridProps> = ({
             <h3 className="text-sm font-bold text-white">Document Page Thumbnails</h3>
             <InfoTooltip
               title="Selective Page Exclusion"
-              content="Skip pages you don't need to print Ã¢â‚¬” like promo slides, chapter covers, or breaks."
+              content="Skip pages you don't need to print — like promo slides, chapter covers, or breaks."
               position="right"
             />
           </div>
