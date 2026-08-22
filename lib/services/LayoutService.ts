@@ -7,7 +7,10 @@ export class LayoutService {
     config: LayoutConfig,
     onProgress?: (current: number, total: number, action: string) => void,
   ): Promise<{ finalPdfBlob: Blob; sheetPreviews: string[]; metrics: OptimizationMetrics }> {
-    memoryManager.revokeAllBlobUrls();
+    /* Free only the previous sheet previews — a blanket revoke here used to
+       kill live thumbnails (merged/processed pages) whose URLs are still
+       referenced by state, producing ERR_FILE_NOT_FOUND on the next paint. */
+    memoryManager.revokeTaggedBlobUrls('sheet-preview');
     if (activePages.length === 0) throw new Error('No pages to layout');
     // Defer pdf-lib (via PdfExporter) until layout/export is actually requested.
     const { PdfExporter } = await import('../optimizer/pdfExporter');

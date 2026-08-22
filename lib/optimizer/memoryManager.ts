@@ -4,7 +4,7 @@ import { detectDeviceProfile } from '../pipeline/types';
  * Memory Management & Device Utilities
  */
 class MemoryManager {
-  private activeBlobUrls: Set<string> = new Set();
+  private activeBlobUrls: Map<string, string | undefined> = new Map();
   private canvasPool: HTMLCanvasElement[] = [];
   private canvasPoolMax = 8;
   private canvasPoolBytes = 0;
@@ -76,8 +76,13 @@ class MemoryManager {
     return Math.min(cores, 4);
   }
 
-  public createTrackedBlobUrl(blob: Blob): string {
-    const url = URL.createObjectURL(blob); this.activeBlobUrls.add(url); return url;
+  /**
+   * Tracks a blob URL. An optional tag groups related URLs so a family
+   * (e.g. 'sheet-preview') can be revoked without touching live UI assets
+   * such as merged-page or processed-page thumbnails.
+   */
+  public createTrackedBlobUrl(blob: Blob, tag?: string): string {
+    const url = URL.createObjectURL(blob); this.activeBlobUrls.set(url, tag); return url;
   }
 
   public revokeBlobUrl(url: string | null | undefined): void {
@@ -86,8 +91,17 @@ class MemoryManager {
     else if (url.startsWith('blob:')) URL.revokeObjectURL(url);
   }
 
+  /** Revokes only URLs created with the given tag. */
+  public revokeTaggedBlobUrls(tag: string): void {
+    this.activeBlobUrls.forEach((t, url) => {
+      if (t !== tag) return;
+      try { URL.revokeObjectURL(url); } catch (error) { console.warn('[MemoryManager] Non-fatal error:', error); }
+      this.activeBlobUrls.delete(url);
+    });
+  }
+
   public revokeAllBlobUrls(): void {
-    this.activeBlobUrls.forEach((url) => { try { URL.revokeObjectURL(url); } catch (error) { console.warn('[MemoryManager] Non-fatal error:', error); } });
+    this.activeBlobUrls.forEach((_, url) => { try { URL.revokeObjectURL(url); } catch (error) { console.warn('[MemoryManager] Non-fatal error:', error); } });
     this.activeBlobUrls.clear();
   }
 
