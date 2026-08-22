@@ -46,7 +46,7 @@ export const EnhanceExportView: React.FC<{ workflow: EnhanceWorkflow }> = ({ wor
               onClick={handleDownload}
               className="flex h-12 w-full max-w-sm items-center justify-center gap-2 rounded-xl border border-elevated bg-surface text-sm font-bold text-ink transition-transform duration-150 active:scale-[0.98]"
             >
-              <Download className="h-4 w-4 text-[#a78bfa]" />
+              <Download className="h-4 w-4 text-accent-soft" />
               Save {state.fileName}
             </button>
             {typeof navigator !== 'undefined' && 'share' in navigator && (
@@ -67,7 +67,7 @@ export const EnhanceExportView: React.FC<{ workflow: EnhanceWorkflow }> = ({ wor
                 }}
                 className="flex h-11 w-full max-w-sm items-center justify-center gap-2 rounded-xl border border-elevated/70 bg-surface/70 text-xs font-bold text-ink transition-transform duration-150 active:scale-[0.98]"
               >
-                <Share2 className="h-4 w-4 text-[#a78bfa]" />
+                <Share2 className="h-4 w-4 text-accent-soft" />
                 Share PDF
               </button>
             )}
@@ -81,7 +81,7 @@ export const EnhanceExportView: React.FC<{ workflow: EnhanceWorkflow }> = ({ wor
           onClick={handleBackToWorkbench}
           className="flex h-11 items-center justify-center gap-2 rounded-xl border border-elevated/70 bg-surface/70 text-xs font-bold text-ink transition-transform duration-150 active:scale-[0.98]"
         >
-          <SlidersHorizontal className="h-4 w-4 text-[#a78bfa]" />
+          <SlidersHorizontal className="h-4 w-4 text-accent-soft" />
           Adjust Enhancement Settings
         </button>
         <button
@@ -89,7 +89,7 @@ export const EnhanceExportView: React.FC<{ workflow: EnhanceWorkflow }> = ({ wor
           onClick={handleReset}
           className="flex h-11 items-center justify-center gap-2 rounded-xl border border-elevated/70 bg-surface/70 text-xs font-bold text-ink transition-transform duration-150 active:scale-[0.98]"
         >
-          <RotateCcw className="h-4 w-4 text-[#a78bfa]" />
+          <RotateCcw className="h-4 w-4 text-accent-soft" />
           Start Over with New PDFs
         </button>
       </div>

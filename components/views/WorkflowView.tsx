@@ -179,7 +179,7 @@ export const WorkflowView: React.FC<WorkflowUIProps> = ({ state, actions, handle
                     disabled={!mergedPdfBytes || isProcessing}
                     className="flex-1 md:flex-none"
                   >
-                    Optimize PDF
+                    Whiten PDF
                     <ArrowRight className="h-4 w-4" aria-hidden="true" />
                   </Button>
                 </ActionBar>
@@ -252,7 +252,7 @@ export const WorkflowView: React.FC<WorkflowUIProps> = ({ state, actions, handle
           </PhaseErrorBoundary>
         ) : (
           <EmptyPhaseState
-            title="No pages to optimize yet"
+            title="No pages to whiten yet"
             message="Upload and process your PDF first — then you can fine-tune ink savings here."
             onBack={() => setCurrentPhase(1)}
             backLabel="Back to Upload"

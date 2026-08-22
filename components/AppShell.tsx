@@ -144,7 +144,7 @@ export default function AppShell() {
         onReset={handleResetWorkflow}
         onNavigatePhase={(phase) => actions.setPhase(phase)}
         isProcessing={state.isProcessing}
-        showStepper={toolMode !== null}
+        showStepper={toolMode === 'dark-print'}
       />
       <ProcessingModal progress={state.progress} onCancel={handleCancelProcessing} progressiveThumbnails={progressiveThumbnails} />
       {swUpdateAvailable && (

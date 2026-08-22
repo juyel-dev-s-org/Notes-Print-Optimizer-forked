@@ -12,7 +12,7 @@ interface GridFormatItem {
 }
 
 const GRID_FORMATS: GridFormatItem[] = [
-  { format: '2x2', label: '4-Up (2x2)', desc: '4 slides per sheet', recommended: true },
+  { format: '2x2', label: '4-Up (2x2)', desc: '4 slides per sheet', recommended: false },
   { format: '1x2', label: '2-Up (1x2)', desc: '2 slides per sheet', recommended: false },
   { format: '2x3', label: '6-Up (2x3)', desc: '6 slides per sheet', recommended: false },
   { format: '2x4', label: '8-Up (2x4)', desc: '8 slides per sheet', recommended: false },

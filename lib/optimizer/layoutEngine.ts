@@ -30,21 +30,32 @@ export class LayoutEngine {
     return { widthPx: Math.round(wIn * dpi), heightPx: Math.round(hIn * dpi), dpi };
   }
 
-  public static getGridDimensions(format: GridFormat): { cols: number; rows: number; totalPerSheet: number } {
-    switch (format) {
-      case '1x2': case '2up': return { cols: 1, rows: 2, totalPerSheet: 2 };
-      case '2x2': case '4up': return { cols: 2, rows: 2, totalPerSheet: 4 };
-      case '2x3': case '6up': return { cols: 2, rows: 3, totalPerSheet: 6 };
-      case '2x4': case '8up': return { cols: 2, rows: 4, totalPerSheet: 8 };
-      case '2x5': case '10up': return { cols: 2, rows: 5, totalPerSheet: 10 };
-      case '2x1': return { cols: 2, rows: 1, totalPerSheet: 2 };
-      case '3x3': return { cols: 3, rows: 3, totalPerSheet: 9 };
-      case '1x1': case 'original': default: return { cols: 1, rows: 1, totalPerSheet: 1 };
+  /**
+   * Grid geometry for a format. On LANDSCAPE sheets asymmetric grids are
+   * transposed ('2x3' -> 3 cols x 2 rows) so cells stay slide-shaped
+   * instead of stretching across the wide sheet.
+   */
+  public static getGridDimensions(format: GridFormat, orientation?: Orientation): { cols: number; rows: number; totalPerSheet: number } {
+    const base = (() => {
+      switch (format) {
+        case '1x2': case '2up': return { cols: 1, rows: 2, totalPerSheet: 2 };
+        case '2x2': case '4up': return { cols: 2, rows: 2, totalPerSheet: 4 };
+        case '2x3': case '6up': return { cols: 2, rows: 3, totalPerSheet: 6 };
+        case '2x4': case '8up': return { cols: 2, rows: 4, totalPerSheet: 8 };
+        case '2x5': case '10up': return { cols: 2, rows: 5, totalPerSheet: 10 };
+        case '2x1': return { cols: 2, rows: 1, totalPerSheet: 2 };
+        case '3x3': return { cols: 3, rows: 3, totalPerSheet: 9 };
+        case '1x1': case 'original': default: return { cols: 1, rows: 1, totalPerSheet: 1 };
+      }
+    })();
+    if (orientation === 'LANDSCAPE' && base.cols !== base.rows) {
+      return { cols: base.rows, rows: base.cols, totalPerSheet: base.totalPerSheet };
     }
+    return base;
   }
 
   public static getSheetCompositionGeometry(config: LayoutConfig): SheetCompositionGeometry {
-    const { cols, rows } = this.getGridDimensions(config.gridFormat);
+    const { cols, rows } = this.getGridDimensions(config.gridFormat, config.orientation);
     const dims = this.getSheetDimensions(config.paperSize, config.orientation, PRINT_LAYOUT_DPI);
     const mmPx = dims.dpi / 25.4;
     const marginTop = Math.round((config.outerMarginMm?.top ?? config.marginMm ?? 2) * mmPx);

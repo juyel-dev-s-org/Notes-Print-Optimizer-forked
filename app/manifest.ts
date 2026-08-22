@@ -15,7 +15,9 @@ export default function manifest(): MetadataRoute.Manifest {
     scope: `${basePath}/`,
     display: 'standalone',
     background_color: '#020617',
-    theme_color: '#020617',
+    /* Static by PWA platform design — brand indigo reads as intentional on
+       both light and dark headers (runtime toggle only drives meta theme-color). */
+    theme_color: '#4338ca',
     orientation: 'portrait-primary',
     categories: ['education', 'productivity', 'utilities'],
     prefer_related_applications: false,

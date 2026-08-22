@@ -34,7 +34,7 @@ export const EnhanceToolView: React.FC<EnhanceToolViewProps> = ({ onBack }) => {
           type="button"
           onClick={onBack}
           aria-label="Back to tools"
-          className="flex h-11 w-11 items-center justify-center rounded-xl border border-elevated/60 bg-surface/80 text-ink transition-transform duration-150 active:scale-95 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#818cf8]"
+          className="flex h-11 w-11 items-center justify-center rounded-xl border border-elevated/60 bg-surface/80 text-ink transition-transform duration-150 active:scale-95 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-soft"
         >
           <ArrowLeft className="h-5 w-5" aria-hidden="true" />
         </button>
@@ -42,7 +42,7 @@ export const EnhanceToolView: React.FC<EnhanceToolViewProps> = ({ onBack }) => {
           <h1 className="truncate text-[15px] font-bold text-ink">Enhance Light PDF</h1>
           <p className="truncate text-[11px] text-ink-faint">Faint scans → clear printouts · 100% on-device</p>
         </div>
-        <span className="rounded-full border border-[#5B35FF]/40 bg-[#5B35FF]/10 px-2.5 py-1 text-[10px] font-bold tabular-nums text-[#a78bfa]">
+        <span className="rounded-full border border-accent/40 bg-accent/10 px-2.5 py-1 text-xs font-bold tabular-nums text-accent-soft">
           {STEP_LABEL[state.step]}
         </span>
       </header>
