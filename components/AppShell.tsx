@@ -16,6 +16,8 @@ export default function AppShell() {
   useMonitor();
   const [swUpdateAvailable, setSwUpdateAvailable] = useState(false);
   const [toolMode, setToolMode] = useState<ToolMode | null>(null);
+  /** True while the user is inside the N-Up stage reached from the enhance tool. */
+  const [arrivedViaEnhance, setArrivedViaEnhance] = useState(false);
 
   useEffect(() => {
     if ('serviceWorker' in navigator) {
@@ -58,11 +60,29 @@ export default function AppShell() {
     progressiveThumbnails,
   } = usePageHandlers();
 
-  /** Enhance -> N-Up: land inside the dark-print tool so the stepper shows. */
+  /** Enhance -> N-Up: land inside the dark-print tool but without its
+   * pipeline chrome (stepper/back-to-optimize) — see arrivedViaEnhance. */
   const runEnhanceLayoutHandoff = useCallback(async (pages: HandoffPageInput[]) => {
     await handleEnhanceLayoutHandoff(pages);
     setToolMode('dark-print');
+    setArrivedViaEnhance(true);
   }, [handleEnhanceLayoutHandoff]);
+
+  /** From the handoff stage, reset exits to the tools box, not tool-1 upload. */
+  const handleSessionReset = useCallback(() => {
+    if (arrivedViaEnhance) {
+      setArrivedViaEnhance(false);
+      setToolMode(null);
+    }
+    handleResetWorkflow();
+  }, [arrivedViaEnhance, handleResetWorkflow]);
+
+  /** Return to the enhance workbench (its results stay alive in the tool machine). */
+  const handleBackToEnhance = useCallback(() => {
+    setArrivedViaEnhance(false);
+    setToolMode('enhance');
+    handleResetWorkflow();
+  }, [handleResetWorkflow]);
 
   const workflowState: WorkflowState = useMemo(() => ({
     currentPhase: state.currentPhase,
@@ -129,9 +149,9 @@ export default function AppShell() {
     handleDownloadFinalPrintPdf,
     handleProceedToPhase4,
     handleSendFeedback,
-    handleResetWorkflow,
-    handleCancelProcessing,
     compilePhase3PrintLayout,
+    handleCancelProcessing,
+    handleResetWorkflow: handleSessionReset,
   }), [
     handleFilesUpload, handleMoveItem, handleRemoveItem,
     handleReorderItem, handleSmartArrange, handleDownloadMerged, handleProceedToPhase2,
@@ -149,10 +169,10 @@ export default function AppShell() {
       <a href="#main-content" className="skip-link">Skip to main content</a>
       <Header
         currentPhase={state.currentPhase}
-        onReset={handleResetWorkflow}
+        onReset={handleSessionReset}
         onNavigatePhase={(phase) => actions.setPhase(phase)}
         isProcessing={state.isProcessing}
-        showStepper={toolMode === 'dark-print'}
+        showStepper={toolMode === 'dark-print' && !arrivedViaEnhance}
       />
       <ProcessingModal progress={state.progress} onCancel={handleCancelProcessing} progressiveThumbnails={progressiveThumbnails} />
       {swUpdateAvailable && (
@@ -198,6 +218,8 @@ export default function AppShell() {
           toolMode={toolMode}
           onToolModeChange={setToolMode}
           onEnhanceHandoff={runEnhanceLayoutHandoff}
+          enhanceHandoffActive={arrivedViaEnhance}
+          onBackToEnhance={handleBackToEnhance}
         />
       </main>
       <footer className="border-t border-surface-2/60 px-4 py-6 text-center text-[11px] text-ink-muted">

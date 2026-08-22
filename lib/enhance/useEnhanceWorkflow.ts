@@ -137,32 +137,43 @@ export function useEnhanceWorkflow() {
     dispatch({ type: 'SET_SELECTED', index });
   }, []);
 
-  const handleExport = useCallback(async () => {
+  const triggerBrowserDownload = useCallback((blob: Blob, fileName: string) => {
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = fileName;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 4000);
+  }, []);
+
+  /** One tap: build the print-ready PDF and hand it straight to the browser. */
+  const handleDownloadPrintPdf = useCallback(async () => {
     if (state.results.length === 0 || state.exportBusy) return;
     dispatch({ type: 'EXPORT_START' });
     try {
       const blob = await EnhanceExporter.exportPdf(state.results, () => undefined);
       dispatch({ type: 'EXPORT_COMPLETE', blob, fileName: state.fileName });
+      triggerBrowserDownload(blob, state.fileName);
     } catch {
       dispatch({ type: 'EXPORT_ERROR', error: 'Failed to build the print PDF.' });
     }
-  }, [state.results, state.exportBusy, state.fileName]);
+  }, [state.results, state.exportBusy, state.fileName, triggerBrowserDownload]);
 
-  const handleDownload = useCallback(() => {
-    if (!state.pdfBlob) return;
-    const url = URL.createObjectURL(state.pdfBlob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = state.fileName;
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
-    setTimeout(() => URL.revokeObjectURL(url), 4000);
+  const handleSharePdf = useCallback(async () => {
+    if (!state.pdfBlob || typeof navigator === 'undefined' || !('share' in navigator)) return;
+    try {
+      const file = new File([state.pdfBlob], state.fileName, { type: 'application/pdf' });
+      if (navigator.canShare?.({ files: [file] })) {
+        await navigator.share({ files: [file], title: state.fileName });
+      } else {
+        await navigator.share({ title: state.fileName });
+      }
+    } catch {
+      /* user cancelled */
+    }
   }, [state.pdfBlob, state.fileName]);
-
-  const handleBackToWorkbench = useCallback(() => {
-    dispatch({ type: 'SET_STEP', step: 'enhance' });
-  }, []);
 
   const handleReset = useCallback(() => {
     abortRef.current?.abort();
@@ -183,12 +194,11 @@ export function useEnhanceWorkflow() {
       handleCancelProcessing,
       handleSetSettings,
       handleSetSelected,
-      handleExport,
-      handleDownload,
-      handleBackToWorkbench,
+      handleDownloadPrintPdf,
+      handleSharePdf,
       handleReset,
     }),
-    [state, handleUpload, handleStartEnhance, handleMoveFile, handleReorderFiles, handleRemoveFile, handleSmartArrange, handleBackToArrange, handleApplySettings, handleCancelProcessing, handleSetSettings, handleSetSelected, handleExport, handleDownload, handleBackToWorkbench, handleReset],
+    [state, handleUpload, handleStartEnhance, handleMoveFile, handleReorderFiles, handleRemoveFile, handleSmartArrange, handleBackToArrange, handleApplySettings, handleCancelProcessing, handleSetSettings, handleSetSelected, handleDownloadPrintPdf, handleSharePdf, handleReset],
   );
 
   return value;

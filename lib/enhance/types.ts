@@ -11,7 +11,7 @@ import type { UploadedPdfItem } from '@/lib/workflow/types';
 /** App-level tool selection (landing tools box). */
 export type ToolMode = 'dark-print' | 'enhance';
 
-export type EnhanceStep = 'upload' | 'arrange' | 'enhance' | 'export';
+export type EnhanceStep = 'upload' | 'arrange' | 'enhance';
 
 /** Hard cap on PDFs per enhance session (mirrors the main flow's queue cap). */
 export const MAX_ENHANCE_FILES = 10;

@@ -1,15 +1,31 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { ArrowLeft, Ban, Check, Download, Loader2, Wand2 } from 'lucide-react';
+import { ArrowLeft, Ban, Check, Download, LayoutGrid, Loader2, RotateCcw, Share2, Wand2 } from 'lucide-react';
 import { ENHANCE_SETTING_RANGE, type EnhanceSettings } from '@/lib/enhance/types';
 import type { EnhanceWorkflow } from '@/lib/enhance/useEnhanceWorkflow';
 import { Button } from '@/components/ui/Button';
 import { SliderRow } from '@/components/ui/Slider';
 import { ToggleRow } from '@/components/ui/Toggle';
 
-export const EnhanceWorkbenchView: React.FC<{ workflow: EnhanceWorkflow }> = ({ workflow }) => {
-  const { state, handleSetSettings, handleSetSelected, handleApplySettings, handleCancelProcessing, handleExport, handleBackToArrange } = workflow;
+export interface EnhanceWorkbenchViewProps {
+  workflow: EnhanceWorkflow;
+  /** Bridges the enhanced pages into the main pipeline's N-Up layout. */
+  onChooseLayout?: () => void;
+}
+
+export const EnhanceWorkbenchView: React.FC<EnhanceWorkbenchViewProps> = ({ workflow, onChooseLayout }) => {
+  const {
+    state,
+    handleSetSettings,
+    handleSetSelected,
+    handleApplySettings,
+    handleCancelProcessing,
+    handleDownloadPrintPdf,
+    handleSharePdf,
+    handleReset,
+    handleBackToArrange,
+  } = workflow;
   const [showBefore, setShowBefore] = useState(false);
   const [appliedSettings, setAppliedSettings] = useState<EnhanceSettings>(state.settings);
   const selected = state.results[state.selectedIndex];
@@ -168,13 +184,48 @@ export const EnhanceWorkbenchView: React.FC<{ workflow: EnhanceWorkflow }> = ({ 
         </div>
       )}
 
-      {/* Sticky export CTA — safe-area aware for gesture bar */}
+      {/* Sticky action bar — download left, layout right; safe-area aware */}
       {!state.isProcessing && state.results.length > 0 && (
         <div className="sticky bottom-0 z-20 -mx-4 border-t border-surface-2 bg-bg/95 px-4 pt-3 backdrop-blur-md" style={{ paddingBottom: 'calc(1rem + env(safe-area-inset-bottom, 0px))' }}>
-          <Button size="lg" fullWidth loading={state.exportBusy} onClick={handleExport}>
-            {!state.exportBusy && <Download className="h-4 w-4" />}
-            {state.exportBusy ? 'Building PDF…' : 'Download Print-Ready PDF'}
-          </Button>
+          <div className={`grid gap-2 ${onChooseLayout ? 'grid-cols-2' : 'grid-cols-1'}`}>
+            <Button size="lg" loading={state.exportBusy} onClick={handleDownloadPrintPdf}>
+              {!state.exportBusy && <Download className="h-4 w-4" />}
+              {state.exportBusy ? 'Building…' : 'Download PDF'}
+            </Button>
+            {onChooseLayout && (
+              <button
+                type="button"
+                onClick={onChooseLayout}
+                disabled={state.exportBusy}
+                style={{ background: 'var(--gradient-brand)' }}
+                className="flex h-12 items-center justify-center gap-2 rounded-xl text-sm font-bold text-white shadow-md shadow-primary/25 transition-transform duration-150 active:scale-[0.98] disabled:opacity-50"
+              >
+                <LayoutGrid className="h-4 w-4" aria-hidden="true" />
+                Choose Layout
+              </button>
+            )}
+          </div>
+
+          <div className="mt-2 flex items-center justify-center gap-5">
+            {state.pdfBlob && typeof navigator !== 'undefined' && 'share' in navigator && (
+              <button
+                type="button"
+                onClick={handleSharePdf}
+                className="flex h-9 items-center gap-1.5 rounded-lg px-2 text-[11px] font-bold text-accent-soft transition-colors hover:bg-surface-2 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-soft"
+              >
+                <Share2 className="h-3.5 w-3.5" aria-hidden="true" />
+                Share PDF
+              </button>
+            )}
+            <button
+              type="button"
+              onClick={handleReset}
+              className="flex h-9 items-center gap-1.5 rounded-lg px-2 text-[11px] font-bold text-ink-muted transition-colors hover:bg-surface-2 hover:text-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-soft"
+            >
+              <RotateCcw className="h-3.5 w-3.5" aria-hidden="true" />
+              Start Over with New PDFs
+            </button>
+          </div>
         </div>
       )}
 

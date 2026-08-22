@@ -7,7 +7,6 @@ import type { EnhanceStep } from '@/lib/enhance/types';
 import { EnhanceUploadView } from './EnhanceUploadView';
 import { EnhanceArrangeView } from './EnhanceArrangeView';
 import { EnhanceWorkbenchView } from './EnhanceWorkbenchView';
-import { EnhanceExportView } from './EnhanceExportView';
 
 export interface EnhanceToolViewProps {
   onBack: () => void;
@@ -19,11 +18,10 @@ const STEP_LABEL: Record<EnhanceStep, string> = {
   upload: '1 · Upload',
   arrange: '2 · Arrange',
   enhance: '3 · Enhance',
-  export: '4 · Export',
 };
 
 /**
- * Self-contained mobile tool: upload → arrange → enhance → export.
+ * Self-contained mobile tool: upload → arrange → enhance (download / N-Up).
  * Own top bar (back arrow exits to the landing tools box) and its own
  * internal state machine via useEnhanceWorkflow.
  */
@@ -53,9 +51,8 @@ export const EnhanceToolView: React.FC<EnhanceToolViewProps> = ({ onBack, onHand
 
       {state.step === 'upload' && <EnhanceUploadView workflow={workflow} />}
       {state.step === 'arrange' && <EnhanceArrangeView workflow={workflow} />}
-      {state.step === 'enhance' && <EnhanceWorkbenchView workflow={workflow} />}
-      {state.step === 'export' && (
-        <EnhanceExportView
+      {state.step === 'enhance' && (
+        <EnhanceWorkbenchView
           workflow={workflow}
           onChooseLayout={
             onHandoffToLayout

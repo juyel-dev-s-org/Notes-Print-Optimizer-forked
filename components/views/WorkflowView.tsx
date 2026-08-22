@@ -53,7 +53,7 @@ const ActionBar: React.FC<{ children: React.ReactNode }> = ({ children }) => (
   </div>
 );
 
-export const WorkflowView: React.FC<WorkflowUIProps> = ({ state, actions, handlers, onToolModeChange }) => {
+export const WorkflowView: React.FC<WorkflowUIProps> = ({ state, actions, handlers, onToolModeChange, enhanceHandoffActive, onBackToEnhance }) => {
   const {
     currentPhase,
     isProcessing,
@@ -350,9 +350,17 @@ export const WorkflowView: React.FC<WorkflowUIProps> = ({ state, actions, handle
               )}
 
               <ActionBar>
-                <Button variant="secondary" size="md" onClick={() => setCurrentPhase(2)}>
-                  <ArrowLeft className="h-4 w-4" /> Back
-                </Button>
+                {enhanceHandoffActive ? (
+                  onBackToEnhance && (
+                    <Button variant="secondary" size="md" onClick={onBackToEnhance}>
+                      <ArrowLeft className="h-4 w-4" /> Back to Enhance
+                    </Button>
+                  )
+                ) : (
+                  <Button variant="secondary" size="md" onClick={() => setCurrentPhase(2)}>
+                    <ArrowLeft className="h-4 w-4" /> Back
+                  </Button>
+                )}
 
                 <div className="flex flex-1 items-center justify-end gap-2 md:flex-none">
                   <Button

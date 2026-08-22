@@ -28,7 +28,7 @@ interface OrchestratorProps extends WorkflowUIProps {
  * Routes the active tool mode to its view. One responsive workflow view —
  * no platform forks, no JS media queries.
  */
-export const PlatformUIOrchestrator: React.FC<OrchestratorProps> = ({ state, actions, handlers, toolMode, onToolModeChange, onEnhanceHandoff }) => {
+export const PlatformUIOrchestrator: React.FC<OrchestratorProps> = ({ state, actions, handlers, toolMode, onToolModeChange, onEnhanceHandoff, enhanceHandoffActive, onBackToEnhance }) => {
   if (toolMode === null) {
     return (
       <div className="animate-enter flex w-full max-w-full min-w-0 flex-col gap-5 md:gap-6">
@@ -58,7 +58,14 @@ export const PlatformUIOrchestrator: React.FC<OrchestratorProps> = ({ state, act
 
   return (
     <PhaseErrorBoundary phaseName="Workflow">
-      <WorkflowView state={state} actions={actions} handlers={handlers} onToolModeChange={onToolModeChange} />
+      <WorkflowView
+        state={state}
+        actions={actions}
+        handlers={handlers}
+        onToolModeChange={onToolModeChange}
+        enhanceHandoffActive={enhanceHandoffActive}
+        onBackToEnhance={onBackToEnhance}
+      />
     </PhaseErrorBoundary>
   );
 };

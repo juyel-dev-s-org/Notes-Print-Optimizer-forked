@@ -63,7 +63,10 @@ export class EnhanceProcessor {
 
     const docs = [];
     for (const item of items) {
-      const task = pdfjsLib.getDocument({ data: new Uint8Array(item.arrayBuffer) });
+      // pdf.js transfers buffer ownership to its worker, detaching it on the
+      // main thread. Slice a private copy per run so Apply & Re-Enhance can
+      // safely reuse item.arrayBuffer (same guard as the main pipeline).
+      const task = pdfjsLib.getDocument({ data: new Uint8Array(item.arrayBuffer.slice(0)) });
       const doc = await task.promise;
       docs.push({ item, doc });
       totalPages += doc.numPages;

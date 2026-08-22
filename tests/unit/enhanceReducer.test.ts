@@ -108,21 +108,23 @@ describe('enhanceReducer', () => {
     expect(s.files).toEqual([]);
   });
 
-  it('export lifecycle sets the blob and moves to export step', () => {
-    let s = enhanceReducer({ ...INITIAL_ENHANCE_STATE, results: [page(0)] }, { type: 'EXPORT_START' });
+  it('export lifecycle stores the blob without leaving the workbench', () => {
+    let s = enhanceReducer({ ...INITIAL_ENHANCE_STATE, step: 'enhance', results: [page(0)] }, { type: 'EXPORT_START' });
     expect(s.exportBusy).toBe(true);
     const blob = new Blob(['%PDF'], { type: 'application/pdf' });
     s = enhanceReducer(s, { type: 'EXPORT_COMPLETE', blob, fileName: 'notes-enhanced.pdf' });
     expect(s.exportBusy).toBe(false);
     expect(s.pdfBlob).toBe(blob);
-    expect(s.step).toBe('export');
+    expect(s.step).toBe('enhance');
+    expect(s.fileName).toBe('notes-enhanced.pdf');
   });
 
   it('EXPORT_ERROR keeps results so retry is possible', () => {
-    let s = enhanceReducer({ ...INITIAL_ENHANCE_STATE, results: [page(0)] }, { type: 'EXPORT_START' });
+    let s = enhanceReducer({ ...INITIAL_ENHANCE_STATE, step: 'enhance', results: [page(0)] }, { type: 'EXPORT_START' });
     s = enhanceReducer(s, { type: 'EXPORT_ERROR', error: 'Build failed.' });
     expect(s.exportBusy).toBe(false);
     expect(s.results).toHaveLength(1);
+    expect(s.step).toBe('enhance');
     expect(s.error).toBe('Build failed.');
   });
 
@@ -171,7 +173,7 @@ describe('enhanceReducer', () => {
 
   it('BACK_TO_ARRANGE discards results and lands on the arrange step', () => {
     const s = enhanceReducer(
-      { ...INITIAL_ENHANCE_STATE, step: 'export', results: [page(0)], pdfBlob: new Blob(['%PDF']), error: 'boom' },
+      { ...INITIAL_ENHANCE_STATE, step: 'enhance', results: [page(0)], pdfBlob: new Blob(['%PDF']), error: 'boom' },
       { type: 'BACK_TO_ARRANGE' },
     );
     expect(s.step).toBe('arrange');
