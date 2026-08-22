@@ -5,6 +5,7 @@ import { ArrowLeft } from 'lucide-react';
 import { useEnhanceWorkflow } from '@/lib/enhance/useEnhanceWorkflow';
 import type { EnhanceStep } from '@/lib/enhance/types';
 import { EnhanceUploadView } from './EnhanceUploadView';
+import { EnhanceArrangeView } from './EnhanceArrangeView';
 import { EnhanceWorkbenchView } from './EnhanceWorkbenchView';
 import { EnhanceExportView } from './EnhanceExportView';
 
@@ -14,12 +15,13 @@ export interface EnhanceToolViewProps {
 
 const STEP_LABEL: Record<EnhanceStep, string> = {
   upload: '1 · Upload',
-  enhance: '2 · Enhance',
-  export: '3 · Export',
+  arrange: '2 · Arrange',
+  enhance: '3 · Enhance',
+  export: '4 · Export',
 };
 
 /**
- * Self-contained mobile tool: upload → enhance → export.
+ * Self-contained mobile tool: upload → arrange → enhance → export.
  * Own top bar (back arrow exits to the landing tools box) and its own
  * internal state machine via useEnhanceWorkflow.
  */
@@ -48,6 +50,7 @@ export const EnhanceToolView: React.FC<EnhanceToolViewProps> = ({ onBack }) => {
       </header>
 
       {state.step === 'upload' && <EnhanceUploadView workflow={workflow} />}
+      {state.step === 'arrange' && <EnhanceArrangeView workflow={workflow} />}
       {state.step === 'enhance' && <EnhanceWorkbenchView workflow={workflow} />}
       {state.step === 'export' && <EnhanceExportView workflow={workflow} />}
     </div>

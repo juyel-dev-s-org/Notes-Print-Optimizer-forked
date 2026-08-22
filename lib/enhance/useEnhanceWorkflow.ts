@@ -2,20 +2,20 @@
  * useEnhanceWorkflow — React hook driving the Enhance Light PDF tool.
  *
  * Composes the pure reducer with the processor/exporter and the shared
- * UploadService. Uploading a PDF auto-starts enhancement (same pattern as
- * the main flow); slider changes queue a manual "Apply" re-process; exports
- * build the print-ready PDF fully on-device. Owns an AbortController so
- * long jobs can be cancelled.
+ * UploadService. Uploading lands on an arrange stage (reorder / remove /
+ * Smart Arrange); enhancement only starts when the user taps "Enhance PDF".
+ * Slider changes queue a manual "Apply" re-process; exports build the
+ * print-ready PDF fully on-device. Owns an AbortController so long jobs
+ * can be cancelled.
  */
 
 import { useCallback, useEffect, useMemo, useReducer, useRef } from 'react';
 import { isLikelyPdfFile, UploadService } from '@/lib/services/UploadService';
+import { planSmartOrder } from '@/lib/rearrange';
 import { buildEnhanceFileName, enhanceReducer } from './enhanceReducer';
 import { EnhanceExporter } from './enhanceExporter';
 import { EnhanceProcessor } from './enhanceProcessor';
-import { INITIAL_ENHANCE_STATE, type EnhanceSettings } from './types';
-
-const MAX_FILES = 10;
+import { MAX_ENHANCE_FILES, INITIAL_ENHANCE_STATE, type EnhanceSettings } from './types';
 
 export function useEnhanceWorkflow() {
   const [state, dispatch] = useReducer(enhanceReducer, INITIAL_ENHANCE_STATE);
@@ -62,7 +62,7 @@ export function useEnhanceWorkflow() {
 
   const handleUpload = useCallback(async (files: File[]) => {
     if (state.isProcessing || state.exportBusy) return;
-    const pdfs = files.slice(0, MAX_FILES);
+    const pdfs = files.slice(0, MAX_ENHANCE_FILES);
     if (pdfs.length === 0) {
       dispatch({ type: 'PROCESS_ERROR', error: 'No files selected.' });
       return;
@@ -75,12 +75,50 @@ export function useEnhanceWorkflow() {
         }
       }
       const items = await UploadService.readFiles(pdfs);
-      dispatch({ type: 'SET_FILES', files: items, step: 'enhance' });
-      void runProcessing(items, state.settings);
+      // Adding from the arrange stage appends; uploading fresh replaces.
+      const base = state.step === 'arrange' ? state.files : [];
+      const merged = [...base, ...items].slice(0, MAX_ENHANCE_FILES);
+      dispatch({ type: 'SET_FILES', files: merged, step: 'arrange' });
     } catch {
       dispatch({ type: 'PROCESS_ERROR', error: 'Failed to read the selected files.' });
     }
-  }, [state.isProcessing, state.exportBusy, state.settings, runProcessing]);
+  }, [state.isProcessing, state.exportBusy, state.step, state.files]);
+
+  /** Explicit start — the only path that kicks off enhancement. */
+  const handleStartEnhance = useCallback(() => {
+    if (state.files.length === 0 || state.isProcessing || state.exportBusy) return;
+    dispatch({ type: 'SET_STEP', step: 'enhance' });
+    void runProcessing(state.files, state.settings);
+  }, [state.files, state.isProcessing, state.exportBusy, state.settings, runProcessing]);
+
+  const canEditQueue = !state.isProcessing && !state.exportBusy;
+
+  const handleMoveFile = useCallback((index: number, direction: 'UP' | 'DOWN') => {
+    if (!canEditQueue) return;
+    dispatch({ type: 'MOVE_FILE', index, direction });
+  }, [canEditQueue]);
+
+  const handleReorderFiles = useCallback((fromIndex: number, toIndex: number) => {
+    if (!canEditQueue) return;
+    dispatch({ type: 'REORDER_FILES', fromIndex, toIndex });
+  }, [canEditQueue]);
+
+  const handleRemoveFile = useCallback((index: number) => {
+    if (!canEditQueue) return;
+    dispatch({ type: 'REMOVE_FILE', index });
+  }, [canEditQueue]);
+
+  const handleSmartArrange = useCallback(() => {
+    if (!canEditQueue || state.files.length < 2) return;
+    const plan = planSmartOrder(state.files);
+    if (!plan.changed) return;
+    dispatch({ type: 'SMART_ARRANGE', files: plan.orderedItems });
+  }, [canEditQueue, state.files]);
+
+  const handleBackToArrange = useCallback(() => {
+    if (state.isProcessing || state.exportBusy) return;
+    dispatch({ type: 'BACK_TO_ARRANGE' });
+  }, [state.isProcessing, state.exportBusy]);
 
   const handleApplySettings = useCallback(() => {
     if (state.files.length === 0 || state.isProcessing || state.exportBusy) return;
@@ -135,6 +173,12 @@ export function useEnhanceWorkflow() {
     () => ({
       state,
       handleUpload,
+      handleStartEnhance,
+      handleMoveFile,
+      handleReorderFiles,
+      handleRemoveFile,
+      handleSmartArrange,
+      handleBackToArrange,
       handleApplySettings,
       handleCancelProcessing,
       handleSetSettings,
@@ -144,7 +188,7 @@ export function useEnhanceWorkflow() {
       handleBackToWorkbench,
       handleReset,
     }),
-    [state, handleUpload, handleApplySettings, handleCancelProcessing, handleSetSettings, handleSetSelected, handleExport, handleDownload, handleBackToWorkbench, handleReset],
+    [state, handleUpload, handleStartEnhance, handleMoveFile, handleReorderFiles, handleRemoveFile, handleSmartArrange, handleBackToArrange, handleApplySettings, handleCancelProcessing, handleSetSettings, handleSetSelected, handleExport, handleDownload, handleBackToWorkbench, handleReset],
   );
 
   return value;
