@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState, useCallback } from 'react';
 import { Header } from '@/components/Header';
 import { ProcessingModal } from '@/components/ProcessingModal';
 import { PlatformUIOrchestrator } from '@/components/views/PlatformUIOrchestrator';
@@ -9,6 +9,7 @@ import { useMonitor } from '@/lib/monitoring/useMonitor';
 import { ToastProvider } from '@/components/shared/Toast';
 import type { WorkflowState, WorkflowActions, WorkflowHandlers } from '@/components/views/types';
 import type { ToolMode } from '@/lib/enhance/types';
+import type { HandoffPageInput } from '@/lib/services/EnhanceHandoffService';
 import { RefreshCw, X } from 'lucide-react';
 
 export default function AppShell() {
@@ -53,8 +54,15 @@ export default function AppShell() {
     handleApplyLayout, handleDownloadFinalPrintPdf, handleProceedToPhase4,
     handleSendFeedback, compilePhase3PrintLayout,
     handleCancelProcessing,
+    handleEnhanceLayoutHandoff,
     progressiveThumbnails,
   } = usePageHandlers();
+
+  /** Enhance -> N-Up: land inside the dark-print tool so the stepper shows. */
+  const runEnhanceLayoutHandoff = useCallback(async (pages: HandoffPageInput[]) => {
+    await handleEnhanceLayoutHandoff(pages);
+    setToolMode('dark-print');
+  }, [handleEnhanceLayoutHandoff]);
 
   const workflowState: WorkflowState = useMemo(() => ({
     currentPhase: state.currentPhase,
@@ -189,6 +197,7 @@ export default function AppShell() {
           handlers={workflowHandlers}
           toolMode={toolMode}
           onToolModeChange={setToolMode}
+          onEnhanceHandoff={runEnhanceLayoutHandoff}
         />
       </main>
       <footer className="border-t border-surface-2/60 px-4 py-6 text-center text-[11px] text-ink-muted">

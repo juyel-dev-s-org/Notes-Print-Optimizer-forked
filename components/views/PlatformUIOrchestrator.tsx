@@ -7,6 +7,7 @@ import { LandingHero } from '@/components/LandingHero';
 import { ToolsBox } from '@/components/tools/ToolsBox';
 import { PhaseSkeleton, CardSkeleton } from '@/components/shared/LoadingSkeleton';
 import { PhaseErrorBoundary } from '@/components/shared/PhaseErrorBoundary';
+import type { HandoffPageInput } from '@/lib/services/EnhanceHandoffService';
 
 const WorkflowView = dynamic(() => import('./WorkflowView').then(m => m.WorkflowView), {
   loading: () => <PhaseSkeleton phaseName="Workflow" />,
@@ -18,11 +19,16 @@ const EnhanceToolView = dynamic(() => import('@/components/enhance/EnhanceToolVi
   ssr: false,
 });
 
+interface OrchestratorProps extends WorkflowUIProps {
+  /** Enhance export -> N-Up layout handoff (optional for tests/storybook). */
+  onEnhanceHandoff?: (pages: HandoffPageInput[]) => Promise<void>;
+}
+
 /**
  * Routes the active tool mode to its view. One responsive workflow view —
  * no platform forks, no JS media queries.
  */
-export const PlatformUIOrchestrator: React.FC<WorkflowUIProps> = ({ state, actions, handlers, toolMode, onToolModeChange }) => {
+export const PlatformUIOrchestrator: React.FC<OrchestratorProps> = ({ state, actions, handlers, toolMode, onToolModeChange, onEnhanceHandoff }) => {
   if (toolMode === null) {
     return (
       <div className="animate-enter flex w-full max-w-full min-w-0 flex-col gap-5 md:gap-6">
@@ -38,7 +44,14 @@ export const PlatformUIOrchestrator: React.FC<WorkflowUIProps> = ({ state, actio
   if (toolMode === 'enhance') {
     return (
       <div className="flex w-full max-w-full min-w-0 flex-col gap-4 pb-20 md:gap-6 md:pb-12">
-        <EnhanceToolView onBack={() => onToolModeChange?.(null)} />
+        <EnhanceToolView
+          onBack={() => onToolModeChange?.(null)}
+          onHandoffToLayout={
+            onEnhanceHandoff
+              ? (pages) => void onEnhanceHandoff(pages)
+              : undefined
+          }
+        />
       </div>
     );
   }

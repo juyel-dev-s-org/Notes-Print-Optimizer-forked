@@ -2,6 +2,7 @@
 
 import { useCallback } from 'react';
 import { ExportService } from '../../services/ExportService';
+import { EnhanceHandoffService, type HandoffPageInput } from '../../services/EnhanceHandoffService';
 import { pwOptimizerStorage } from '../../optimizer/storage';
 import { memoryManager } from '../../optimizer/memoryManager';
 import { sendFeedbackToGas } from '../../feedback/gasClient';
@@ -60,6 +61,21 @@ export function useSessionFlow({
     clearProgressiveThumbnails();
     actions.resetWorkflow();
   }, [actions, abortRef, revokePreviewAssets, clearProgressiveThumbnails]);
+
+  /**
+   * Enhance tool -> LAYOUT phase handoff. Reset clears the whole page cache,
+   * so ordering matters: reset FIRST, then persist the enhanced JPEGs and
+   * publish the manifest. No optimizer pass — enhance output is already the
+   * final processed imagery and N-Up is pure geometry.
+   */
+  const handleEnhanceLayoutHandoff = useCallback(async (pages: HandoffPageInput[]) => {
+    if (pages.length === 0) return;
+    handleResetWorkflow();
+    const pdfId = EnhanceHandoffService.buildPdfId();
+    await EnhanceHandoffService.persistPages(pages, pdfId);
+    actions.setProcessedPages(EnhanceHandoffService.buildProcessedPages(pages, pdfId));
+    actions.setPhase(3);
+  }, [actions, handleResetWorkflow]);
 
   const handleDownloadFinalPrintPdf = useCallback(() => {
     if (!finalPrintPdfBlob) return;
@@ -133,6 +149,7 @@ export function useSessionFlow({
   return {
     handleCancelProcessing,
     handleResetWorkflow,
+    handleEnhanceLayoutHandoff,
     handleProceedToPhase3,
     handleProceedToPhase4,
     handleDownloadFinalPrintPdf,
