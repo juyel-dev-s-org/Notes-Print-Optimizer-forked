@@ -64,7 +64,7 @@
     "type": "git",
     "url": "https://github.com/juyel-dev/Notes-Print-Optimizer.git"
   },
-  "homepage": "https://juyel-dev.github.io/Notes-Print-Optimizer",
+  "homepage": "https://notes-print-optimizer.vercel.app",
   "bugs": {
     "url": "https://github.com/juyel-dev/Notes-Print-Optimizer/issues"
   },

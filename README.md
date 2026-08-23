@@ -11,9 +11,9 @@
 | Product | PW Notes Print Optimizer |
 | Purpose | Convert dark-background lecture slides (Physics Wallah / class notes) to print-ready PDFs with optimal ink and paper usage |
 | Stack | Next.js 15 (App Router, `output: 'export'`), React 19, TypeScript 5.9 strict, Tailwind CSS v4, pdfjs-dist 4.10.38, pdf-lib, Rust→WASM kernels |
-| Runtime model | Fully client-side; zero server code; static export deployed to GitHub Pages |
+| Runtime model | Fully client-side; zero server code; static export deployed to Vercel (portable to any static host) |
 | License | Juyel Source License (JSL) v1.0 (see LICENSE) |
-| CI badge | [CI + Deploy](https://github.com/juyel-dev/Notes-Print-Optimizer/actions/workflows/deploy.yml) |
+| CI badge | [CI](https://github.com/juyel-dev/Notes-Print-Optimizer/actions/workflows/ci.yml) |
 
 ## 2. Repository topology (two-repo model)
 
@@ -28,10 +28,12 @@ Mandatory rules for agents:
 2. **Never push to production `main` directly.** It is updated ONLY via a
    Pull Request from the fork; the PR must pass the `ci` check (plus
    lighthouse/budget) and be merged with `gh pr merge --merge`.
-3. Production URL: `https://juyel-dev.github.io/Notes-Print-Optimizer/`
-4. Fork preview URL: `https://juyel-dev-s-org.github.io/Notes-Print-Optimizer-forked/`
-5. Base path is derived from the repo name (`NEXT_PUBLIC_BASE_PATH`), so one
-   build config serves both repos.
+3. Production URL: `https://notes-print-optimizer.vercel.app/` (Vercel git
+   integration deploys production `main` automatically; fork pushes get
+   preview deployments)
+4. Fork preview URL: follow the Vercel preview comment on each PR
+5. Base path is opt-in only (`NEXT_PUBLIC_BASE_PATH`) — never inferred from
+   the environment. Root hosts (Vercel) need nothing.
 6. A stale `develop` branch exists in production for historical reasons. Do
    not use it.
 
@@ -151,13 +153,14 @@ Copy `.env.example` → `.env.local`:
 | Variable | Required | Description |
 |---|---|---|
 | `NEXT_PUBLIC_FEEDBACK_URL` | No | Google Apps Script web app URL (feedback relay) |
-| `NEXT_PUBLIC_BASE_PATH` | No | Deployment base path (auto-set in CI) |
+| `NEXT_PUBLIC_BASE_PATH` | No | Deployment base path — opt-in only, never inferred from env |
+| `NEXT_PUBLIC_SITE_URL` | No | Absolute production URL for canonicals/sitemap/JSON-LD (auto-detected on Vercel; set it explicitly when adding a custom domain) |
 
 ## 8. CI/CD (`.github/workflows/`)
 
 | Workflow | Jobs | Triggers |
 |---|---|---|
-| `deploy.yml` | npm ci → lint → tsc → unit tests → build → deploy (GitHub Pages, env `github-pages`) | push to main + PRs; deploy skipped on PRs |
+| `ci.yml` | npm ci → lint → tsc → unit tests → dependency audit → build (root basePath) → Playwright smoke | push to main + PRs; hosting handled by Vercel git integration |
 | `lighthouse.yml` | Lighthouse CI: `lighthouse` + `budget` jobs | PRs + main |
 | `wasm-build.yml` | Rust WASM build check | PRs + main |
 

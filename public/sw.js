@@ -1,4 +1,4 @@
-const VERSION = 'v8';
+const VERSION = 'v9';
 const CACHE = `pw-optimizer-${VERSION}`;
 const STATIC_CACHE = `pw-optimizer-static-${VERSION}`;
 const DYNAMIC_CACHE = `pw-optimizer-dynamic-${VERSION}`;
@@ -7,9 +7,24 @@ const DYNAMIC_CACHE = `pw-optimizer-dynamic-${VERSION}`;
 const BASE = self.location.pathname.replace(/\/sw\.js$/, '') || '';
 const OFFLINE_URL = `${BASE}/offline/`;
 
+// Deliberate decision (architecture review, Aug 2026): every public tool
+// route is precached. Each page is a few KB of static HTML (<60 KB total),
+// and offline deep-linking is a core product promise ("100% Offline").
+// Adding a tool = adding its route here AND to lib/tools/registry.ts.
+const TOOL_ROUTES = [
+  '/tools/dark-print/',
+  '/tools/enhance-light-pdf/',
+  '/tools/protect-pdf/',
+  '/tools/pdf-to-images/',
+  '/tools/merge-pdf/',
+  '/tools/split-pdf/',
+  '/tools/image-to-pdf/',
+];
+
 const PRECACHE_URLS = [
   `${BASE}/`,
   `${BASE}/offline/`,
+  ...TOOL_ROUTES.map((route) => `${BASE}${route}`),
   `${BASE}/icon.svg`,
   `${BASE}/icon-192-v2.png`,
   `${BASE}/icon-512-v2.png`,
