@@ -1,4 +1,4 @@
-name: CI + Deploy
+name: CI
 
 on:
   push:
@@ -9,18 +9,17 @@ on:
 
 permissions:
   contents: read
-  pages: write
-  id-token: write
 
 concurrency:
-  group: "pages"
-  cancel-in-progress: false
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   ci:
+    # Hosting-agnostic quality gate — the same checks Vercel/any host relies on.
+    # No GitHub Pages deploy: builds at root (no base path), like production Vercel.
     runs-on: ubuntu-latest
     env:
-      NEXT_PUBLIC_BASE_PATH: /${{ github.event.repository.name }}
       # Feedback relay (public GAS web-app URL; security enforced server-side
       # via chat_id override + endpoint whitelist + rate limiting)
       NEXT_PUBLIC_FEEDBACK_URL: ${{ vars.NEXT_PUBLIC_FEEDBACK_URL || 'https://script.google.com/macros/s/AKfycbyYBvhRphdbvTAEI-hktpUWcpYyFjdsOjSHhHwuQyt0K310uqIX3ManTNfQ1Kx7UEtw/exec' }}
@@ -57,39 +56,3 @@ jobs:
 
       - name: Smoke Tests (Playwright)
         run: npx playwright test --config=playwright.config.ts --project=chromium --grep-invert "worker pool runtime"
-
-      - name: Upload build artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: out
-          path: ./out
-          retention-days: 7
-
-  deploy:
-    if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master'
-    needs: ci
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
-    runs-on: ubuntu-latest
-    steps:
-      - name: Download build artifact
-        uses: actions/download-artifact@v4
-        with:
-          name: out
-          path: ./out
-
-      - name: Add .nojekyll
-        run: touch out/.nojekyll
-
-      - name: Setup Pages
-        uses: actions/configure-pages@v5
-
-      - name: Upload artifact
-        uses: actions/upload-pages-artifact@v3
-        with:
-          path: ./out
-
-      - name: Deploy to GitHub Pages
-        id: deployment
-        uses: actions/deploy-pages@v4
