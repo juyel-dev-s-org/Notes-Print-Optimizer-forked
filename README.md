@@ -28,9 +28,10 @@ Mandatory rules for agents:
 2. **Never push to production `main` directly.** It is updated ONLY via a
    Pull Request from the fork; the PR must pass the `ci` check (plus
    lighthouse/budget) and be merged with `gh pr merge --merge`.
-3. Production URL: `https://notes-print-optimizer.vercel.app/` (Vercel git
-   integration deploys production `main` automatically; fork pushes get
-   preview deployments)
+3. Production URL: `https://print-optimizer.vercel.app/` (Vercel git
+   integration deploys production `main` automatically; absolute SEO URLs
+   come from `VERCEL_PROJECT_PRODUCTION_URL`, so renaming the project or
+   adding a domain requires a fresh deployment to take effect)
 4. Fork preview URL: follow the Vercel preview comment on each PR
 5. Base path is opt-in only (`NEXT_PUBLIC_BASE_PATH`) — never inferred from
    the environment. Root hosts (Vercel) need nothing.

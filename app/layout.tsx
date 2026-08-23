@@ -71,6 +71,12 @@ export const metadata: Metadata = {
   other: {
     'msapplication-TileColor': '#0f172a',
     'msapplication-tap-highlight': 'no',
+    // Google Search Console site verification — set NEXT_PUBLIC_GSC_VERIFICATION
+    // in the hosting env (Vercel → Settings → Environment Variables) with the
+    // token from the "HTML tag" method; the meta tag renders only when set.
+    ...(process.env.NEXT_PUBLIC_GSC_VERIFICATION
+      ? { 'google-site-verification': process.env.NEXT_PUBLIC_GSC_VERIFICATION }
+      : {}),
   },
 };
 
