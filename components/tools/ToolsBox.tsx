@@ -14,6 +14,7 @@ export interface ToolsBoxProps {
   onSelectToImages: () => void;
   onSelectMerge: () => void;
   onSelectSplit: () => void;
+  onSelectToPdf: () => void;
 }
 
 type LaunchMap = Record<ToolMode, () => void>;
@@ -24,12 +25,12 @@ type LaunchMap = Record<ToolMode, () => void>;
  * Registry-driven: searchable by title/alias/keyword with fuzzy fallback;
  * category shortcut chips appear automatically once >1 category exists.
  */
-export const ToolsBox: React.FC<ToolsBoxProps> = ({ onSelectDarkPrint, onSelectEnhance, onSelectProtect, onSelectToImages, onSelectMerge, onSelectSplit }) => {
+export const ToolsBox: React.FC<ToolsBoxProps> = ({ onSelectDarkPrint, onSelectEnhance, onSelectProtect, onSelectToImages, onSelectMerge, onSelectSplit, onSelectToPdf }) => {
   const [query, setQuery] = useState('');
   const [activeCategory, setActiveCategory] = useState<'all' | ToolCategory>('all');
 
   const categories = useMemo(() => getToolCategories(TOOL_REGISTRY), []);
-  const launches: LaunchMap = { 'dark-print': onSelectDarkPrint, enhance: onSelectEnhance, protect: onSelectProtect, 'to-images': onSelectToImages, merge: onSelectMerge, split: onSelectSplit };
+  const launches: LaunchMap = { 'dark-print': onSelectDarkPrint, enhance: onSelectEnhance, protect: onSelectProtect, 'to-images': onSelectToImages, merge: onSelectMerge, split: onSelectSplit, 'to-pdf': onSelectToPdf };
 
   const visibleTools = useMemo(
     () =>

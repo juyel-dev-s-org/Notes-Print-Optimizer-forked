@@ -24,8 +24,9 @@ describe('searchTools', () => {
       'to-images',
       'merge',
       'split',
+      'to-pdf',
     ]);
-    expect(ids(searchTools(TOOL_REGISTRY, '   '))).toHaveLength(6);
+    expect(ids(searchTools(TOOL_REGISTRY, '   '))).toHaveLength(7);
   });
 
   it('matches by title prefix first', () => {

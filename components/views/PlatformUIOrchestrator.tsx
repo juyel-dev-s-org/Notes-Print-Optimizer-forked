@@ -39,6 +39,11 @@ const SplitToolView = dynamic(() => import('@/components/tosplit/SplitToolView')
   ssr: false,
 });
 
+const ImagePdfToolView = dynamic(() => import('@/components/toimgpdf/ImagePdfToolView').then(m => m.ImagePdfToolView), {
+  loading: () => <CardSkeleton />,
+  ssr: false,
+});
+
 interface OrchestratorProps extends WorkflowUIProps {
   /** Enhance export -> N-Up layout handoff (optional for tests/storybook). */
   onEnhanceHandoff?: (pages: HandoffPageInput[]) => Promise<void>;
@@ -60,6 +65,7 @@ export const PlatformUIOrchestrator: React.FC<OrchestratorProps> = ({ state, act
           onSelectToImages={() => onToolModeChange?.('to-images')}
           onSelectMerge={() => onToolModeChange?.('merge')}
           onSelectSplit={() => onToolModeChange?.('split')}
+          onSelectToPdf={() => onToolModeChange?.('to-pdf')}
         />
       </div>
     );
@@ -108,6 +114,14 @@ export const PlatformUIOrchestrator: React.FC<OrchestratorProps> = ({ state, act
     return (
       <div className="flex w-full max-w-full min-w-0 flex-col gap-4 pb-20 md:gap-6 md:pb-12">
         <SplitToolView onBack={() => onToolModeChange?.(null)} />
+      </div>
+    );
+  }
+
+  if (toolMode === 'to-pdf') {
+    return (
+      <div className="flex w-full max-w-full min-w-0 flex-col gap-4 pb-20 md:gap-6 md:pb-12">
+        <ImagePdfToolView onBack={() => onToolModeChange?.(null)} />
       </div>
     );
   }

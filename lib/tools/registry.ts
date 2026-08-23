@@ -5,7 +5,7 @@
  */
 
 import type { LucideIcon } from 'lucide-react';
-import { Combine, Contrast, FileText, Images, Scissors, ShieldCheck } from 'lucide-react';
+import { Combine, Contrast, FileText, ImagePlus, Images, Scissors, ShieldCheck } from 'lucide-react';
 import type { ToolMode } from '@/lib/enhance/types';
 
 /** Coarse groups used by the shortcut chips (rendered once >1 exists). */
@@ -104,6 +104,19 @@ export const TOOL_REGISTRY: ToolDefinition[] = [
     gradient: 'linear-gradient(135deg, #F43F5E 0%, #EC4899 55%, #A12CFF 100%)',
     chips: ['Extract range', 'Burst every N', 'ZIP export'],
     cta: 'Split',
+  },
+  {
+    id: 'to-pdf',
+    title: 'Image to PDF',
+    description:
+      'Combine photos and screenshots into one tidy PDF — arrange the order, fit each page or use A4.',
+    aliases: ['jpg to pdf', 'png to pdf', 'photo to pdf', 'scan to pdf', 'pictures'],
+    keywords: ['convert images', 'combine photos', 'screenshots', 'one document'],
+    category: 'pdf',
+    icon: ImagePlus,
+    gradient: 'linear-gradient(135deg, #6366F1 0%, #8B5CF6 55%, #EC4899 100%)',
+    chips: ['JPG · PNG · WebP', 'Fit or A4 pages', 'Reorderable'],
+    cta: 'Create PDF',
   },
 ];
 
