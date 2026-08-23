@@ -3,34 +3,24 @@
 import React, { useMemo, useState } from 'react';
 import { Search, SearchX, X } from 'lucide-react';
 import { ToolCard } from './ToolCard';
-import { TOOL_REGISTRY, getToolCategories, type ToolCategory } from '@/lib/tools/registry';
+import { TOOL_REGISTRY, getToolCategories, toolHref, type ToolCategory } from '@/lib/tools/registry';
 import { searchTools } from '@/lib/tools/search';
-import type { ToolMode } from '@/lib/enhance/types';
-
-export interface ToolsBoxProps {
-  onSelectDarkPrint: () => void;
-  onSelectEnhance: () => void;
-  onSelectProtect: () => void;
-  onSelectToImages: () => void;
-  onSelectMerge: () => void;
-  onSelectSplit: () => void;
-  onSelectToPdf: () => void;
-}
-
-type LaunchMap = Record<ToolMode, () => void>;
 
 /**
  * Tool selector shown on all surfaces (mobile / tablet / desktop).
  * Stacked on mobile, 2-column grid from sm+ — upload stays primary above it.
  * Registry-driven: searchable by title/alias/keyword with fuzzy fallback;
  * category shortcut chips appear automatically once >1 category exists.
+ *
+ * Cards are real <Link>s to /tools/<slug>/ — the URL is the source of
+ * truth for the active tool (deep-linkable + crawlable), so this component
+ * needs no navigation props.
  */
-export const ToolsBox: React.FC<ToolsBoxProps> = ({ onSelectDarkPrint, onSelectEnhance, onSelectProtect, onSelectToImages, onSelectMerge, onSelectSplit, onSelectToPdf }) => {
+export const ToolsBox: React.FC = () => {
   const [query, setQuery] = useState('');
   const [activeCategory, setActiveCategory] = useState<'all' | ToolCategory>('all');
 
   const categories = useMemo(() => getToolCategories(TOOL_REGISTRY), []);
-  const launches: LaunchMap = { 'dark-print': onSelectDarkPrint, enhance: onSelectEnhance, protect: onSelectProtect, 'to-images': onSelectToImages, merge: onSelectMerge, split: onSelectSplit, 'to-pdf': onSelectToPdf };
 
   const visibleTools = useMemo(
     () =>
@@ -109,7 +99,7 @@ export const ToolsBox: React.FC<ToolsBoxProps> = ({ onSelectDarkPrint, onSelectE
                 gradient={tool.gradient}
                 chips={tool.chips}
                 cta={tool.cta}
-                onClick={launches[tool.id]}
+                href={toolHref(tool.id)}
               />
             );
           })}

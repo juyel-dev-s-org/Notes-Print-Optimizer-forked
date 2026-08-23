@@ -1,23 +1,50 @@
 'use client';
 
-import { useEffect, useMemo, useState, useCallback } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { usePathname, useRouter } from 'next/navigation';
 import { Header } from '@/components/Header';
 import { ProcessingModal } from '@/components/ProcessingModal';
 import { PlatformUIOrchestrator } from '@/components/views/PlatformUIOrchestrator';
 import { usePageHandlers } from '@/lib/workflow/usePageHandlers';
 import { useMonitor } from '@/lib/monitoring/useMonitor';
 import { ToastProvider } from '@/components/shared/Toast';
-import type { WorkflowState, WorkflowActions, WorkflowHandlers } from '@/components/views/types';
+import { modeForSlug, toolHref } from '@/lib/tools/registry';
 import type { ToolMode } from '@/lib/enhance/types';
+import type { WorkflowState, WorkflowActions, WorkflowHandlers } from '@/components/views/types';
 import type { HandoffPageInput } from '@/lib/services/EnhanceHandoffService';
 import { RefreshCw, X } from 'lucide-react';
 
-export default function AppShell() {
+/**
+ * Persistent client shell — mounted ONCE by app/(app)/layout.tsx and kept
+ * alive across every soft route change inside the group. Owns:
+ *
+ *  - session/workflow state (usePageHandlers) that must survive navigation
+ *  - the Enhance→N-Up handoff flag (in-memory by design)
+ *  - SW registration + update banner
+ *  - header/footer chrome
+ *
+ * The ACTIVE TOOL is derived from the URL via usePathname(): the URL is the
+ * single source of truth. Deep links, refresh, back and forward all resolve
+ * to the same tool without any imperative history plumbing.
+ *
+ * Server pages inject crawlable content as `children`; it renders below the
+ * interactive tool stage so UX is unchanged while SEO HTML ships statically.
+ */
+export function PersistentShell({ children }: { children: React.ReactNode }) {
   useMonitor();
+  const router = useRouter();
+  const pathname = usePathname();
   const [swUpdateAvailable, setSwUpdateAvailable] = useState(false);
-  const [toolMode, setToolMode] = useState<ToolMode | null>(null);
   /** True while the user is inside the N-Up stage reached from the enhance tool. */
   const [arrivedViaEnhance, setArrivedViaEnhance] = useState(false);
+
+  // URL → tool mode. `/tools/<slug>/…` maps through the registry contract;
+  // anything else (home) is the landing.
+  const toolMode: ToolMode | null = useMemo(() => {
+    if (!pathname) return null;
+    const match = pathname.match(/^\/tools\/([^/]+)/);
+    return match ? modeForSlug(match[1]) : null;
+  }, [pathname]);
 
   useEffect(() => {
     if ('serviceWorker' in navigator) {
@@ -43,6 +70,14 @@ export default function AppShell() {
     }
   }, []);
 
+  /** URL navigation IS tool selection — native router, history-aware. */
+  const navigateToTool = useCallback(
+    (mode: ToolMode | null) => {
+      router.push(mode ? toolHref(mode) : '/');
+    },
+    [router],
+  );
+
   const {
     state, actions,
     handleResetWorkflow, handleFilesUpload,
@@ -60,29 +95,29 @@ export default function AppShell() {
     progressiveThumbnails,
   } = usePageHandlers();
 
-  /** Enhance -> N-Up: land inside the dark-print tool but without its
-   * pipeline chrome (stepper/back-to-optimize) — see arrivedViaEnhance. */
+  /** Enhance -> N-Up: land inside the dark-print tool via its route, without
+   * its pipeline chrome (stepper/back-to-optimize) — see arrivedViaEnhance. */
   const runEnhanceLayoutHandoff = useCallback(async (pages: HandoffPageInput[]) => {
     await handleEnhanceLayoutHandoff(pages);
-    setToolMode('dark-print');
     setArrivedViaEnhance(true);
-  }, [handleEnhanceLayoutHandoff]);
+    router.push(toolHref('dark-print'));
+  }, [handleEnhanceLayoutHandoff, router]);
 
   /** From the handoff stage, reset exits to the tools box, not tool-1 upload. */
   const handleSessionReset = useCallback(() => {
     if (arrivedViaEnhance) {
       setArrivedViaEnhance(false);
-      setToolMode(null);
+      router.push('/');
     }
     handleResetWorkflow();
-  }, [arrivedViaEnhance, handleResetWorkflow]);
+  }, [arrivedViaEnhance, handleResetWorkflow, router]);
 
   /** Return to the enhance workbench (its results stay alive in the tool machine). */
   const handleBackToEnhance = useCallback(() => {
     setArrivedViaEnhance(false);
-    setToolMode('enhance');
+    router.push(toolHref('enhance'));
     handleResetWorkflow();
-  }, [handleResetWorkflow]);
+  }, [handleResetWorkflow, router]);
 
   const workflowState: WorkflowState = useMemo(() => ({
     currentPhase: state.currentPhase,
@@ -160,7 +195,8 @@ export default function AppShell() {
     handleSelectLayoutFormat, handleToggleOrientation, handleToggleBorders,
     handleTogglePageNumbers, handleUpdateOuterMargins, handleUpdateInnerMargin,
     handleDownloadFinalPrintPdf, handleProceedToPhase4, handleSendFeedback,
-    handleResetWorkflow, handleCancelProcessing, compilePhase3PrintLayout,
+    handleCancelProcessing, compilePhase3PrintLayout,
+    handleSessionReset,
   ]);
 
   return (
@@ -193,7 +229,7 @@ export default function AppShell() {
               className="p-2 hover:text-ink text-primary-soft transition"
               aria-label="Dismiss update alert"
             >
-              <X className="w-3.5 h-3.5" />
+              <X className="w-3.5 h-3.5" aria-hidden="true" />
             </button>
           </div>
         </div>
@@ -206,21 +242,27 @@ export default function AppShell() {
             className="p-2 hover:text-ink text-danger-soft transition"
             aria-label="Dismiss error"
           >
-            <X className="w-4 h-4" />
+            <X className="h-4 w-4" aria-hidden="true" />
           </button>
         </div>
       )}
       <main id="main-content" className="mx-auto w-full max-w-5xl lg:max-w-6xl flex-1 px-3 py-4 sm:px-6 sm:py-6 pb-28 md:pb-8">
-        <PlatformUIOrchestrator
-          state={workflowState}
-          actions={workflowActions}
-          handlers={workflowHandlers}
-          toolMode={toolMode}
-          onToolModeChange={setToolMode}
-          onEnhanceHandoff={runEnhanceLayoutHandoff}
-          enhanceHandoffActive={arrivedViaEnhance}
-          onBackToEnhance={handleBackToEnhance}
-        />
+        {toolMode !== null && (
+          <>
+            <PlatformUIOrchestrator
+              state={workflowState}
+              actions={workflowActions}
+              handlers={workflowHandlers}
+              toolMode={toolMode}
+              onToolModeChange={navigateToTool}
+              onEnhanceHandoff={runEnhanceLayoutHandoff}
+              enhanceHandoffActive={arrivedViaEnhance}
+              onBackToEnhance={handleBackToEnhance}
+            />
+            <div className="mt-6 md:mt-8" />
+          </>
+        )}
+        {children}
       </main>
       <footer className="border-t border-surface-2/60 px-4 py-6 text-center text-[11px] text-ink-muted">
         <div className="mx-auto flex max-w-md flex-col items-center gap-1.5">

@@ -1,6 +1,7 @@
 'use client';
 
 import React from 'react';
+import Link from 'next/link';
 import type { LucideIcon } from 'lucide-react';
 
 export interface ToolCardProps {
@@ -10,7 +11,8 @@ export interface ToolCardProps {
   gradient: string;
   chips: string[];
   cta: string;
-  onClick: () => void;
+  /** Public tool route — cards are crawlable links, not state buttons. */
+  href: string;
 }
 
 /**
@@ -24,11 +26,11 @@ export const ToolCard: React.FC<ToolCardProps> = ({
   gradient,
   chips,
   cta,
-  onClick,
+  href,
 }) => (
-  <button
-    type="button"
-    onClick={onClick}
+  <Link
+    href={href}
+    prefetch={false}
     aria-label={`${title} — ${description}`}
     className="group relative w-full min-h-[168px] min-[375px]:min-h-[148px] h-full rounded-2xl bg-gradient-to-br p-[1.5px] text-left transition-all duration-200 ease-out hover:-translate-y-0.5 hover:shadow-xl hover:shadow-primary/15 active:scale-[0.98] active:translate-y-0 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-soft"
     style={{ backgroundImage: gradient }}
@@ -60,5 +62,5 @@ export const ToolCard: React.FC<ToolCardProps> = ({
         ))}
       </span>
     </span>
-  </button>
+  </Link>
 );

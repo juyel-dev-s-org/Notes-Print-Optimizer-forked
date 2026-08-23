@@ -3,8 +3,6 @@
 import React from 'react';
 import dynamic from 'next/dynamic';
 import { WorkflowUIProps } from './types';
-import { LandingHero } from '@/components/LandingHero';
-import { ToolsBox } from '@/components/tools/ToolsBox';
 import { PhaseSkeleton, CardSkeleton } from '@/components/shared/LoadingSkeleton';
 import { PhaseErrorBoundary } from '@/components/shared/PhaseErrorBoundary';
 import type { HandoffPageInput } from '@/lib/services/EnhanceHandoffService';
@@ -52,24 +50,14 @@ interface OrchestratorProps extends WorkflowUIProps {
 /**
  * Routes the active tool mode to its view. One responsive workflow view —
  * no platform forks, no JS media queries.
+ *
+ * The landing (toolMode === null) is NOT handled here anymore: the home
+ * route renders server-side SEO content plus <ToolsBox /> directly, and
+ * tool cards navigate via /tools/<slug>/ URLs. This component only stages
+ * active tools; the persistent shell derives `toolMode` from the pathname.
  */
 export const PlatformUIOrchestrator: React.FC<OrchestratorProps> = ({ state, actions, handlers, toolMode, onToolModeChange, onEnhanceHandoff, enhanceHandoffActive, onBackToEnhance }) => {
-  if (toolMode === null) {
-    return (
-      <div className="animate-enter flex w-full max-w-full min-w-0 flex-col gap-5 md:gap-6">
-        <LandingHero />
-        <ToolsBox
-          onSelectDarkPrint={() => onToolModeChange?.('dark-print')}
-          onSelectEnhance={() => onToolModeChange?.('enhance')}
-          onSelectProtect={() => onToolModeChange?.('protect')}
-          onSelectToImages={() => onToolModeChange?.('to-images')}
-          onSelectMerge={() => onToolModeChange?.('merge')}
-          onSelectSplit={() => onToolModeChange?.('split')}
-          onSelectToPdf={() => onToolModeChange?.('to-pdf')}
-        />
-      </div>
-    );
-  }
+  if (toolMode === null) return null;
 
   if (toolMode === 'enhance') {
     return (

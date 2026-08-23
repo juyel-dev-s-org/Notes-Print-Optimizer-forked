@@ -1,4 +1,0 @@
-User-agent: *
-Allow: /
-
-Sitemap: https://juyel-dev.github.io/Notes-Print-Optimizer/sitemap.xml

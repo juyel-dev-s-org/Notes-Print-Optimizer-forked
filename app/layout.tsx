@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from 'next';
 import { Plus_Jakarta_Sans } from 'next/font/google';
+import { SITE_URL, withBase } from '@/lib/site';
 import './globals.css';
 
 const jakarta = Plus_Jakarta_Sans({
@@ -8,27 +9,28 @@ const jakarta = Plus_Jakarta_Sans({
   display: 'swap',
 });
 
-const basePath = process.env.NEXT_PUBLIC_BASE_PATH || '';
-const siteUrl = `https://juyel-dev.github.io${basePath}`;
+const DESCRIPTION =
+  'Every PDF, print-perfect â€” merge, whiten dark notes, enhance light scans & build smart N-up layouts. 100% offline, on-device.';
 
 export const metadata: Metadata = {
-  metadataBase: new URL(siteUrl),
-  title: 'Print Optimizer',
-  description:
-    'Every PDF, print-perfect — merge, whiten dark notes, enhance light scans & build smart N-up layouts. 100% offline, on-device.',
+  metadataBase: new URL(SITE_URL),
+  title: {
+    default: 'Print Optimizer',
+    template: '%s Â· Print Optimizer',
+  },
+  description: DESCRIPTION,
   alternates: {
-    canonical: `${basePath}/`,
+    canonical: withBase('/'),
   },
   openGraph: {
     title: 'Print Optimizer',
-    description:
-      'Every PDF, print-perfect — merge, whiten dark notes, enhance light scans & build smart N-up layouts. 100% offline, on-device.',
-    url: `${basePath}/`,
+    description: DESCRIPTION,
+    url: withBase('/'),
     siteName: 'Print Optimizer',
     type: 'website',
     images: [
       {
-        url: `${basePath}/icon-512-v2.png`,
+        url: `${withBase('/icon-512-v2.png')}`,
         width: 512,
         height: 512,
         alt: 'Print Optimizer',
@@ -38,23 +40,23 @@ export const metadata: Metadata = {
   icons: {
     icon: [
       {
-        url: `${basePath}/icon-192-v2.png`,
+        url: `${withBase('/icon-192-v2.png')}`,
         type: 'image/png',
         sizes: '192x192',
       },
       {
-        url: `${basePath}/icon-512-v2.png`,
+        url: `${withBase('/icon-512-v2.png')}`,
         type: 'image/png',
         sizes: '512x512',
       },
     ],
-    shortcut: `${basePath}/icon-192-v2.png`,
-    apple: `${basePath}/icon-512-v2.png`,
+    shortcut: `${withBase('/icon-192-v2.png')}`,
+    apple: `${withBase('/icon-512-v2.png')}`,
     other: [
       {
         rel: 'mask-icon',
         color: '#243BFF',
-        url: `${basePath}/icon-maskable-v2.svg`,
+        url: `${withBase('/icon-maskable-v2.svg')}`,
       },
     ],
   },
@@ -64,7 +66,7 @@ export const metadata: Metadata = {
     title: 'Print Optimizer',
     startupImage: [
       {
-        url: `${basePath}/icon-512-v2.png`,
+        url: `${withBase('/icon-512-v2.png')}`,
         media:
           '(device-width: 390px) and (device-height: 844px) and (-webkit-device-pixel-ratio: 3)',
       },

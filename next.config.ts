@@ -9,6 +9,10 @@ const withBundleAnalyzer = bundleAnalyzer({ enabled: process.env.ANALYZE === 'tr
 
 const nextConfig: NextConfig = {
   output: 'export',
+  // Directory-style URLs (/tools/<slug>/, /offline/) — matches the service
+  // worker's OFFLINE_URL and manifest start_url contract, emits
+  // <route>/index.html so every static host serves deep links identically.
+  trailingSlash: true,
   ...(basePath ? { basePath, assetPrefix: `${basePath}/` } : {}),
   env: {
     NEXT_PUBLIC_BASE_PATH: basePath,
