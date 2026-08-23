@@ -28,14 +28,7 @@ export const metadata: Metadata = {
     url: withBase('/'),
     siteName: 'Print Optimizer',
     type: 'website',
-    images: [
-      {
-        url: `${withBase('/icon-512-v2.png')}`,
-        width: 512,
-        height: 512,
-        alt: 'Print Optimizer',
-      },
-    ],
+    // og:image is supplied by app/opengraph-image.tsx (file convention).
   },
   icons: {
     icon: [

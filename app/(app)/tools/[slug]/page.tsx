@@ -37,10 +37,11 @@ export async function generateMetadata({
       url: canonical,
       siteName: 'Print Optimizer',
       type: 'website',
-      images: [{ url: absoluteUrl('/icon-512-v2.png'), width: 512, height: 512, alt: tool.title }],
+      // og:image is supplied by the file convention
+      // (app/(app)/tools/[slug]/opengraph-image.tsx).
     },
     twitter: {
-      card: 'summary',
+      card: 'summary_large_image',
       title: tool.seoTitle,
       description: tool.seoDescription,
     },
