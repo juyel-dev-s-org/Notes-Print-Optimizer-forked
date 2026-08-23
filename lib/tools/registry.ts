@@ -5,7 +5,7 @@
  */
 
 import type { LucideIcon } from 'lucide-react';
-import { Combine, Contrast, FileText, Images, ShieldCheck } from 'lucide-react';
+import { Combine, Contrast, FileText, Images, Scissors, ShieldCheck } from 'lucide-react';
 import type { ToolMode } from '@/lib/enhance/types';
 
 /** Coarse groups used by the shortcut chips (rendered once >1 exists). */
@@ -91,6 +91,19 @@ export const TOOL_REGISTRY: ToolDefinition[] = [
     gradient: 'linear-gradient(135deg, #F59E0B 0%, #EC4899 55%, #A12CFF 100%)',
     chips: ['Up to 10 files', 'Smart Arrange', 'Custom filename'],
     cta: 'Merge',
+  },
+  {
+    id: 'split',
+    title: 'Split PDF',
+    description:
+      'Pull out one page range into its own PDF, or burst the document into fixed-size parts with a ZIP.',
+    aliases: ['cut pdf', 'divide', 'separate pages', 'break pdf'],
+    keywords: ['extract pages', 'page range', 'parts', 'burst'],
+    category: 'pdf',
+    icon: Scissors,
+    gradient: 'linear-gradient(135deg, #F43F5E 0%, #EC4899 55%, #A12CFF 100%)',
+    chips: ['Extract range', 'Burst every N', 'ZIP export'],
+    cta: 'Split',
   },
 ];
 

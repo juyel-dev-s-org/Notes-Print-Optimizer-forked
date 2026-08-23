@@ -9,7 +9,7 @@
 import type { UploadedPdfItem } from '@/lib/workflow/types';
 
 /** App-level tool selection (landing tools box). */
-export type ToolMode = 'dark-print' | 'enhance' | 'protect' | 'to-images' | 'merge';
+export type ToolMode = 'dark-print' | 'enhance' | 'protect' | 'to-images' | 'merge' | 'split';
 
 export type EnhanceStep = 'upload' | 'arrange' | 'enhance';
 

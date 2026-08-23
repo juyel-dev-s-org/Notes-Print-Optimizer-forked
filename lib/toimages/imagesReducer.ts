@@ -4,6 +4,9 @@
 
 import { sanitizeBaseName } from '../shared/filename';
 
+// Canonical implementation lives in lib/shared; re-exported for compatibility.
+export { resolveRange } from '../shared/range';
+
 export type ImagesStep = 'upload' | 'options' | 'done';
 export type ImagesFormat = 'image/jpeg' | 'image/png' | 'image/webp';
 
@@ -76,25 +79,6 @@ export type ImagesAction =
   | { type: 'CONVERT_PROGRESS'; current: number }
   | { type: 'CONVERT_COMPLETE'; results: PageOutput[] }
   | { type: 'CONVERT_ERROR'; error: string };
-
-/**
- * Validates the selected page window. Returns 1-based inclusive bounds or
- * null when the selection is incomplete/invalid (CTA stays disabled).
- */
-export function resolveRange(
-  mode: 'all' | 'custom',
-  from: string,
-  to: string,
-  pageCount: number | null,
-): { start: number; end: number } | null {
-  if (!pageCount || pageCount <= 0) return null;
-  if (mode === 'all') return { start: 1, end: pageCount };
-  const f = Number.parseInt(from, 10);
-  const t = Number.parseInt(to, 10);
-  if (!Number.isFinite(f) || !Number.isFinite(t)) return null;
-  if (f < 1 || t < 1 || f > t || t > pageCount) return null;
-  return { start: f, end: t };
-}
 
 export function imagesReducer(state: ImagesState, action: ImagesAction): ImagesState {
   switch (action.type) {
