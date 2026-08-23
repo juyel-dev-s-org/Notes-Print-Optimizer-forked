@@ -20,6 +20,9 @@ jobs:
     # No GitHub Pages deploy: builds at root (no base path), like production Vercel.
     runs-on: ubuntu-latest
     env:
+      # Root build — production Vercel parity. Base path is opt-in only
+      # (NEXT_PUBLIC_BASE_PATH), never inferred from the environment.
+      NEXT_PUBLIC_BASE_PATH: ''
       # Feedback relay (public GAS web-app URL; security enforced server-side
       # via chat_id override + endpoint whitelist + rate limiting)
       NEXT_PUBLIC_FEEDBACK_URL: ${{ vars.NEXT_PUBLIC_FEEDBACK_URL || 'https://script.google.com/macros/s/AKfycbyYBvhRphdbvTAEI-hktpUWcpYyFjdsOjSHhHwuQyt0K310uqIX3ManTNfQ1Kx7UEtw/exec' }}

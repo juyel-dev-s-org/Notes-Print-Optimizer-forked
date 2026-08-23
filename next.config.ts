@@ -1,9 +1,13 @@
 import type {NextConfig} from 'next';
 import bundleAnalyzer from '@next/bundle-analyzer';
 
-const isGitHubActions = process.env.GITHUB_ACTIONS === 'true' || process.env.GITHUB_ACTIONS === '1';
-const repoName = process.env.GITHUB_REPOSITORY ? process.env.GITHUB_REPOSITORY.split('/')[1] : '';
-const basePath = process.env.NEXT_PUBLIC_BASE_PATH || (isGitHubActions && repoName ? `/${repoName}` : '');
+/**
+ * Base path comes ONLY from an explicit env var — never inferred from the
+ * environment (the old GITHUB_ACTIONS auto-detection once silently built
+ * Pages-style paths inside CI, breaking root-hosted E2E). Vercel/any root
+ * host needs nothing; subpath deploys opt in deliberately.
+ */
+const basePath = process.env.NEXT_PUBLIC_BASE_PATH || '';
 
 const withBundleAnalyzer = bundleAnalyzer({ enabled: process.env.ANALYZE === 'true' });
 
