@@ -8,6 +8,7 @@
  */
 
 import { PDFDocument } from 'pdf-lib';
+import { MAX_FILE_SIZE_MB, MAX_TOTAL_SIZE_MB, type DropzoneAccept, type PdfValidationResult } from '@/lib/services/UploadService';
 import type { ImageItem, ImagePageMode } from './imagePdfReducer';
 
 const A4_PORTRAIT: [number, number] = [595.28, 841.89];
@@ -27,6 +28,51 @@ function kindOf(file: File): ImageItem['kind'] {
 }
 
 export { kindOf };
+
+/**
+ * Dropzone contract for the Image to PDF tool — dialog shows only
+ * decodable-in-browser images (HEIC deliberately excluded: canvas
+ * re-encode cannot decode it outside Safari).
+ */
+export const IMAGE_DROPZONE_ACCEPT: DropzoneAccept = {
+  input: 'image/jpeg,image/png,image/webp,.jpg,.jpeg,.png,.webp',
+  noun: 'images',
+  validate: validateImageFiles,
+};
+
+/** Mirrors validatePdfFiles semantics for image uploads. */
+async function validateImageFiles(files: File[], maxFiles: number): Promise<PdfValidationResult> {
+  const validFiles: File[] = [];
+  const skipped: string[] = [];
+  let totalSize = 0;
+
+  for (const file of files) {
+    if (validFiles.length >= maxFiles) {
+      skipped.push(`${file.name} (over ${maxFiles} file limit)`);
+      continue;
+    }
+    if (file.size > MAX_FILE_SIZE_MB * 1024 * 1024) {
+      skipped.push(`${file.name} (over ${MAX_FILE_SIZE_MB} MB)`);
+      continue;
+    }
+    if (!isLikelyImageFile(file)) {
+      skipped.push(file.name);
+      continue;
+    }
+    validFiles.push(file);
+    totalSize += file.size;
+  }
+
+  if (totalSize > MAX_TOTAL_SIZE_MB * 1024 * 1024) {
+    return {
+      validFiles: [],
+      skipped,
+      error: `Combined size exceeds the ${MAX_TOTAL_SIZE_MB} MB limit. Please upload fewer or smaller images.`,
+    };
+  }
+
+  return { validFiles, skipped, error: null };
+}
 
 /** Blob -> bytes with a FileReader fallback for environments without blob.arrayBuffer(). */
 async function blobBytes(blob: Blob): Promise<Uint8Array> {

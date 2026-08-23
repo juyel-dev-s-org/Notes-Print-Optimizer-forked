@@ -31,6 +31,23 @@ export interface PdfValidationResult {
   error: string | null;
 }
 
+/** What a dropzone accepts: dialog filter copy + the validator that gates uploads. */
+export interface DropzoneAccept {
+  /** `accept` attribute for the hidden file input, e.g. 'application/pdf,.pdf'. */
+  input: string;
+  /** Plural noun used in skip/error copy ('PDFs', 'images'). */
+  noun: string;
+  /** Same contract as validatePdfFiles. */
+  validate: (files: File[], maxFiles: number) => Promise<PdfValidationResult>;
+}
+
+/** Default: the original PDF-only behavior every existing tool relies on. */
+export const PDF_DROPZONE_ACCEPT: DropzoneAccept = {
+  input: 'application/pdf,.pdf',
+  noun: 'PDFs',
+  validate: validatePdfFiles,
+};
+
 /**
  * Shared validator for PDF uploads — used by both the main UploadArea
  * and the Enhance tool. Keeps per-file / total-size / magic-byte checks

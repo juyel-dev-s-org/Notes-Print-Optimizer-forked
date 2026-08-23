@@ -2,6 +2,7 @@
 
 import React from 'react';
 import { MAX_FILE_SIZE_MB } from '@/lib/services/UploadService';
+import { IMAGE_DROPZONE_ACCEPT } from '@/lib/img2pdf/imagePdfService';
 import { PdfDropzone } from '@/components/ui/PdfDropzone';
 import { HowItWorks } from '@/components/ui/HowItWorks';
 import type { ImagePdfWorkflow } from '@/lib/img2pdf/useImagePdfWorkflow';
@@ -17,6 +18,7 @@ export const ImagePdfUploadView: React.FC<{ workflow: ImagePdfWorkflow }> = ({ w
       multiple
       maxFiles={workflow.maxFiles}
       minHeights="min-h-[240px]"
+      accept={IMAGE_DROPZONE_ACCEPT}
       onFiles={(files) => workflow.handleUpload(files)}
       footer={
         <>

@@ -2,7 +2,7 @@
 
 import React, { useRef, useState } from 'react';
 import { AlertCircle, FileUp } from 'lucide-react';
-import { MAX_FILE_SIZE_MB, validatePdfFiles } from '@/lib/services/UploadService';
+import { MAX_FILE_SIZE_MB, PDF_DROPZONE_ACCEPT, type DropzoneAccept } from '@/lib/services/UploadService';
 
 export interface PdfDropzoneProps {
   title: string;
@@ -13,6 +13,8 @@ export interface PdfDropzoneProps {
   /** Omit for no file-count cap. */
   maxFiles?: number;
   minHeights?: string;
+  /** What this zone accepts — defaults to PDFs for the classic tools. */
+  accept?: DropzoneAccept;
   onFiles: (files: File[]) => void;
   footer?: React.ReactNode;
 }
@@ -40,6 +42,7 @@ export const PdfDropzone: React.FC<PdfDropzoneProps> = ({
   multiple = true,
   maxFiles,
   minHeights = 'min-h-[240px] lg:min-h-[280px]',
+  accept = PDF_DROPZONE_ACCEPT,
   onFiles,
   footer,
 }) => {
@@ -50,7 +53,7 @@ export const PdfDropzone: React.FC<PdfDropzoneProps> = ({
   const processFileList = async (filesList: FileList | File[]) => {
     setUploadError(null);
     const files = Array.from(filesList as FileList);
-    const { validFiles, skipped, error } = await validatePdfFiles(files, maxFiles ?? Number.MAX_SAFE_INTEGER);
+    const { validFiles, skipped, error } = await accept.validate(files, maxFiles ?? Number.MAX_SAFE_INTEGER);
 
     if (error) {
       setUploadError(error);
@@ -65,10 +68,10 @@ export const PdfDropzone: React.FC<PdfDropzoneProps> = ({
     const summary = formatSkipped(skipped);
     if (summary) {
       setUploadError(
-        `Skipped ${summary.count} file(s): ${summary.list} — only valid PDFs up to ${MAX_FILE_SIZE_MB} MB are accepted.`,
+        `Skipped ${summary.count} file(s): ${summary.list} — only supported ${accept.noun} up to ${MAX_FILE_SIZE_MB} MB are accepted.`,
       );
     } else if (validFiles.length === 0) {
-      setUploadError(`No valid PDFs found — only valid PDFs up to ${MAX_FILE_SIZE_MB} MB are accepted.`);
+      setUploadError(`No supported ${accept.noun} found — up to ${MAX_FILE_SIZE_MB} MB each.`);
     }
   };
 
@@ -104,7 +107,7 @@ export const PdfDropzone: React.FC<PdfDropzoneProps> = ({
         <input
           ref={fileInputRef}
           type="file"
-          accept="application/pdf,.pdf"
+          accept={accept.input}
           multiple={multiple}
           aria-label={ariaLabel}
           onChange={(e) => {

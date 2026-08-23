@@ -5,7 +5,7 @@
 
 import { PDFDocument } from 'pdf-lib';
 import { describe, expect, it } from 'vitest';
-import { isLikelyImageFile, ImagePdfService } from '@/lib/img2pdf/imagePdfService';
+import { isLikelyImageFile, ImagePdfService, IMAGE_DROPZONE_ACCEPT } from '@/lib/img2pdf/imagePdfService';
 import {
   INITIAL_IMAGE_PDF_STATE,
   imagePdfReducer,
@@ -101,5 +101,31 @@ describe('ImagePdfService.build', () => {
 
   it('throws a friendly error when there are no images', async () => {
     await expect(ImagePdfService.build([], 'fit')).rejects.toThrow(/No images/);
+  });
+});
+
+describe('IMAGE_DROPZONE_ACCEPT.validate', () => {
+  it('accepts images, skips non-images, reports skipped names', async () => {
+    const good = pngFile('pic.png');
+    const bad = new File([new TextEncoder().encode('hello')], 'notes.txt', { type: 'text/plain' });
+    const { validFiles, skipped, error } = await IMAGE_DROPZONE_ACCEPT.validate([good, bad], 20);
+    expect(error).toBeNull();
+    expect(validFiles).toEqual([good]);
+    expect(skipped).toEqual(['notes.txt']);
+  });
+
+  it('caps at maxFiles with a skip note', async () => {
+    const { validFiles, skipped } = await IMAGE_DROPZONE_ACCEPT.validate(
+      [item('a.png').blob as File, item('b.png').blob as File],
+      1,
+    );
+    expect(validFiles).toHaveLength(1);
+    expect(skipped[0]).toMatch(/over 1 file limit/);
+  });
+
+  it('dialog filter targets decodable image types only (no HEIC dead-end)', () => {
+    expect(IMAGE_DROPZONE_ACCEPT.input).toContain('image/jpeg');
+    expect(IMAGE_DROPZONE_ACCEPT.input).toContain('image/webp');
+    expect(IMAGE_DROPZONE_ACCEPT.input).not.toContain('heic');
   });
 });
