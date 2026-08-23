@@ -45,10 +45,6 @@ function writeUtf8(view: DataView, bytes: Uint8Array, offset: number): number {
   return offset + bytes.length;
 }
 
-function utf8Bytes(text: string): Uint8Array {
-  return new TextEncoder().encode(text);
-}
-
 /** Builds a complete ZIP archive from entries, in order. */
 export function buildZip(entries: ZipEntry[], now: Date = new Date()): Uint8Array {
   const encoder = new TextEncoder();

@@ -10,7 +10,6 @@
 import { getPdfjsLib } from '@/lib/optimizer/pdfjsLoader';
 import { memoryManager } from '@/lib/optimizer/memoryManager';
 
-const JPEG_QUALITY = 0.92;
 const THUMB_EDGE = 120;
 
 export type ImageFormat = 'image/jpeg' | 'image/png' | 'image/webp';
@@ -26,6 +25,9 @@ export interface ImageConvertOptions {
   format: ImageFormat;
   /** JPEG/WebP quality 0.5–1.0 (ignored for PNG). */
   quality: number;
+  /** 1-based inclusive page window; defaults to every page. */
+  fromPage?: number;
+  toPage?: number;
 }
 
 export interface PageImageResult {
@@ -87,9 +89,11 @@ export class ImagesConverter {
     const scale = options.dpi / 72;
     const task = pdfjsLib.getDocument({ data: new Uint8Array(bytes.slice(0)) });
     const doc = await task.promise;
+    const first = Math.max(1, options.fromPage ?? 1);
+    const last = Math.min(doc.numPages, options.toPage ?? doc.numPages);
 
     try {
-      for (let p = 1; p <= doc.numPages; p++) {
+      for (let p = first; p <= last; p++) {
         throwIfAborted(signal);
         const page = await doc.getPage(p);
         throwIfAborted(signal);
@@ -113,6 +117,6 @@ export class ImagesConverter {
       await doc.destroy().catch(() => undefined);
     }
 
-    return doc.numPages;
+    return last - first + 1;
   }
 }

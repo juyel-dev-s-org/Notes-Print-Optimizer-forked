@@ -4,7 +4,7 @@ import React from 'react';
 import { AlertCircle, Ban, Check, FileText, Images, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { SliderRow } from '@/components/ui/Slider';
-import { DPI_PRESETS, type DpiPresetId, type ImagesFormat } from '@/lib/toimages/imagesReducer';
+import { DPI_PRESETS, resolveRange, type DpiPresetId, type ImagesFormat } from '@/lib/toimages/imagesReducer';
 import { FORMAT_EXT } from '@/lib/toimages/imagesConverter';
 import type { ImagesWorkflow } from '@/lib/toimages/useImagesWorkflow';
 
@@ -14,12 +14,26 @@ const FORMATS: Array<{ id: ImagesFormat; label: string }> = [
   { id: 'image/webp', label: 'WebP' },
 ];
 
-/** Resolution radio-cards + format segmented control + quality + CTA. */
+/** Resolution radio-cards + pages window + format + quality + CTA. */
 export const ImagesOptionsView: React.FC<{ workflow: ImagesWorkflow }> = ({ workflow }) => {
-  const { state, handleConvert, handleCancelConvert, handleSetDpi, handleSetFormat, handleSetQuality, handleReset } =
-    workflow;
+  const {
+    state,
+    canConvert,
+    handleConvert,
+    handleCancelConvert,
+    handleSetDpi,
+    handleSetFormat,
+    handleSetQuality,
+    handleSetRangeMode,
+    handleSetRangeFrom,
+    handleSetRangeTo,
+    handleReset,
+  } = workflow;
   const busy = state.isBusy;
   const pct = state.progress ? Math.round((state.progress.current / Math.max(1, state.progress.total)) * 100) : 0;
+  const rangeInvalid =
+    state.rangeMode === 'custom' &&
+    resolveRange('custom', state.rangeFrom, state.rangeTo, state.pageCount) === null;
 
   return (
     <div className="flex flex-col gap-4">
@@ -73,6 +87,65 @@ export const ImagesOptionsView: React.FC<{ workflow: ImagesWorkflow }> = ({ work
               </button>
             );
           })}
+        </div>
+
+        {/* Pages window */}
+        <div>
+          <p className="mb-1.5 text-[11px] font-bold tracking-wide text-ink-muted">Pages</p>
+          <div role="radiogroup" aria-label="Page selection" className="flex rounded-xl border border-elevated bg-elevated/40 p-1">
+            {([['all', 'All Pages'], ['custom', 'Custom Range']] as const).map(([mode, label]) => {
+              const active = state.rangeMode === mode;
+              return (
+                <button
+                  key={mode}
+                  type="button"
+                  role="radio"
+                  aria-checked={active}
+                  disabled={busy || state.pageCount === null}
+                  onClick={() => handleSetRangeMode(mode)}
+                  className={`h-9 flex-1 rounded-lg text-xs font-bold transition-all ${
+                    active ? 'bg-surface text-ink shadow-sm' : 'text-ink-muted hover:text-ink'
+                  }`}
+                >
+                  {label}
+                </button>
+              );
+            })}
+          </div>
+
+          {state.rangeMode === 'custom' && (
+            <div className="mt-2 flex items-center gap-2 animate-enter">
+              {(['From', 'To'] as const).map((label) => {
+                const id = label.toLowerCase();
+                const value = label === 'From' ? state.rangeFrom : state.rangeTo;
+                const onChange = label === 'From' ? handleSetRangeFrom : handleSetRangeTo;
+                return (
+                  <React.Fragment key={label}>
+                    {label === 'To' && <span aria-hidden="true" className="text-xs font-bold text-ink-muted">to</span>}
+                    <div className="flex flex-1 items-center gap-2 rounded-xl border border-elevated bg-surface/80 px-3 focus-within:border-primary/50">
+                      <input
+                        id={`range-${id}`}
+                        inputMode="numeric"
+                        pattern="[0-9]*"
+                        value={value}
+                        onChange={(e) => onChange(e.target.value)}
+                        disabled={busy}
+                        placeholder={label}
+                        aria-label={`${label} page`}
+                        className="h-10 w-full min-w-0 bg-transparent text-sm font-semibold tabular-nums text-ink placeholder:font-normal placeholder:text-ink-faint focus:outline-none"
+                      />
+                    </div>
+                  </React.Fragment>
+                );
+              })}
+              <span className="shrink-0 text-xs tabular-nums text-ink-muted">of {state.pageCount ?? '…'}</span>
+            </div>
+          )}
+          {rangeInvalid && (
+            <p className="mt-1.5 text-[11px] font-semibold text-warning-strong">
+              Enter a valid range between 1 and {state.pageCount}.
+            </p>
+          )}
         </div>
 
         {/* Format segmented control */}
@@ -135,10 +208,13 @@ export const ImagesOptionsView: React.FC<{ workflow: ImagesWorkflow }> = ({ work
           </div>
         ) : (
           <>
-            <Button size="lg" fullWidth disabled={!state.source} onClick={handleConvert}>
+            <Button size="lg" fullWidth disabled={!canConvert} onClick={handleConvert}>
               {!busy && <Images className="h-4 w-4" aria-hidden="true" />}
               Convert to {FORMAT_EXT[state.format].toUpperCase()}
             </Button>
+            {state.rangeMode === 'all' && !canConvert && state.pageCount === null && (
+              <p className="-mt-2 text-center text-[10px] font-semibold text-ink-faint">Reading page count…</p>
+            )}
             <Button variant="ghost" size="md" fullWidth onClick={handleReset}>
               Choose a different file
             </Button>

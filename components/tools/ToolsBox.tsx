@@ -12,6 +12,7 @@ export interface ToolsBoxProps {
   onSelectEnhance: () => void;
   onSelectProtect: () => void;
   onSelectToImages: () => void;
+  onSelectMerge: () => void;
 }
 
 type LaunchMap = Record<ToolMode, () => void>;
@@ -22,12 +23,12 @@ type LaunchMap = Record<ToolMode, () => void>;
  * Registry-driven: searchable by title/alias/keyword with fuzzy fallback;
  * category shortcut chips appear automatically once >1 category exists.
  */
-export const ToolsBox: React.FC<ToolsBoxProps> = ({ onSelectDarkPrint, onSelectEnhance, onSelectProtect, onSelectToImages }) => {
+export const ToolsBox: React.FC<ToolsBoxProps> = ({ onSelectDarkPrint, onSelectEnhance, onSelectProtect, onSelectToImages, onSelectMerge }) => {
   const [query, setQuery] = useState('');
   const [activeCategory, setActiveCategory] = useState<'all' | ToolCategory>('all');
 
   const categories = useMemo(() => getToolCategories(TOOL_REGISTRY), []);
-  const launches: LaunchMap = { 'dark-print': onSelectDarkPrint, enhance: onSelectEnhance, protect: onSelectProtect, 'to-images': onSelectToImages };
+  const launches: LaunchMap = { 'dark-print': onSelectDarkPrint, enhance: onSelectEnhance, protect: onSelectProtect, 'to-images': onSelectToImages, merge: onSelectMerge };
 
   const visibleTools = useMemo(
     () =>

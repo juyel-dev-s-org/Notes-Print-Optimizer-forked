@@ -1,7 +1,6 @@
 'use client';
 
 import React from 'react';
-import { Images } from 'lucide-react';
 import { MAX_FILE_SIZE_MB } from '@/lib/services/UploadService';
 import { PdfDropzone } from '@/components/ui/PdfDropzone';
 import { HowItWorks } from '@/components/ui/HowItWorks';

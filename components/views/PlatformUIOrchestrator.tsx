@@ -29,6 +29,11 @@ const ImagesToolView = dynamic(() => import('@/components/toimages/ImagesToolVie
   ssr: false,
 });
 
+const MergeToolView = dynamic(() => import('@/components/tomerge/MergeToolView').then(m => m.MergeToolView), {
+  loading: () => <CardSkeleton />,
+  ssr: false,
+});
+
 interface OrchestratorProps extends WorkflowUIProps {
   /** Enhance export -> N-Up layout handoff (optional for tests/storybook). */
   onEnhanceHandoff?: (pages: HandoffPageInput[]) => Promise<void>;
@@ -48,6 +53,7 @@ export const PlatformUIOrchestrator: React.FC<OrchestratorProps> = ({ state, act
           onSelectEnhance={() => onToolModeChange?.('enhance')}
           onSelectProtect={() => onToolModeChange?.('protect')}
           onSelectToImages={() => onToolModeChange?.('to-images')}
+          onSelectMerge={() => onToolModeChange?.('merge')}
         />
       </div>
     );
@@ -80,6 +86,14 @@ export const PlatformUIOrchestrator: React.FC<OrchestratorProps> = ({ state, act
     return (
       <div className="flex w-full max-w-full min-w-0 flex-col gap-4 pb-20 md:gap-6 md:pb-12">
         <ImagesToolView onBack={() => onToolModeChange?.(null)} />
+      </div>
+    );
+  }
+
+  if (toolMode === 'merge') {
+    return (
+      <div className="flex w-full max-w-full min-w-0 flex-col gap-4 pb-20 md:gap-6 md:pb-12">
+        <MergeToolView onBack={() => onToolModeChange?.(null)} />
       </div>
     );
   }

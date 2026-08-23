@@ -7,6 +7,7 @@ import { buildZip, crc32 } from '@/lib/toimages/zipWriter';
 import {
   INITIAL_IMAGES_STATE,
   imagesReducer,
+  resolveRange,
 } from '@/lib/toimages/imagesReducer';
 import { buildPageImageName, sanitizeBaseName } from '@/lib/shared/filename';
 
@@ -131,5 +132,33 @@ describe('imagesReducer & naming', () => {
 
   it('sanitizeBaseName strips hostile characters', () => {
     expect(sanitizeBaseName('bad:name?.pdf')).toBe('badname.pdf');
+  });
+});
+
+describe('resolveRange', () => {
+  it('"all" spans every page once the count is known', () => {
+    expect(resolveRange('all', '', '', null)).toBeNull();
+    expect(resolveRange('all', '', '', 23)).toEqual({ start: 1, end: 23 });
+  });
+
+  it('"custom" accepts a valid inclusive window', () => {
+    expect(resolveRange('custom', '3', '12', 23)).toEqual({ start: 3, end: 12 });
+    expect(resolveRange('custom', '5', '5', 10)).toEqual({ start: 5, end: 5 });
+  });
+
+  it('rejects incomplete, inverted or out-of-bounds ranges', () => {
+    expect(resolveRange('custom', '', '5', 10)).toBeNull();
+    expect(resolveRange('custom', '7', '3', 10)).toBeNull();
+    expect(resolveRange('custom', '9', '11', 10)).toBeNull();
+    expect(resolveRange('custom', '0', '5', 10)).toBeNull();
+    expect(resolveRange('custom', 'abc', '5', 10)).toBeNull();
+    expect(resolveRange('custom', '1', '2', null)).toBeNull();
+  });
+
+  it('range inputs keep digits only via the reducer', () => {
+    let s = imagesReducer(INITIAL_IMAGES_STATE, { type: 'SET_RANGE_FROM', value: 'a1b2c' });
+    expect(s.rangeFrom).toBe('12');
+    s = imagesReducer(s, { type: 'SET_RANGE_MODE', mode: 'custom' });
+    expect(s.rangeMode).toBe('custom');
   });
 });

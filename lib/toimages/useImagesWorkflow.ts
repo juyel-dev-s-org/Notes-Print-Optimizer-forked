@@ -11,6 +11,7 @@ import {
   DPI_PRESETS,
   INITIAL_IMAGES_STATE,
   imagesReducer,
+  resolveRange,
   type DpiPresetId,
   type ImagesFormat,
   type PageOutput,
@@ -60,22 +61,15 @@ export function useImagesWorkflow() {
   const handleConvert = useCallback(async () => {
     if (!state.source || state.isBusy) return;
 
-    const preset = DPI_PRESETS.find((p) => p.id === state.dpi) ?? DPI_PRESETS[1];
-    let total = state.pageCount ?? 0;
+    const range = resolveRange(state.rangeMode, state.rangeFrom, state.rangeTo, state.pageCount);
+    let total = range ? range.end - range.start + 1 : 0;
     if (total <= 0) {
-      try {
-        total = await ImagesConverter.countPages(state.source.bytes.slice(0));
-        dispatch({ type: 'SET_PAGE_COUNT', count: total });
-      } catch {
-        total = 0;
-      }
-    }
-    if (total <= 0) {
-      dispatch({ type: 'CONVERT_ERROR', error: 'No pages found in this PDF.' });
+      dispatch({ type: 'CONVERT_ERROR', error: 'Check the selected page range.' });
       return;
     }
     if (total > MAX_PAGES) total = MAX_PAGES; // hard mobile memory guard
 
+    const preset = DPI_PRESETS.find((p) => p.id === state.dpi) ?? DPI_PRESETS[1];
     const controller = new AbortController();
     abortRef.current = controller;
     dispatch({ type: 'CONVERT_START', total });
@@ -84,14 +78,21 @@ export function useImagesWorkflow() {
     try {
       await ImagesConverter.convert(
         state.source.bytes.slice(0),
-        { dpi: preset.dpi, format: state.format, quality: state.quality },
+        {
+          dpi: preset.dpi,
+          format: state.format,
+          quality: state.quality,
+          fromPage: range!.start,
+          toPage: range!.end,
+        },
         ({ index, blob, thumbDataUrl }) => {
+          // index is the absolute 0-based page — names stay traceable to the document.
           results.push({
             blob,
             thumbDataUrl,
             name: `${state.source!.baseName}-p${String(index + 1).padStart(2, '0')}.${FORMAT_EXT[state.format]}`,
           });
-          if (index > 0) dispatch({ type: 'CONVERT_PROGRESS', current: index + 1 });
+          dispatch({ type: 'CONVERT_PROGRESS', current: results.length });
         },
         controller.signal,
       );
@@ -102,7 +103,12 @@ export function useImagesWorkflow() {
       if (err instanceof Error && err.message === 'Processing cancelled.') return;
       dispatch({ type: 'CONVERT_ERROR', error: 'Conversion failed. The PDF may be corrupted.' });
     }
-  }, [state.source, state.isBusy, state.pageCount, state.dpi, state.format, state.quality]);
+  }, [state.source, state.isBusy, state.pageCount, state.rangeMode, state.rangeFrom, state.rangeTo, state.dpi, state.format, state.quality]);
+
+  const canConvert =
+    !!state.source &&
+    !state.isBusy &&
+    resolveRange(state.rangeMode, state.rangeFrom, state.rangeTo, state.pageCount) !== null;
 
   const handleCancelConvert = useCallback(() => {
     abortRef.current?.abort();
@@ -129,6 +135,9 @@ export function useImagesWorkflow() {
   const handleSetDpi = useCallback((dpi: DpiPresetId) => dispatch({ type: 'SET_DPI', dpi }), []);
   const handleSetFormat = useCallback((format: ImagesFormat) => dispatch({ type: 'SET_FORMAT', format }), []);
   const handleSetQuality = useCallback((quality: number) => dispatch({ type: 'SET_QUALITY', quality }), []);
+  const handleSetRangeMode = useCallback((mode: 'all' | 'custom') => dispatch({ type: 'SET_RANGE_MODE', mode }), []);
+  const handleSetRangeFrom = useCallback((value: string) => dispatch({ type: 'SET_RANGE_FROM', value }), []);
+  const handleSetRangeTo = useCallback((value: string) => dispatch({ type: 'SET_RANGE_TO', value }), []);
   const handleBackToOptions = useCallback(() => dispatch({ type: 'SET_STEP', step: 'options' }), []);
   const handleReset = useCallback(() => {
     abortRef.current?.abort();
@@ -138,6 +147,7 @@ export function useImagesWorkflow() {
   const value = useMemo(
     () => ({
       state,
+      canConvert,
       handleUpload,
       handleConvert,
       handleCancelConvert,
@@ -146,10 +156,13 @@ export function useImagesWorkflow() {
       handleSetDpi,
       handleSetFormat,
       handleSetQuality,
+      handleSetRangeMode,
+      handleSetRangeFrom,
+      handleSetRangeTo,
       handleBackToOptions,
       handleReset,
     }),
-    [state, handleUpload, handleConvert, handleCancelConvert, handleDownloadZip, handleDownloadSingle, handleSetDpi, handleSetFormat, handleSetQuality, handleBackToOptions, handleReset],
+    [state, canConvert, handleUpload, handleConvert, handleCancelConvert, handleDownloadZip, handleDownloadSingle, handleSetDpi, handleSetFormat, handleSetQuality, handleSetRangeMode, handleSetRangeFrom, handleSetRangeTo, handleBackToOptions, handleReset],
   );
 
   return value;

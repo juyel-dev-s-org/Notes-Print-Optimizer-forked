@@ -35,6 +35,10 @@ export interface ImagesState {
   dpi: DpiPresetId;
   format: ImagesFormat;
   quality: number;
+  rangeMode: 'all' | 'custom';
+  /** Raw input values — parsed by resolveRange(). */
+  rangeFrom: string;
+  rangeTo: string;
   isBusy: boolean;
   progress: { current: number; total: number } | null;
   results: PageOutput[];
@@ -48,6 +52,9 @@ export const INITIAL_IMAGES_STATE: ImagesState = {
   dpi: 'balanced',
   format: 'image/jpeg',
   quality: 0.92,
+  rangeMode: 'all',
+  rangeFrom: '',
+  rangeTo: '',
   isBusy: false,
   progress: null,
   results: [],
@@ -62,10 +69,32 @@ export type ImagesAction =
   | { type: 'SET_DPI'; dpi: DpiPresetId }
   | { type: 'SET_FORMAT'; format: ImagesFormat }
   | { type: 'SET_QUALITY'; quality: number }
+  | { type: 'SET_RANGE_MODE'; mode: 'all' | 'custom' }
+  | { type: 'SET_RANGE_FROM'; value: string }
+  | { type: 'SET_RANGE_TO'; value: string }
   | { type: 'CONVERT_START'; total: number }
   | { type: 'CONVERT_PROGRESS'; current: number }
   | { type: 'CONVERT_COMPLETE'; results: PageOutput[] }
   | { type: 'CONVERT_ERROR'; error: string };
+
+/**
+ * Validates the selected page window. Returns 1-based inclusive bounds or
+ * null when the selection is incomplete/invalid (CTA stays disabled).
+ */
+export function resolveRange(
+  mode: 'all' | 'custom',
+  from: string,
+  to: string,
+  pageCount: number | null,
+): { start: number; end: number } | null {
+  if (!pageCount || pageCount <= 0) return null;
+  if (mode === 'all') return { start: 1, end: pageCount };
+  const f = Number.parseInt(from, 10);
+  const t = Number.parseInt(to, 10);
+  if (!Number.isFinite(f) || !Number.isFinite(t)) return null;
+  if (f < 1 || t < 1 || f > t || t > pageCount) return null;
+  return { start: f, end: t };
+}
 
 export function imagesReducer(state: ImagesState, action: ImagesAction): ImagesState {
   switch (action.type) {
@@ -96,6 +125,15 @@ export function imagesReducer(state: ImagesState, action: ImagesAction): ImagesS
 
     case 'SET_QUALITY':
       return { ...state, quality: action.quality };
+
+    case 'SET_RANGE_MODE':
+      return { ...state, rangeMode: action.mode, error: null };
+
+    case 'SET_RANGE_FROM':
+      return { ...state, rangeFrom: action.value.replace(/[^0-9]/g, '').slice(0, 4) };
+
+    case 'SET_RANGE_TO':
+      return { ...state, rangeTo: action.value.replace(/[^0-9]/g, '').slice(0, 4) };
 
     case 'CONVERT_START':
       return {

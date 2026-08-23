@@ -5,7 +5,7 @@
  */
 
 import type { LucideIcon } from 'lucide-react';
-import { Contrast, FileText, Images, ShieldCheck } from 'lucide-react';
+import { Combine, Contrast, FileText, Images, ShieldCheck } from 'lucide-react';
 import type { ToolMode } from '@/lib/enhance/types';
 
 /** Coarse groups used by the shortcut chips (rendered once >1 exists). */
@@ -78,6 +78,19 @@ export const TOOL_REGISTRY: ToolDefinition[] = [
     gradient: 'linear-gradient(135deg, #059669 0%, #14B8A6 55%, #06B6D4 100%)',
     chips: ['JPG · PNG · WebP', 'Up to 300 DPI', 'One-click ZIP'],
     cta: 'Convert',
+  },
+  {
+    id: 'merge',
+    title: 'Merge PDF',
+    description:
+      'Combine multiple documents into one — drag to arrange the order, smart-arrange series, then merge.',
+    aliases: ['combine', 'join pdfs', 'unite', 'concatenate', 'stitch'],
+    keywords: ['multiple pdfs', 'one file', 'order', 'sequence'],
+    category: 'pdf',
+    icon: Combine,
+    gradient: 'linear-gradient(135deg, #F59E0B 0%, #EC4899 55%, #A12CFF 100%)',
+    chips: ['Up to 10 files', 'Smart Arrange', 'Custom filename'],
+    cta: 'Merge',
   },
 ];
 

@@ -17,8 +17,8 @@ describe('normalizeQuery', () => {
 
 describe('searchTools', () => {
   it('empty query lists every tool in registry order', () => {
-    expect(ids(searchTools(TOOL_REGISTRY, ''))).toEqual(['dark-print', 'enhance', 'protect', 'to-images']);
-    expect(ids(searchTools(TOOL_REGISTRY, '   '))).toHaveLength(4);
+    expect(ids(searchTools(TOOL_REGISTRY, ''))).toEqual(['dark-print', 'enhance', 'protect', 'to-images', 'merge']);
+    expect(ids(searchTools(TOOL_REGISTRY, '   '))).toHaveLength(5);
   });
 
   it('matches by title prefix first', () => {
