@@ -7,6 +7,7 @@ import type { EnhanceWorkflow } from '@/lib/enhance/useEnhanceWorkflow';
 import { Button } from '@/components/ui/Button';
 import { SliderRow } from '@/components/ui/Slider';
 import { ToggleRow } from '@/components/ui/Toggle';
+import { FileNameField } from '@/components/ui/FileNameField';
 
 export interface EnhanceWorkbenchViewProps {
   workflow: EnhanceWorkflow;
@@ -28,6 +29,7 @@ export const EnhanceWorkbenchView: React.FC<EnhanceWorkbenchViewProps> = ({ work
   } = workflow;
   const [showBefore, setShowBefore] = useState(false);
   const [appliedSettings, setAppliedSettings] = useState<EnhanceSettings>(state.settings);
+  const [outBase, setOutBase] = useState(() => state.fileName.replace(/-enhanced\.pdf$/i, '') || 'Enhanced');
   const selected = state.results[state.selectedIndex];
 
   useEffect(() => {
@@ -184,11 +186,14 @@ export const EnhanceWorkbenchView: React.FC<EnhanceWorkbenchViewProps> = ({ work
         </div>
       )}
 
-      {/* Sticky action bar — download left, layout right; safe-area aware */}
+      {/* Sticky action bar — filename + download left, layout right */}
       {!state.isProcessing && state.results.length > 0 && (
         <div className="sticky bottom-0 z-20 -mx-4 border-t border-surface-2 bg-bg/95 px-4 pt-3 backdrop-blur-md" style={{ paddingBottom: 'calc(1rem + env(safe-area-inset-bottom, 0px))' }}>
+          <div className="mb-2">
+            <FileNameField baseName={outBase} onChange={setOutBase} suffix="-PrintReady.pdf" label="Filename" />
+          </div>
           <div className={`grid gap-2 ${onChooseLayout ? 'grid-cols-2' : 'grid-cols-1'}`}>
-            <Button size="lg" loading={state.exportBusy} onClick={handleDownloadPrintPdf}>
+            <Button size="lg" loading={state.exportBusy} onClick={() => handleDownloadPrintPdf(outBase)}>
               {!state.exportBusy && <Download className="h-4 w-4" />}
               {state.exportBusy ? 'Building…' : 'Download PDF'}
             </Button>

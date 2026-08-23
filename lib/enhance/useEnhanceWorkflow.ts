@@ -12,6 +12,7 @@
 import { useCallback, useEffect, useMemo, useReducer, useRef } from 'react';
 import { isLikelyPdfFile, UploadService } from '@/lib/services/UploadService';
 import { planSmartOrder } from '@/lib/rearrange';
+import { sanitizeBaseName } from '../shared/filename';
 import { buildEnhanceFileName, enhanceReducer } from './enhanceReducer';
 import { EnhanceExporter } from './enhanceExporter';
 import { EnhanceProcessor } from './enhanceProcessor';
@@ -149,17 +150,18 @@ export function useEnhanceWorkflow() {
   }, []);
 
   /** One tap: build the print-ready PDF and hand it straight to the browser. */
-  const handleDownloadPrintPdf = useCallback(async () => {
+  const handleDownloadPrintPdf = useCallback(async (baseName?: string) => {
     if (state.results.length === 0 || state.exportBusy) return;
     dispatch({ type: 'EXPORT_START' });
     try {
       const blob = await EnhanceExporter.exportPdf(state.results, () => undefined);
-      dispatch({ type: 'EXPORT_COMPLETE', blob, fileName: state.fileName });
-      triggerBrowserDownload(blob, state.fileName);
+      const outName = `${sanitizeBaseName(baseName ?? '') || 'Enhanced'}-PrintReady.pdf`;
+      dispatch({ type: 'EXPORT_COMPLETE', blob, fileName: outName });
+      triggerBrowserDownload(blob, outName);
     } catch {
       dispatch({ type: 'EXPORT_ERROR', error: 'Failed to build the print PDF.' });
     }
-  }, [state.results, state.exportBusy, state.fileName, triggerBrowserDownload]);
+  }, [state.results, state.exportBusy, triggerBrowserDownload]);
 
   const handleSharePdf = useCallback(async () => {
     if (!state.pdfBlob || typeof navigator === 'undefined' || !('share' in navigator)) return;

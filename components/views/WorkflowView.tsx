@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useState } from 'react';
 import dynamic from 'next/dynamic';
 import {
   Download,
@@ -12,6 +12,7 @@ import {
 } from 'lucide-react';
 import { WorkflowUIProps } from './types';
 import { UploadArea } from '@/components/UploadArea';
+import { FileNameField } from '@/components/ui/FileNameField';
 import { FileSequencePanel } from '@/components/FileSequencePanel';
 import { BeforeAfterSlider } from '@/components/BeforeAfterSlider';
 import { PageGrid } from '@/components/PageGrid';
@@ -111,6 +112,11 @@ export const WorkflowView: React.FC<WorkflowUIProps> = ({ state, actions, handle
   const onToggleExcludeAll = (exclude: boolean) => {
     setExcludedPages(buildExcludedSet(state.processedPages.length, exclude));
   };
+
+  // Output name for the final print PDF, shared by phase 3 and phase 4 downloads.
+  const [printBase, setPrintBase] = useState(() =>
+    uploadedItems[0]?.name ? uploadedItems[0].name.replace(/\.pdf$/i, '') : 'PW_Print_Ready_Notes',
+  );
 
   return (
     <div className="flex w-full max-w-full min-w-0 flex-col gap-4 md:gap-5 lg:gap-6">
@@ -349,6 +355,19 @@ export const WorkflowView: React.FC<WorkflowUIProps> = ({ state, actions, handle
                 />
               )}
 
+              {/* Output name — consumed by the Download button in the ActionBar */}
+              {finalPrintPdfBlob && (
+                <div className="rounded-2xl border border-surface-2 bg-surface/80 p-4">
+                  <FileNameField
+                    baseName={printBase}
+                    onChange={setPrintBase}
+                    suffix="-PrintReady.pdf"
+                    label="Print PDF filename"
+                  />
+                  <p className="mt-1.5 text-[10px] text-ink-faint">Used by the Download button below.</p>
+                </div>
+              )}
+
               <ActionBar>
                 {enhanceHandoffActive ? (
                   onBackToEnhance && (
@@ -366,7 +385,7 @@ export const WorkflowView: React.FC<WorkflowUIProps> = ({ state, actions, handle
                   <Button
                     variant="primary"
                     size="lg"
-                    onClick={onDownloadFinalPrintPdf}
+                    onClick={() => onDownloadFinalPrintPdf(printBase)}
                     disabled={!finalPrintPdfBlob}
                     className="flex-1 md:flex-none"
                   >
@@ -416,12 +435,7 @@ export const WorkflowView: React.FC<WorkflowUIProps> = ({ state, actions, handle
                   </div>
                 )}
 
-                <Button
-                  size="lg"
-                  fullWidth
-                  className="mt-4 max-w-xs"
-                  onClick={onDownloadFinalPrintPdf}
-                >
+                <Button variant="secondary" size="md" onClick={() => onDownloadFinalPrintPdf(printBase)}>
                   <Download className="h-4 w-4" />
                   Download Print PDF Again
                 </Button>

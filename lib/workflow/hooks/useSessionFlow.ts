@@ -3,6 +3,7 @@
 import { useCallback } from 'react';
 import { ExportService } from '../../services/ExportService';
 import { EnhanceHandoffService, type HandoffPageInput } from '../../services/EnhanceHandoffService';
+import { sanitizeBaseName } from '../../shared/filename';
 import { pwOptimizerStorage } from '../../optimizer/storage';
 import { memoryManager } from '../../optimizer/memoryManager';
 import { sendFeedbackToGas } from '../../feedback/gasClient';
@@ -77,9 +78,10 @@ export function useSessionFlow({
     actions.setPhase(3);
   }, [actions, handleResetWorkflow]);
 
-  const handleDownloadFinalPrintPdf = useCallback(() => {
+  const handleDownloadFinalPrintPdf = useCallback((customBase?: string) => {
     if (!finalPrintPdfBlob) return;
-    ExportService.downloadBlob(finalPrintPdfBlob, 'PW_Print_Ready_Notes.pdf');
+    const clean = sanitizeBaseName(customBase ?? '') || 'PW_Print_Ready_Notes';
+    ExportService.downloadBlob(finalPrintPdfBlob, `${clean}-PrintReady.pdf`);
   }, [finalPrintPdfBlob]);
 
   const handleProceedToPhase4 = useCallback(() => {

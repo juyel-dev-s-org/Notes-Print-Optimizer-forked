@@ -79,7 +79,7 @@ export interface WorkflowHandlers {
   handleTogglePageNumbers: () => void;
   handleUpdateOuterMargins?: (margins: OuterMarginConfig) => void;
   handleUpdateInnerMargin?: (innerMarginMm: number) => void;
-  handleDownloadFinalPrintPdf: () => void;
+  handleDownloadFinalPrintPdf: (customBase?: string) => void;
   handleProceedToPhase4: () => void;
   handleSendFeedback: () => void;
   handleResetWorkflow: () => void;
