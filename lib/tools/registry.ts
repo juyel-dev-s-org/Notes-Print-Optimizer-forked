@@ -72,7 +72,7 @@ export const TOOL_REGISTRY: ToolDefinition[] = [
     description:
       'Convert every sheet into crisp JPG, PNG or WebP images — preview each page or export one tidy ZIP.',
     aliases: ['jpg', 'jpeg', 'png', 'webp', 'image converter', 'extract images'],
-    keywords: ['convert to image', 'render pages', 'dpi', 'resolution', 'zip export', 'photo'],
+    keywords: ['convert to image', 'render pages', 'dpi', 'resolution', 'zip export', 'photo', 'save pages as images'],
     category: 'pdf',
     icon: Images,
     gradient: 'linear-gradient(135deg, #059669 0%, #14B8A6 55%, #06B6D4 100%)',
@@ -110,8 +110,8 @@ export const TOOL_REGISTRY: ToolDefinition[] = [
     title: 'Image to PDF',
     description:
       'Combine photos and screenshots into one tidy PDF — arrange the order, fit each page or use A4.',
-    aliases: ['jpg to pdf', 'png to pdf', 'photo to pdf', 'scan to pdf', 'pictures'],
-    keywords: ['convert images', 'combine photos', 'screenshots', 'one document'],
+    aliases: ['jpg to pdf', 'png to pdf', 'photo to pdf', 'scan to pdf', 'pictures', 'upload images', 'add photos'],
+    keywords: ['convert images', 'combine photos', 'screenshots', 'one document', 'image', 'gallery'],
     category: 'pdf',
     icon: ImagePlus,
     gradient: 'linear-gradient(135deg, #6366F1 0%, #8B5CF6 55%, #EC4899 100%)',

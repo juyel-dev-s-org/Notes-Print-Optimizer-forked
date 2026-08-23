@@ -57,13 +57,31 @@ describe('searchTools', () => {
     expect(ids(searchTools(TOOL_REGISTRY, 'DARK-Notes!!'))).toContain('dark-print');
   });
 
+  it('multi-word partial matches surface tools (action phrasing)', () => {
+    // "upload" is absent from every tool, but "images" hits Image to PDF.
+    const actionHits = ids(searchTools(TOOL_REGISTRY, 'upload a images'));
+    expect(actionHits).toContain('to-pdf');
+    expect(actionHits[0]).toBe('to-pdf');
+  });
+
+  it('partial ratio >= 0.5 still surfaces a tool below full matches', () => {
+    expect(ids(searchTools(TOOL_REGISTRY, 'enhance upload'))).toContain('enhance');
+  });
+
   it('returns nothing for unrelated queries', () => {
     expect(searchTools(TOOL_REGISTRY, 'zzzzqqqq')).toEqual([]);
   });
 
-  it('multi-word queries require every word somewhere', () => {
+  it('multi-word queries surface tools when at least half the words hit', () => {
     expect(ids(searchTools(TOOL_REGISTRY, 'light ink'))).toContain('enhance');
-    expect(searchTools(TOOL_REGISTRY, 'ink zebra')).toEqual([]);
+    expect(ids(searchTools(TOOL_REGISTRY, 'image'))).toContain('to-pdf');
+    expect(ids(searchTools(TOOL_REGISTRY, 'image'))).toContain('to-images');
+    // One of two words ("ink") still finds ink-related tools.
+    expect(ids(searchTools(TOOL_REGISTRY, 'ink zebra'))).toContain('dark-print');
+  });
+
+  it('phrases where zero words match stay empty', () => {
+    expect(searchTools(TOOL_REGISTRY, 'zebra unicorn')).toEqual([]);
   });
 });
 

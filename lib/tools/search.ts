@@ -81,12 +81,22 @@ function scoreTool(tool: SearchableTool, q: string): number {
     if (normalizeQuery(keyword).includes(q)) return 50;
   }
 
-  // Every query word appears somewhere (title/alias/keywords).
+  // Partial word matching: users describe actions ("upload my images"),
+  // so reward the share of query words found anywhere — don't demand all.
   const haystack = normalizeQuery(
     [tool.title, ...tool.aliases, ...tool.keywords].join(' '),
   );
-  const words = q.split(' ');
-  if (words.length > 1 && words.every((w) => haystack.includes(w))) return 40;
+  const words = q.split(' ').filter((w) => w.length >= 2);
+  if (words.length > 0) {
+    let matched = 0;
+    for (const w of words) {
+      if (haystack.includes(w)) matched++;
+    }
+    if (matched === words.length) return 45;
+    if (words.length >= 2 && matched / words.length >= 0.5) {
+      return Math.round(10 + 30 * (matched / words.length));
+    }
+  }
 
   return fuzzScore(tool, q);
 }
