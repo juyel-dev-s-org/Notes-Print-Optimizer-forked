@@ -8,7 +8,7 @@ import { isLikelyPdfFile, UploadService } from '@/lib/services/UploadService';
 import { ExportService } from '@/lib/services/ExportService';
 import { ImagesConverter } from '@/lib/toimages/imagesConverter';
 import { buildZip } from '@/lib/toimages/zipWriter';
-import { planChunks } from '../shared/chunks';
+import { planChunks, planEvenChunks } from '../shared/chunks';
 import { resolveRange } from '../shared/range';
 import { sanitizeBaseName } from '../shared/filename';
 import { INITIAL_SPLIT_STATE, splitReducer, buildPartName } from './splitReducer';
@@ -56,9 +56,13 @@ export function useSplitWorkflow() {
     if (state.mode === 'extract') {
       return resolveRange('custom', state.rangeFrom, state.rangeTo, state.pageCount) !== null;
     }
-    const n = Number.parseInt(state.perFile, 10);
-    return Number.isFinite(n) && n >= 1 && planChunks(state.pageCount, n).length > 0;
-  }, [state.source, state.isBusy, state.pageCount, state.mode, state.rangeFrom, state.rangeTo, state.perFile]);
+    if (state.mode === 'every') {
+      const n = Number.parseInt(state.perFile, 10);
+      return Number.isFinite(n) && n >= 1 && planChunks(state.pageCount, n).length > 0;
+    }
+    const parts = Number.parseInt(state.partCount, 10);
+    return Number.isFinite(parts) && parts >= 2 && planEvenChunks(state.pageCount, parts).length > 0;
+  }, [state.source, state.isBusy, state.pageCount, state.mode, state.rangeFrom, state.rangeTo, state.perFile, state.partCount]);
 
   const handleRun = useCallback(async () => {
     if (!canRun || !state.source || !state.pageCount) return;
@@ -77,8 +81,11 @@ export function useSplitWorkflow() {
           outputs: [{ name: '', blob: new Blob([bytes as unknown as BlobPart], { type: 'application/pdf' }), pages }],
         });
       } else {
-        const perFile = Number.parseInt(state.perFile, 10);
-        const chunks = planChunks(state.pageCount, perFile);
+        // 'every' and 'parts' share the burst pipeline — only the planner differs.
+        const chunks =
+          state.mode === 'every'
+            ? planChunks(state.pageCount, Number.parseInt(state.perFile, 10))
+            : planEvenChunks(state.pageCount, Number.parseInt(state.partCount, 10));
         dispatch({ type: 'RUN_START', progress: { pct: 10, label: `Splitting into ${chunks.length} files…` } });
 
         const parts = await SplitService.splitEvery(
@@ -111,7 +118,7 @@ export function useSplitWorkflow() {
           : 'Split failed. The PDF may be corrupted.';
       dispatch({ type: 'RUN_ERROR', error: msg });
     }
-  }, [canRun, state.source, state.pageCount, state.mode, state.rangeFrom, state.rangeTo, state.perFile]);
+  }, [canRun, state.source, state.pageCount, state.mode, state.rangeFrom, state.rangeTo, state.perFile, state.partCount]);
 
   const handleCancelRun = useCallback(() => abortRef.current?.abort(), []);
 
@@ -150,6 +157,7 @@ export function useSplitWorkflow() {
   const handleSetRangeFrom = useCallback((value: string) => dispatch({ type: 'SET_RANGE_FROM', value }), []);
   const handleSetRangeTo = useCallback((value: string) => dispatch({ type: 'SET_RANGE_TO', value }), []);
   const handleSetPerFile = useCallback((value: string) => dispatch({ type: 'SET_PER_FILE', value }), []);
+  const handleSetPartCount = useCallback((value: string) => dispatch({ type: 'SET_PART_COUNT', value }), []);
   const handleBackToOptions = useCallback(() => dispatch({ type: 'SET_STEP', step: 'options' }), []);
   const handleReset = useCallback(() => {
     abortRef.current?.abort();
@@ -170,10 +178,11 @@ export function useSplitWorkflow() {
       handleSetRangeFrom,
       handleSetRangeTo,
       handleSetPerFile,
+      handleSetPartCount,
       handleBackToOptions,
       handleReset,
     }),
-    [state, canRun, handleUpload, handleRun, handleCancelRun, handleDownloadSingle, handleDownloadZip, handleSaveOne, handleSetMode, handleSetRangeFrom, handleSetRangeTo, handleSetPerFile, handleBackToOptions, handleReset],
+    [state, canRun, handleUpload, handleRun, handleCancelRun, handleDownloadSingle, handleDownloadZip, handleSaveOne, handleSetMode, handleSetRangeFrom, handleSetRangeTo, handleSetPerFile, handleSetPartCount, handleBackToOptions, handleReset],
   );
 
   return value;

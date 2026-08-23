@@ -6,7 +6,7 @@
 
 import { PDFDocument, StandardFonts } from 'pdf-lib';
 import { describe, expect, it } from 'vitest';
-import { planChunks } from '@/lib/shared/chunks';
+import { planChunks, planEvenChunks } from '@/lib/shared/chunks';
 import { resolveRange } from '@/lib/shared/range';
 import { SplitService } from '@/lib/tosplit/splitService';
 import {
@@ -46,6 +46,42 @@ describe('planChunks', () => {
     expect(planChunks(0, 5)).toEqual([]);
     expect(planChunks(10, 0)).toEqual([]);
     expect(planChunks(-3, 2)).toEqual([]);
+  });
+});
+
+describe('planEvenChunks', () => {
+  it('spreads the remainder across leading parts (23÷4 → 6·6·6·5)', () => {
+    expect(planEvenChunks(23, 4)).toEqual([
+      { start: 1, end: 6 },
+      { start: 7, end: 12 },
+      { start: 13, end: 18 },
+      { start: 19, end: 23 },
+    ]);
+    expect(planEvenChunks(7, 3).map((c) => c.end - c.start + 1)).toEqual([3, 2, 2]);
+  });
+
+  it('caps parts at page count — one page per part', () => {
+    const chunks = planEvenChunks(5, 9);
+    expect(chunks).toHaveLength(5);
+    chunks.forEach((c) => expect(c.end - c.start + 1).toBe(1));
+  });
+
+  it('handles trivial and invalid inputs', () => {
+    expect(planEvenChunks(10, 1)).toEqual([{ start: 1, end: 10 }]);
+    expect(planEvenChunks(0, 3)).toEqual([]);
+    expect(planEvenChunks(12, 0)).toEqual([]);
+  });
+
+  it('roundtrip through the engine keeps every page exactly once', async () => {
+    const bytes = await makeDoc(7);
+    const parts = await SplitService.splitEvery(bytes.slice(0), planEvenChunks(7, 3));
+    expect(parts.map((p) => p.pages)).toEqual([3, 2, 2]);
+    let seen = 0;
+    for (const part of parts) {
+      const doc = await PDFDocument.load(part.bytes);
+      seen += doc.getPageCount();
+    }
+    expect(seen).toBe(7);
   });
 });
 
@@ -98,6 +134,8 @@ describe('splitReducer', () => {
     expect(s.rangeFrom).toBe('12');
     s = splitReducer(s, { type: 'SET_PER_FILE', value: '99999' });
     expect(s.perFile).toBe('9999');
+    s = splitReducer(s, { type: 'SET_PART_COUNT', value: '4x' });
+    expect(s.partCount).toBe('4');
   });
 
   it('extract lifecycle completes onto done as single output', () => {

@@ -3,7 +3,7 @@
  */
 
 export type SplitStep = 'upload' | 'options' | 'done';
-export type SplitMode = 'extract' | 'every';
+export type SplitMode = 'extract' | 'every' | 'parts';
 
 /** '' name marks the single-extract output — the user names it on Done. */
 export interface SplitOutput {
@@ -32,6 +32,7 @@ export interface SplitState {
   rangeFrom: string;
   rangeTo: string;
   perFile: string;
+  partCount: string;
   isBusy: boolean;
   progress: SplitProgress | null;
   kind: 'single' | 'multi';
@@ -47,6 +48,7 @@ export const INITIAL_SPLIT_STATE: SplitState = {
   rangeFrom: '',
   rangeTo: '',
   perFile: '',
+  partCount: '',
   isBusy: false,
   progress: null,
   kind: 'single',
@@ -63,6 +65,7 @@ export type SplitAction =
   | { type: 'SET_RANGE_FROM'; value: string }
   | { type: 'SET_RANGE_TO'; value: string }
   | { type: 'SET_PER_FILE'; value: string }
+  | { type: 'SET_PART_COUNT'; value: string }
   | { type: 'RUN_START'; progress: SplitProgress }
   | { type: 'RUN_PROGRESS'; progress: SplitProgress }
   | { type: 'RUN_COMPLETE'; kind: 'single' | 'multi'; outputs: SplitOutput[] }
@@ -102,6 +105,9 @@ export function splitReducer(state: SplitState, action: SplitAction): SplitState
 
     case 'SET_PER_FILE':
       return { ...state, perFile: digitsOnly(action.value, 4) };
+
+    case 'SET_PART_COUNT':
+      return { ...state, partCount: digitsOnly(action.value, 3) };
 
     case 'RUN_START':
       return { ...state, isBusy: true, progress: action.progress, error: null, outputs: [] };

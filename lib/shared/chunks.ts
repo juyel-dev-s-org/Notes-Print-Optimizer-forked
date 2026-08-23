@@ -21,3 +21,26 @@ export function planChunks(pageCount: number, perFile: number): PageChunk[] {
   }
   return chunks;
 }
+
+/**
+ * Divides 1..pageCount into exactly `parts` consecutive windows, spreading
+ * the remainder across the leading parts (23÷4 → 6·6·6·5). Requesting more
+ * parts than pages caps at one page per part.
+ */
+export function planEvenChunks(pageCount: number, parts: number): PageChunk[] {
+  if (!Number.isFinite(pageCount) || pageCount <= 0) return [];
+  const requested = Math.floor(parts);
+  if (!Number.isFinite(requested) || requested < 1) return [];
+  const n = Math.min(requested, pageCount);
+  const base = Math.floor(pageCount / n);
+  const remainder = pageCount % n;
+
+  const chunks: PageChunk[] = [];
+  let start = 1;
+  for (let i = 0; i < n; i++) {
+    const size = base + (i < remainder ? 1 : 0);
+    chunks.push({ start, end: start + size - 1 });
+    start += size;
+  }
+  return chunks;
+}

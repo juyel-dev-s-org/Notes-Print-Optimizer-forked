@@ -4,13 +4,14 @@ import React from 'react';
 import { AlertCircle, Check, FileText, Loader2, Scissors } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { resolveRange } from '@/lib/shared/range';
-import { planChunks } from '@/lib/shared/chunks';
+import { planChunks, planEvenChunks } from '@/lib/shared/chunks';
 import type { SplitMode } from '@/lib/tosplit/splitReducer';
 import type { SplitWorkflow } from '@/lib/tosplit/useSplitWorkflow';
 
 const MODES: Array<{ id: SplitMode; label: string; hint: string }> = [
   { id: 'extract', label: 'Extract Range', hint: 'One range → one PDF' },
   { id: 'every', label: 'Split Every N', hint: 'Burst into fixed parts' },
+  { id: 'parts', label: 'Into N Parts', hint: 'Divide evenly' },
 ];
 
 /** Mode selector + range/per-file controls with a live output preview. */
@@ -24,6 +25,7 @@ export const SplitOptionsView: React.FC<{ workflow: SplitWorkflow }> = ({ workfl
     handleSetRangeFrom,
     handleSetRangeTo,
     handleSetPerFile,
+    handleSetPartCount,
     handleReset,
   } = workflow;
   const busy = state.isBusy;
@@ -34,10 +36,13 @@ export const SplitOptionsView: React.FC<{ workflow: SplitWorkflow }> = ({ workfl
     resolveRange('custom', state.rangeFrom, state.rangeTo, state.pageCount) === null;
 
   const perFileNum = Number.parseInt(state.perFile, 10);
+  const partCountNum = Number.parseInt(state.partCount, 10);
   const chunks =
     state.mode === 'every' && Number.isFinite(perFileNum) && perFileNum >= 1 && state.pageCount
       ? planChunks(state.pageCount, perFileNum)
-      : [];
+      : state.mode === 'parts' && Number.isFinite(partCountNum) && partCountNum >= 1 && state.pageCount
+        ? planEvenChunks(state.pageCount, partCountNum)
+        : [];
   const preview =
     state.mode === 'extract'
       ? (() => {
@@ -45,9 +50,9 @@ export const SplitOptionsView: React.FC<{ workflow: SplitWorkflow }> = ({ workfl
           return r ? `1 file · ${r.end - r.start + 1} pages` : '';
         })()
       : chunks.length > 0
-        ? `${chunks.length} file${chunks.length === 1 ? '' : 's'} · ${state.pageCount} pages (last file: ${
-            chunks[chunks.length - 1].end - chunks[chunks.length - 1].start + 1
-          } pages)`
+        ? `${chunks.length} file${chunks.length === 1 ? '' : 's'} · ${state.pageCount} pages · sizes ${chunks
+            .map((c) => c.end - c.start + 1)
+            .join('·')}`
         : '';
 
   return (
@@ -70,7 +75,7 @@ export const SplitOptionsView: React.FC<{ workflow: SplitWorkflow }> = ({ workfl
         <h3 className="text-sm font-bold tracking-wide text-ink">Split Mode</h3>
 
         {/* Mode cards */}
-        <div role="radiogroup" aria-label="Split mode" className="grid grid-cols-2 gap-2">
+        <div role="radiogroup" aria-label="Split mode" className="grid grid-cols-1 gap-2 sm:grid-cols-3">
           {MODES.map((m) => {
             const active = state.mode === m.id;
             return (
@@ -147,6 +152,28 @@ export const SplitOptionsView: React.FC<{ workflow: SplitWorkflow }> = ({ workfl
                 className="h-10 w-full min-w-0 bg-transparent text-sm font-semibold tabular-nums text-ink placeholder:font-normal placeholder:text-ink-faint focus:outline-none"
               />
             </div>
+          </div>
+        )}
+
+        {/* Even-parts controls */}
+        {state.mode === 'parts' && (
+          <div className="flex flex-col gap-2 animate-enter">
+            <p className="text-[11px] font-bold tracking-wide text-ink-muted">Number of parts</p>
+            <div className="flex items-center rounded-xl border border-elevated bg-surface/80 px-3 focus-within:border-primary/50 sm:max-w-[200px]">
+              <input
+                inputMode="numeric"
+                pattern="[0-9]*"
+                value={state.partCount}
+                onChange={(e) => handleSetPartCount(e.target.value)}
+                disabled={busy}
+                placeholder="e.g. 4"
+                aria-label="Number of parts"
+                className="h-10 w-full min-w-0 bg-transparent text-sm font-semibold tabular-nums text-ink placeholder:font-normal placeholder:text-ink-faint focus:outline-none"
+              />
+            </div>
+            {partCountNum === 1 && (
+              <p className="text-[11px] font-semibold text-warning-strong">Enter at least 2 parts.</p>
+            )}
           </div>
         )}
 
