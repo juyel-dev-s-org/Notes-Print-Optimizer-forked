@@ -5,7 +5,7 @@
  */
 
 import type { LucideIcon } from 'lucide-react';
-import { Contrast, FileText, ShieldCheck } from 'lucide-react';
+import { Contrast, FileText, Images, ShieldCheck } from 'lucide-react';
 import type { ToolMode } from '@/lib/enhance/types';
 
 /** Coarse groups used by the shortcut chips (rendered once >1 exists). */
@@ -65,6 +65,19 @@ export const TOOL_REGISTRY: ToolDefinition[] = [
     gradient: 'linear-gradient(135deg, #06B6D4 0%, #243BFF 55%, #5B35FF 100%)',
     chips: ['AES-256', 'Open password', 'Print/Copy locks'],
     cta: 'Protect',
+  },
+  {
+    id: 'to-images',
+    title: 'PDF to Images',
+    description:
+      'Convert every sheet into crisp JPG, PNG or WebP images — preview each page or export one tidy ZIP.',
+    aliases: ['jpg', 'jpeg', 'png', 'webp', 'image converter', 'extract images'],
+    keywords: ['convert to image', 'render pages', 'dpi', 'resolution', 'zip export', 'photo'],
+    category: 'pdf',
+    icon: Images,
+    gradient: 'linear-gradient(135deg, #059669 0%, #14B8A6 55%, #06B6D4 100%)',
+    chips: ['JPG · PNG · WebP', 'Up to 300 DPI', 'One-click ZIP'],
+    cta: 'Convert',
   },
 ];
 

@@ -94,6 +94,8 @@ function scoreTool(tool: SearchableTool, q: string): number {
 /** Filtered + ranked copies of the input tools, best match first. */
 export function searchTools<T extends SearchableTool>(tools: T[], query: string): T[] {
   const q = normalizeQuery(query);
+  // No query → keep registry order untouched.
+  if (!q) return tools.filter(() => true);
   return tools
     .map((tool) => ({ tool, score: scoreTool(tool, q) }))
     .filter(({ score }) => score > 0)

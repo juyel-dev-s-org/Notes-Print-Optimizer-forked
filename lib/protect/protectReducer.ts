@@ -66,6 +66,9 @@ export type ProtectAction =
   | { type: 'PROTECT_COMPLETE'; blob: Blob }
   | { type: 'PROTECT_ERROR'; error: string };
 
+// Shared implementation lives in lib/shared; re-exported for compatibility.
+export { sanitizeBaseName } from '../shared/filename';
+
 export function protectReducer(state: ProtectState, action: ProtectAction): ProtectState {
   switch (action.type) {
     case 'RESET':
@@ -110,13 +113,4 @@ export function protectReducer(state: ProtectState, action: ProtectAction): Prot
     default:
       return state;
   }
-}
-
-/** Strips filesystem-hostile characters and caps length for the output name. */
-export function sanitizeBaseName(input: string): string {
-  return input
-    .replace(/[\\/:*?"<>|\x00-\x1F]/g, '')
-    .replace(/\s+/g, ' ')
-    .trim()
-    .slice(0, 80);
 }
