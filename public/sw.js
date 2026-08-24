@@ -95,7 +95,7 @@ self.addEventListener('fetch', (event) => {
           const rootPage = await caches.match(`${BASE}/`);
           if (rootPage) return rootPage;
           return new Response(
-            '<!DOCTYPE html><html><body style="background:#0f172a;color:#e2e8f0;display:flex;align-items:center;justify-content:center;height:100vh;font-family:sans-serif"><div style="text-align:center"><h1>Offline</h1><p>Please check your connection.</p></div></body></html>',
+            '<!DOCTYPE html><html><head><meta charset="utf-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/><title>Offline · Print Optimizer</title></head><body style="margin:0;min-height:100vh;display:flex;align-items:center;justify-content:center;background:#f4f6fb;color:#0f172a;font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;padding:24px"><div style="text-align:center;max-width:420px"><div style="width:64px;height:64px;margin:0 auto;display:flex;align-items:center;justify-content:center;border-radius:16px;background:#eef2ff;border:1px solid #c7d2fe;color:#4338ca">Offline</div><h1 style="margin:24px 0 8px;font-size:24px;letter-spacing:-0.02em">You Are Offline</h1><p style="margin:0;color:#64748b;font-size:14px;line-height:1.6">Core tools stay available offline after your first visit — everything runs on your device. Reconnect to load fresh pages.</p><p style="margin:24px 0 0;font-size:11px;color:#94a3b8">Offline · Print Optimizer · Juyel Hossain</p></div></body></html>',
             { status: 503, statusText: 'Service Unavailable', headers: { 'Content-Type': 'text/html' } },
           );
         }

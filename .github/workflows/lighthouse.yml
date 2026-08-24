@@ -82,7 +82,6 @@ jobs:
             "$BASE/tools/merge-pdf/"
             "$BASE/tools/split-pdf/"
             "$BASE/tools/image-to-pdf/"
-            "$BASE/offline/"
           )
           for URL in "${URLS[@]}"; do
             echo "→ $URL"
