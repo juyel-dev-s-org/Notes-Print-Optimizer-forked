@@ -49,7 +49,12 @@ export const ToolsBox: React.FC = () => {
   );
 
   return (
-    <section aria-label="Choose a tool" className="flex flex-col gap-3 animate-slide-up" style={{ animationDelay: '80ms' }}>
+    <section
+      id="tools"
+      aria-label="Choose a tool"
+      className="flex flex-col gap-3 animate-slide-up scroll-mt-20"
+      style={{ animationDelay: '80ms' }}
+    >
       <div className="flex items-center justify-between px-1">
         <h2 className="text-sm font-bold tracking-wide text-ink">Choose a Tool</h2>
         <span className="text-[10px] font-medium text-ink-faint">Free · No sign-up</span>

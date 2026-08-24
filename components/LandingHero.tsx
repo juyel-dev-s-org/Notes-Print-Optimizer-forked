@@ -15,11 +15,20 @@ const heroStats = [
  * Aurora Dark gradient (#243BFF → #5B35FF → #A12CFF) stays as brand, but copy is
  * generic. No dark-slides-only messaging. CTA points to ToolsBox (not Upload).
  */
-export const LandingHero: React.FC = () => (
-  <section
-    aria-label="Print Optimizer — every PDF, print-perfect"
-    className="relative overflow-hidden rounded-2xl border border-surface-2/70 bg-gradient-to-b from-primary-faint/70 via-surface/60 to-surface/40 px-5 py-7 sm:py-9 text-center animate-slide-up"
-  >
+export const LandingHero: React.FC = () => {
+  const scrollToTools = () => {
+    const el = document.getElementById('tools');
+    if (el) {
+      const reduced = typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      el.scrollIntoView({ behavior: reduced ? 'auto' : 'smooth', block: 'start' });
+    }
+  };
+
+  return (
+    <section
+      aria-label="Print Optimizer — every PDF, print-perfect"
+      className="relative overflow-hidden rounded-2xl border border-surface-2/70 bg-gradient-to-b from-primary-faint/70 via-surface/60 to-surface/40 px-5 py-7 sm:py-9 text-center animate-slide-up"
+    >
     <div aria-hidden="true" className="pointer-events-none absolute -top-24 left-1/2 h-64 w-64 -translate-x-1/2 rounded-full bg-[#243BFF]/20 blur-3xl" />
     <div aria-hidden="true" className="pointer-events-none absolute -bottom-32 -right-16 h-72 w-72 rounded-full bg-[#A12CFF]/12 blur-3xl" />
 
@@ -45,10 +54,15 @@ export const LandingHero: React.FC = () => (
         <span className="font-semibold text-ink"> on your device</span>. Instant, private, no uploads.
       </p>
 
-      <div className="mt-1 inline-flex items-center gap-2 rounded-full bg-primary-strong px-5 py-2.5 text-xs font-bold tracking-wide text-white shadow-lg shadow-primary-deep/25 ring-1 ring-primary/30">
+      <button
+        type="button"
+        onClick={scrollToTools}
+        aria-label="Scroll to tools"
+        className="mt-1 inline-flex items-center gap-2 rounded-full bg-primary-strong px-5 py-2.5 text-xs font-bold tracking-wide text-white shadow-lg shadow-primary-deep/25 ring-1 ring-primary/30 transition-all hover:bg-primary hover:shadow-xl hover:shadow-primary/20 active:scale-[0.98] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-soft"
+      >
         <ArrowDown className="h-3.5 w-3.5 shrink-0 animate-bounce" aria-hidden="true" />
         Choose a tool below to begin
-      </div>
+      </button>
 
       {/* Hint chips — hidden on landing mobile to keep ToolsBox directly visible, subtle on sm+ */}
       <div className="hidden w-full max-w-2xl grid-cols-4 gap-2 sm:grid">
@@ -62,4 +76,5 @@ export const LandingHero: React.FC = () => (
       </div>
     </div>
   </section>
-);
+  );
+};
