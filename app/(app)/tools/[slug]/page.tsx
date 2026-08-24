@@ -6,6 +6,7 @@ import { absoluteUrl, ogImageUrl } from '@/lib/site';
 import { buildFaqJsonLd, getFaqsForSlug } from '@/lib/content/faqs';
 import { FaqAccordion } from '@/components/seo/FaqAccordion';
 import { JsonLd } from '@/components/seo/JsonLd';
+import { ToolSeoShell } from '@/components/seo/ToolSeoShell';
 
 /**
  * Public tool route — the URL contract lives in the registry
@@ -77,7 +78,8 @@ export default async function ToolPage({
 
   return (
     <>
-      <div className="mt-2 flex flex-col gap-4">
+      <ToolSeoShell>
+        <div className="mt-2 flex flex-col gap-4">
         <section
           aria-labelledby="tool-seo-title"
           className="rounded-2xl border border-surface-2/70 bg-surface/50 p-5 text-sm leading-relaxed text-ink-muted md:p-6"
@@ -157,7 +159,8 @@ export default async function ToolPage({
             })}
           </ul>
         </nav>
-      </div>
+        </div>
+      </ToolSeoShell>
 
       <JsonLd
         data={[

@@ -1,9 +1,10 @@
 'use client';
 
-import React from 'react';
+import React, { useEffect } from 'react';
 import { ArrowLeft } from 'lucide-react';
 import { useProtectWorkflow } from '@/lib/protect/useProtectWorkflow';
 import type { ProtectStep } from '@/lib/protect/protectReducer';
+import { useSeoVisibility } from '@/components/seo/SeoVisibilityContext';
 import { ProtectUploadView } from './ProtectUploadView';
 import { ProtectOptionsView } from './ProtectOptionsView';
 import { ProtectResultView } from './ProtectResultView';
@@ -27,6 +28,11 @@ const STEP_LABEL: Record<ProtectStep, string> = {
 export const ProtectToolView: React.FC<ProtectToolViewProps> = ({ onBack }) => {
   const workflow = useProtectWorkflow();
   const { state } = workflow;
+  const { setVisible } = useSeoVisibility();
+  useEffect(() => {
+    setVisible(state.step === 'upload' || state.step === 'done');
+    return () => setVisible(true);
+  }, [state.step, setVisible]);
 
   return (
     <div className="flex flex-col gap-4 animate-slide-up">

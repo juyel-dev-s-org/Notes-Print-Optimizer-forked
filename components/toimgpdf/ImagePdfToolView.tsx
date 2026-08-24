@@ -1,9 +1,10 @@
 'use client';
 
-import React from 'react';
+import React, { useEffect } from 'react';
 import { ArrowLeft } from 'lucide-react';
 import { useImagePdfWorkflow } from '@/lib/img2pdf/useImagePdfWorkflow';
 import type { ImagePdfStep } from '@/lib/img2pdf/imagePdfReducer';
+import { useSeoVisibility } from '@/components/seo/SeoVisibilityContext';
 import { ImagePdfUploadView } from './ImagePdfUploadView';
 import { ImagePdfArrangeView } from './ImagePdfArrangeView';
 import { ImagePdfResultView } from './ImagePdfResultView';
@@ -27,6 +28,11 @@ const STEP_LABEL: Record<ImagePdfStep, string> = {
 export const ImagePdfToolView: React.FC<ImagePdfToolViewProps> = ({ onBack }) => {
   const workflow = useImagePdfWorkflow();
   const { state } = workflow;
+  const { setVisible } = useSeoVisibility();
+  useEffect(() => {
+    setVisible(state.step === 'upload' || state.step === 'done');
+    return () => setVisible(true);
+  }, [state.step, setVisible]);
 
   return (
     <div className="flex flex-col gap-4 animate-slide-up">

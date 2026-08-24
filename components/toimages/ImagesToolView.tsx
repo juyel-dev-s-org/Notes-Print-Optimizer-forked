@@ -1,9 +1,10 @@
 'use client';
 
-import React from 'react';
+import React, { useEffect } from 'react';
 import { ArrowLeft } from 'lucide-react';
 import { useImagesWorkflow } from '@/lib/toimages/useImagesWorkflow';
 import type { ImagesStep } from '@/lib/toimages/imagesReducer';
+import { useSeoVisibility } from '@/components/seo/SeoVisibilityContext';
 import { ImagesUploadView } from './ImagesUploadView';
 import { ImagesOptionsView } from './ImagesOptionsView';
 import { ImagesResultView } from './ImagesResultView';
@@ -27,6 +28,11 @@ const STEP_LABEL: Record<ImagesStep, string> = {
 export const ImagesToolView: React.FC<ImagesToolViewProps> = ({ onBack }) => {
   const workflow = useImagesWorkflow();
   const { state } = workflow;
+  const { setVisible } = useSeoVisibility();
+  useEffect(() => {
+    setVisible(state.step === 'upload' || state.step === 'done');
+    return () => setVisible(true);
+  }, [state.step, setVisible]);
 
   return (
     <div className="flex flex-col gap-4 animate-slide-up">

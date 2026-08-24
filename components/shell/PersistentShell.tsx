@@ -8,6 +8,7 @@ import { PlatformUIOrchestrator } from '@/components/views/PlatformUIOrchestrato
 import { usePageHandlers } from '@/lib/workflow/usePageHandlers';
 import { useMonitor } from '@/lib/monitoring/useMonitor';
 import { ToastProvider } from '@/components/shared/Toast';
+import { SeoVisibilityContext } from '@/components/seo/SeoVisibilityContext';
 import { modeForSlug, toolHref } from '@/lib/tools/registry';
 import type { ToolMode } from '@/lib/enhance/types';
 import type { WorkflowState, WorkflowActions, WorkflowHandlers } from '@/components/views/types';
@@ -119,6 +120,17 @@ export function PersistentShell({ children }: { children: React.ReactNode }) {
     handleResetWorkflow();
   }, [handleResetWorkflow, router]);
 
+  // SEO blocks (About / FAQ / Related) — premium: visible only on upload
+  // + done. Dark-print is derived synchronously (phase 1 + 4); every other
+  // tool drives visibility via SeoVisibilityContext from inside its own step.
+  const [seoVisibleOther, setSeoVisibleOther] = useState(true);
+  const seoVisible =
+    toolMode === 'dark-print' ? state.currentPhase === 1 || state.currentPhase === 4 : seoVisibleOther;
+
+  useEffect(() => {
+    if (toolMode !== 'dark-print' && toolMode !== null) setSeoVisibleOther(true);
+  }, [toolMode]);
+
   const workflowState: WorkflowState = useMemo(() => ({
     currentPhase: state.currentPhase,
     isProcessing: state.isProcessing,
@@ -201,7 +213,8 @@ export function PersistentShell({ children }: { children: React.ReactNode }) {
 
   return (
     <ToastProvider>
-      <div className="min-h-screen bg-bg app-shell-bg text-ink font-sans flex flex-col pb-safe">
+      <SeoVisibilityContext.Provider value={{ visible: seoVisible, setVisible: setSeoVisibleOther }}>
+        <div className="min-h-screen bg-bg app-shell-bg text-ink font-sans flex flex-col pb-safe">
       <a href="#main-content" className="skip-link">Skip to main content</a>
       <Header
         currentPhase={state.currentPhase}
@@ -278,7 +291,8 @@ export function PersistentShell({ children }: { children: React.ReactNode }) {
           </a>
         </div>
       </footer>
-      </div>
+        </div>
+      </SeoVisibilityContext.Provider>
     </ToastProvider>
   );
 }
