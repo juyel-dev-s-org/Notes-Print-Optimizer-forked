@@ -133,7 +133,6 @@ export const Header: React.FC<HeaderProps> = ({
             <div
               className="text-[17px] font-bold tracking-[-0.02em] sm:text-[18px] lg:text-[19px]"
               style={{ fontFamily: 'var(--font-display)' }}
-              aria-label="Print Optimizer"
             >
               <span className="bg-gradient-to-r from-[#5B8CFF] via-[#8B6BFF] to-[#C14DFF] bg-clip-text text-transparent">
                 Print
