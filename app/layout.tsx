@@ -1,6 +1,6 @@
 import type { Metadata, Viewport } from 'next';
 import { Plus_Jakarta_Sans } from 'next/font/google';
-import { SITE_URL, withBase } from '@/lib/site';
+import { SITE_URL, ogImageUrl, withBase } from '@/lib/site';
 import './globals.css';
 
 const jakarta = Plus_Jakarta_Sans({
@@ -10,13 +10,13 @@ const jakarta = Plus_Jakarta_Sans({
 });
 
 const DESCRIPTION =
-  'Every PDF, print-perfect â€” merge, whiten dark notes, enhance light scans & build smart N-up layouts. 100% offline, on-device.';
+  'Every PDF, print-perfect — merge, whiten dark notes, enhance light scans & build smart N-up layouts. 100% offline, on-device.';
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
   title: {
     default: 'Print Optimizer',
-    template: '%s Â· Print Optimizer',
+    template: '%s · Print Optimizer',
   },
   description: DESCRIPTION,
   alternates: {
@@ -28,7 +28,27 @@ export const metadata: Metadata = {
     url: withBase('/'),
     siteName: 'Print Optimizer',
     type: 'website',
-    // og:image is supplied by app/opengraph-image.tsx (file convention).
+    locale: 'en_US',
+    images: [
+      {
+        url: ogImageUrl('home.png'),
+        width: 1200,
+        height: 630,
+        type: 'image/png',
+        alt: 'Print Optimizer',
+      },
+    ],
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'Print Optimizer',
+    description: DESCRIPTION,
+    images: [
+      {
+        url: ogImageUrl('home.png'),
+        alt: 'Print Optimizer',
+      },
+    ],
   },
   icons: {
     icon: [

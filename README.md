@@ -154,8 +154,24 @@ Copy `.env.example` → `.env.local`:
 | Variable | Required | Description |
 |---|---|---|
 | `NEXT_PUBLIC_FEEDBACK_URL` | No | Google Apps Script web app URL (feedback relay) |
-| `NEXT_PUBLIC_BASE_PATH` | No | Deployment base path — opt-in only, never inferred from env |
+| `NEXT_PUBLIC_BASE_PATH` | No | Deployment base path - opt-in only, never inferred from env |
 | `NEXT_PUBLIC_SITE_URL` | No | Absolute production URL for canonicals/sitemap/JSON-LD (auto-detected on Vercel; set it explicitly when adding a custom domain) |
+| `NEXT_PUBLIC_GSC_VERIFICATION` | No | Google Search Console token; renders `google-site-verification` meta only when set |
+| `NEXT_PUBLIC_OG_CDN_BASE` | No | Base for social share cards. Default: `https://cdn.jsdelivr.net/gh/juyel-dev/image@main`. Point elsewhere to switch providers with zero code changes |
+
+### Social share cards (og:image / twitter:image)
+
+Cards are **static PNGs served by jsDelivr** from the separate
+[`juyel-dev/image`](https://github.com/juyel-dev/image) repo — one per route
+(`print-optimizer/og/<slug>.png`, landing = `home.png`; naming contract frozen
+by `tests/unit/siteContract.test.ts`). Swapping a card needs **no app
+redeploy**: push a new PNG there, then purge
+(`https://purge.jsdelivr.net/gh/juyel-dev/image@main/print-optimizer/og/<file>.png`)
+and re-scrape in the [Facebook debugger](https://developers.facebook.com/tools/debug/).
+Full rules (dimensions, weight caps): that repo's README.
+
+Verify all cards live: `npm run check:og` (checks status, content-type,
+1200x630 IHDR dims, size caps against the CDN).
 
 ## 8. CI/CD (`.github/workflows/`)
 

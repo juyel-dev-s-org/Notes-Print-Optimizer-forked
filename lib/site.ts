@@ -29,3 +29,25 @@ export function withBase(path: string): string {
 export function absoluteUrl(path: string): string {
   return `${SITE_URL}${withBase(path)}`;
 }
+
+// ---------------------------------------------------------------------------
+// Social share images (Open Graph / Twitter) live OUTSIDE this app, in the
+// `image` repo, served by jsDelivr. Swapping a card = push a PNG there —
+// no app redeploy. The CDN base stays env-overridable so the provider can
+// change without code edits.
+// ---------------------------------------------------------------------------
+
+const OG_CDN_BASE =
+  process.env.NEXT_PUBLIC_OG_CDN_BASE?.replace(/\/$/, '') ||
+  'https://cdn.jsdelivr.net/gh/juyel-dev/image@main';
+
+/** Project folder inside the image repo (matches the public route contract). */
+export const OG_PROJECT_SLUG = 'print-optimizer';
+
+/**
+ * Absolute CDN URL for a share card. `name` is the route slug + '.png'
+ * (landing uses 'home.png') — see the image repo's naming contract.
+ */
+export function ogImageUrl(name: string): string {
+  return `${OG_CDN_BASE}/${OG_PROJECT_SLUG}/og/${name}`;
+}

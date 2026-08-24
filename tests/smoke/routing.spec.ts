@@ -27,7 +27,9 @@ test.describe('tool routes — direct navigation', () => {
       const canonical = page.locator('link[rel="canonical"]');
       await expect(canonical).toHaveAttribute('href', new RegExp(`/tools/${t.slug}/$`));
       await expect(page.locator('#tool-seo-title')).toContainText(t.name);
-      await expect(page.locator('header')).toBeVisible();
+      // 'banner' landmark = the persistent app header; a <header> nested in
+      // the hydrated tool UI must not satisfy this assertion.
+      await expect(page.getByRole('banner')).toBeVisible();
       await expect(page.locator('text=404')).toHaveCount(0);
     });
   }

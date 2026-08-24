@@ -2,7 +2,7 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { TOOL_REGISTRY, getAllToolSlugs, getToolBySlug } from '@/lib/tools/registry';
-import { absoluteUrl } from '@/lib/site';
+import { absoluteUrl, ogImageUrl } from '@/lib/site';
 import { JsonLd } from '@/components/seo/JsonLd';
 
 /**
@@ -37,13 +37,26 @@ export async function generateMetadata({
       url: canonical,
       siteName: 'Print Optimizer',
       type: 'website',
-      // og:image is supplied by the file convention
-      // (app/(app)/tools/[slug]/opengraph-image.tsx).
+      images: [
+        {
+          url: ogImageUrl(`${tool.slug}.png`),
+          width: 1200,
+          height: 630,
+          type: 'image/png',
+          alt: tool.title,
+        },
+      ],
     },
     twitter: {
       card: 'summary_large_image',
       title: tool.seoTitle,
       description: tool.seoDescription,
+      images: [
+        {
+          url: ogImageUrl(`${tool.slug}.png`),
+          alt: tool.title,
+        },
+      ],
     },
   };
 }

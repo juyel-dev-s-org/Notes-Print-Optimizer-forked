@@ -15,6 +15,7 @@
     "test:smoke": "playwright test --config=playwright.config.ts",
     "fixtures:gen": "node scripts/gen-pdf-fixtures.mjs",
     "test:ci": "vitest run && vitest bench && playwright test --config=playwright.config.ts",
+    "check:og": "node scripts/check-og-assets.mjs",
     "build:wasm": "wasm-pack build --target web --release --out-dir pkg wasm && node -e \"const f=require('fs');f.copyFileSync('wasm/pkg/npo_wasm_bg.wasm','public/wasm/npo_wasm_bg.wasm');f.copyFileSync('wasm/pkg/npo_wasm.js','public/wasm/npo_wasm.js');console.log('wasm glue+binary -> public/wasm/')\""
   },
   "dependencies": {

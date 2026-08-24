@@ -13,6 +13,7 @@ import {
   slugForMode,
   toolHref,
 } from '@/lib/tools/registry';
+import { ogImageUrl } from '@/lib/site';
 
 const SLUG_RE = /^[a-z0-9]+(-[a-z0-9]+)*$/;
 
@@ -70,5 +71,29 @@ describe('public route contract', () => {
     for (const [id, slug] of Object.entries(frozen)) {
       expect(slugForMode(id as never)).toBe(slug);
     }
+  });
+
+  it('share-card URLs follow the image-repo naming contract', () => {
+    // Structural, env-independent: <base>/<project>/og/<name>.png where name
+    // is the route slug (landing: home.png). The base itself is env-swappable
+    // (NEXT_PUBLIC_OG_CDN_BASE) — only the path shape is frozen. The PNGs live
+    // in github.com/juyel-dev/image (see its README rules).
+    for (const tool of TOOL_REGISTRY) {
+      const url = ogImageUrl(`${tool.slug}.png`);
+      expect(url.startsWith('https://')).toBe(true);
+      expect(url).toContain('/print-optimizer/og/');
+      expect(url.endsWith(`/og/${tool.slug}.png`)).toBe(true);
+      expect(url).not.toMatch(/[^:]\/\//); // no double slashes
+    }
+    expect(ogImageUrl('home.png').endsWith('/og/home.png')).toBe(true);
+  });
+
+  it('default share-card provider is the jsDelivr image repo', () => {
+    // Snapshot of the zero-config default; overriding NEXT_PUBLIC_OG_CDN_BASE
+    // in the hosting env intentionally changes this without breaking the
+    // structural test above.
+    expect(ogImageUrl('merge-pdf.png')).toBe(
+      'https://cdn.jsdelivr.net/gh/juyel-dev/image@main/print-optimizer/og/merge-pdf.png',
+    );
   });
 });
