@@ -53,6 +53,20 @@ export const metadata: Metadata = {
   icons: {
     icon: [
       {
+        url: `${withBase('/icon.svg')}`,
+        type: 'image/svg+xml',
+      },
+      {
+        url: `${withBase('/favicon-32x32.png')}`,
+        type: 'image/png',
+        sizes: '32x32',
+      },
+      {
+        url: `${withBase('/favicon-48x48.png')}`,
+        type: 'image/png',
+        sizes: '48x48',
+      },
+      {
         url: `${withBase('/icon-192-v2.png')}`,
         type: 'image/png',
         sizes: '192x192',
@@ -63,8 +77,19 @@ export const metadata: Metadata = {
         sizes: '512x512',
       },
     ],
-    shortcut: `${withBase('/icon-192-v2.png')}`,
-    apple: `${withBase('/icon-512-v2.png')}`,
+    shortcut: `${withBase('/favicon.ico')}`,
+    apple: [
+      {
+        url: `${withBase('/apple-icon.png')}`,
+        type: 'image/png',
+        sizes: '180x180',
+      },
+      {
+        url: `${withBase('/icon-512-v2.png')}`,
+        type: 'image/png',
+        sizes: '512x512',
+      },
+    ],
     other: [
       {
         rel: 'mask-icon',
