@@ -125,20 +125,21 @@ export const Header: React.FC<HeaderProps> = ({
             </button>
           </div>
 
-          {/* Logo — single h1, premium: landing mobile centred (absolute), otherwise left */}
+          {/* Logo — div (not h1) so each page has a single semantic h1 in its main content */}
           <div
             className={`flex items-center gap-2.5 ${showStepper ? '' : 'absolute left-1/2 -translate-x-1/2 sm:static sm:translate-x-0'}`}
           >
             <AppLogo className="h-8 w-8 lg:h-9 lg:w-9 drop-shadow-sm" />
-            <h1
+            <div
               className="text-[17px] font-bold tracking-[-0.02em] sm:text-[18px] lg:text-[19px]"
               style={{ fontFamily: 'var(--font-display)' }}
+              aria-label="Print Optimizer"
             >
               <span className="bg-gradient-to-r from-[#5B8CFF] via-[#8B6BFF] to-[#C14DFF] bg-clip-text text-transparent">
                 Print
               </span>{' '}
               <span className="text-ink">Optimizer</span>
-            </h1>
+            </div>
           </div>
 
           {/* Middle: Stepper — centred, pill, premium */}

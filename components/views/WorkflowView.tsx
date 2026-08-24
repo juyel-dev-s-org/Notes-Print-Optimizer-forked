@@ -118,23 +118,36 @@ export const WorkflowView: React.FC<WorkflowUIProps> = ({ state, actions, handle
     uploadedItems[0]?.name ? uploadedItems[0].name.replace(/\.pdf$/i, '') : 'PW_Print_Ready_Notes',
   );
 
+  const stepLabel =
+    currentPhase === 1 ? '1 · Upload' : currentPhase === 2 ? '2 · Whiten' : currentPhase === 3 ? '3 · Layout' : '4 · Done';
+
   return (
     <div className="flex w-full max-w-full min-w-0 flex-col gap-4 md:gap-5 lg:gap-6">
+      <header className="sticky top-0 z-30 -mx-4 flex items-center gap-3 border-b border-surface-2/70 bg-bg/90 px-4 py-3 backdrop-blur-md">
+        <button
+          type="button"
+          onClick={() => {
+            handlers.handleResetWorkflow();
+            onToolModeChange?.(null);
+          }}
+          aria-label="Back to tools"
+          className="flex h-11 w-11 items-center justify-center rounded-xl border border-elevated/60 bg-surface/80 text-ink transition-transform duration-150 active:scale-95 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-soft"
+        >
+          <ArrowLeft className="h-5 w-5" aria-hidden="true" />
+        </button>
+        <div className="flex min-w-0 flex-1 flex-col">
+          <h1 className="truncate text-[15px] font-bold text-ink">Dark Notes → Print</h1>
+          <p className="truncate text-[11px] text-ink-faint">Auto-whiten · N-up · Print-ready · 100% on-device</p>
+        </div>
+        <span className="rounded-full border border-accent/40 bg-accent/10 px-2.5 py-1 text-xs font-bold tabular-nums text-accent-soft">
+          {stepLabel}
+        </span>
+      </header>
+
       {/* PHASE 1: UPLOAD & MERGE */}
       {currentPhase === 1 && (
         <PhaseErrorBoundary phaseName="Upload & Merge">
           <div className="animate-enter flex flex-col gap-4 md:gap-5">
-            <Button
-              variant="ghost"
-              size="md"
-              onClick={() => {
-                handlers.handleResetWorkflow();
-                onToolModeChange?.(null);
-              }}
-              className="self-start rounded-full px-4"
-            >
-              <ArrowLeft className="h-3.5 w-3.5" /> Back to Tools
-            </Button>
 
             <div id="upload-area" className="scroll-mt-4">
               <UploadArea onFilesUpload={onFilesUpload} isProcessing={isProcessing} />
