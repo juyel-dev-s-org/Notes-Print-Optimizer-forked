@@ -4,10 +4,10 @@ import React from 'react';
 import { ShieldCheck, Zap, LayoutGrid, Printer, ArrowDown } from 'lucide-react';
 
 const heroStats = [
-  { icon: ShieldCheck, label: '100% Private', sub: 'On-device' },
-  { icon: Zap, label: '80% Ink Saved', sub: 'Whitening' },
+  { icon: ShieldCheck, label: '7 Free Tools', sub: 'All-in-one' },
+  { icon: Zap, label: 'Ink-Saving', sub: 'Whitening' },
   { icon: LayoutGrid, label: 'Smart N-Up', sub: '1→10 per sheet' },
-  { icon: Printer, label: 'Print-Ready', sub: 'Merge & layout' },
+  { icon: Printer, label: 'JPG ⇄ PDF', sub: 'Image convert' },
 ];
 
 /**
@@ -40,7 +40,8 @@ export const LandingHero: React.FC = () => (
       </h1>
 
       <p className="max-w-xl text-pretty text-xs leading-relaxed text-ink-muted sm:text-sm">
-        Merge documents, whiten dark notes, enhance light scans & build smart N-up layouts — everything runs
+        Merge, split, protect, whiten &amp; enhance PDFs — or turn JPG &amp; PNG images into tidy
+        documents. Everything runs
         <span className="font-semibold text-ink"> on your device</span>. Instant, private, no uploads.
       </p>
 

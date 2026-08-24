@@ -10,7 +10,7 @@ export default function manifest(): MetadataRoute.Manifest {
     name: 'Print Optimizer',
     short_name: 'Print Optimizer',
     description:
-      'Every PDF, print-perfect — merge, whiten dark notes, enhance light scans & build smart N-up layouts. 100% offline, on-device.',
+      'Every PDF, print-perfect — merge, split, protect, whiten & enhance, plus JPG/PNG image conversion. 100% free, private & on-device.',
     start_url: `${basePath}/`,
     scope: `${basePath}/`,
     display: 'standalone',
