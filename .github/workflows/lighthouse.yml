@@ -85,6 +85,7 @@ jobs:
           )
           for URL in "${URLS[@]}"; do
             echo "→ $URL"
+            rm -f ./lh.json
             npx lighthouse "$URL" \
               --output=json \
               --output-path=./lh.json \
