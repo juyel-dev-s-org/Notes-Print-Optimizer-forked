@@ -5,11 +5,11 @@
  */
 
 import type { LucideIcon } from 'lucide-react';
-import { Combine, Contrast, FileText, ImagePlus, Images, KeyRound, Scissors, ShieldCheck } from 'lucide-react';
+import { Combine, Contrast, FileText, ImagePlus, Images, KeyRound, QrCode, Scissors, ShieldCheck } from 'lucide-react';
 import type { ToolMode } from '@/lib/enhance/types';
 
 /** Coarse groups used by the shortcut chips (rendered once >1 exists). */
-export type ToolCategory = 'pdf' | 'image' | 'security';
+export type ToolCategory = 'pdf' | 'image' | 'security' | 'text' | 'utility';
 
 export interface ToolDefinition {
   id: ToolMode;
@@ -169,10 +169,27 @@ export const TOOL_REGISTRY: ToolDefinition[] = [
     chips: ['Crypto-random', '8–64 chars', 'Bulk generate'],
     cta: 'Generate',
   },
+  {
+    id: 'qr-gen',
+    slug: 'qr-generator',
+    title: 'QR Code Generator',
+    description:
+      'Turn links, text or Wi-Fi details into a crisp QR code — pick size and colors, then download PNG or SVG.',
+    seoTitle: 'QR Code Generator — Download PNG or SVG, 100% Offline',
+    seoDescription:
+      'Create QR codes for links, text and Wi-Fi in your browser. Choose size, colors and error correction, then download crisp PNG or SVG — free, private, on-device.',
+    aliases: ['qr code', 'qrcode', 'barcode', 'scan code', 'link to qr'],
+    keywords: ['generator', 'png', 'svg', 'wifi', 'url', 'download', 'error correction'],
+    category: 'utility',
+    icon: QrCode,
+    gradient: 'linear-gradient(135deg, #06B6D4 0%, #0EA5E9 55%, #243BFF 100%)',
+    chips: ['PNG · SVG', 'Wi-Fi & URLs', 'Color control'],
+    cta: 'Create QR',
+  },
 ];
 
 /** Preferred display order for category chips — keeps Image next to PDF. */
-const CATEGORY_ORDER: ToolCategory[] = ['pdf', 'image', 'security'];
+const CATEGORY_ORDER: ToolCategory[] = ['pdf', 'image', 'security', 'utility', 'text'];
 
 /** Unique categories in preferred order — drives the shortcut chip row. */
 export function getToolCategories(tools: ToolDefinition[]): ToolCategory[] {

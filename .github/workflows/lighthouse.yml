@@ -83,6 +83,7 @@ jobs:
             "$BASE/tools/split-pdf/"
             "$BASE/tools/image-to-pdf/"
             "$BASE/tools/password-generator/"
+            "$BASE/tools/qr-generator/"
           )
           for URL in "${URLS[@]}"; do
             echo "→ $URL"

@@ -15,6 +15,7 @@ const TOOLS = [
   { slug: 'pdf-to-images', name: 'PDF to Images' },
   { slug: 'image-to-pdf', name: 'Image to PDF' },
   { slug: 'password-generator', name: 'Strong Password Generator' },
+  { slug: 'qr-generator', name: 'QR Code Generator' },
 ];
 
 test.describe('tool routes — direct navigation', () => {

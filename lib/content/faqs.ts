@@ -198,6 +198,28 @@ export const TOOL_FAQS: Record<string, FaqItem[]> = {
       a: 'Yes — pick a quantity of up to 10 and copy them individually. Handy for team onboarding, Wi-Fi keys, or seeding multiple accounts in one sitting.',
     },
   ],
+  'qr-generator': [
+    {
+      q: 'What can I put inside a QR code?',
+      a: 'Any text — links, plain notes, phone numbers, or Wi-Fi credentials. Scanners automatically open links and offer to join Wi-Fi networks encoded in the standard format.',
+    },
+    {
+      q: 'Which error correction level should I pick?',
+      a: 'M is the sweet spot for most uses. Choose Q or H when the code might get dirty, folded, or printed small — higher levels survive more damage but pack in denser modules.',
+    },
+    {
+      q: 'PNG or SVG — which should I download?',
+      a: 'PNG for messaging apps, documents and social posts. SVG for print — it stays razor-sharp at any size, from business cards to posters.',
+    },
+    {
+      q: 'Do the QR codes expire or track scans?',
+      a: 'Never — these are static codes generated on your device. The data lives in the pattern itself; there is no redirect service, no expiry, and no scan tracking.',
+    },
+    {
+      q: 'Why does my long text make a denser code?',
+      a: 'QR capacity is fixed, so more characters mean smaller modules. Keep URLs short, use the highest size your print allows, and prefer lower error correction for very long text.',
+    },
+  ],
 };
 
 /** FAQs for a tool slug; empty array for unknown slugs (defensive). */
