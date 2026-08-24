@@ -176,6 +176,28 @@ export const TOOL_FAQS: Record<string, FaqItem[]> = {
       a: 'Convert images to PDF first, then Merge to append or interleave them — the standard flow for attaching signed scan photos to forms.',
     },
   ],
+  'password-generator': [
+    {
+      q: 'How random are these passwords?',
+      a: 'They come from your browser’s cryptographic random number generator (crypto.getRandomValues) — the same source used for encryption keys. Nothing is pre-computed, stored, or sent anywhere.',
+    },
+    {
+      q: 'What password length should I use?',
+      a: '16+ characters for anything that matters, 12 as an absolute floor. Every extra character multiplies the work an attacker must do — length beats cleverness every time.',
+    },
+    {
+      q: 'Are these passwords safe to use for banking?',
+      a: 'Yes — generation happens entirely on your device with crypto-grade randomness, and no password is ever transmitted or logged. Copy it straight into your password manager.',
+    },
+    {
+      q: 'What does the strength meter measure?',
+      a: 'Entropy in bits — length times the size of your chosen character pool. Roughly: under 50 bits is weak, 50–80 fair, 80–110 strong, and above 110 is overkill-proof.',
+    },
+    {
+      q: 'Can I generate several passwords at once?',
+      a: 'Yes — pick a quantity of up to 10 and copy them individually. Handy for team onboarding, Wi-Fi keys, or seeding multiple accounts in one sitting.',
+    },
+  ],
 };
 
 /** FAQs for a tool slug; empty array for unknown slugs (defensive). */

@@ -42,6 +42,11 @@ const ImagePdfToolView = dynamic(() => import('@/components/toimgpdf/ImagePdfToo
   ssr: false,
 });
 
+const PasswordGenToolView = dynamic(() => import('@/components/passwordgen/PasswordGenToolView').then(m => m.PasswordGenToolView), {
+  loading: () => <CardSkeleton />,
+  ssr: false,
+});
+
 interface OrchestratorProps extends WorkflowUIProps {
   /** Enhance export -> N-Up layout handoff (optional for tests/storybook). */
   onEnhanceHandoff?: (pages: HandoffPageInput[]) => Promise<void>;
@@ -110,6 +115,14 @@ export const PlatformUIOrchestrator: React.FC<OrchestratorProps> = ({ state, act
     return (
       <div className="flex w-full max-w-full min-w-0 flex-col gap-4 pb-20 md:gap-6 md:pb-12">
         <ImagePdfToolView onBack={() => onToolModeChange?.(null)} />
+      </div>
+    );
+  }
+
+  if (toolMode === 'password-gen') {
+    return (
+      <div className="flex w-full max-w-full min-w-0 flex-col gap-4 pb-20 md:gap-6 md:pb-12">
+        <PasswordGenToolView onBack={() => onToolModeChange?.(null)} />
       </div>
     );
   }

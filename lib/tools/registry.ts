@@ -5,7 +5,7 @@
  */
 
 import type { LucideIcon } from 'lucide-react';
-import { Combine, Contrast, FileText, ImagePlus, Images, Scissors, ShieldCheck } from 'lucide-react';
+import { Combine, Contrast, FileText, ImagePlus, Images, KeyRound, Scissors, ShieldCheck } from 'lucide-react';
 import type { ToolMode } from '@/lib/enhance/types';
 
 /** Coarse groups used by the shortcut chips (rendered once >1 exists). */
@@ -151,6 +151,23 @@ export const TOOL_REGISTRY: ToolDefinition[] = [
     gradient: 'linear-gradient(135deg, #6366F1 0%, #8B5CF6 55%, #EC4899 100%)',
     chips: ['JPG · PNG · WebP', 'Fit or A4 pages', 'Reorderable'],
     cta: 'Create PDF',
+  },
+  {
+    id: 'password-gen',
+    slug: 'password-generator',
+    title: 'Password Generator',
+    description:
+      'Create strong random passwords with crypto-grade randomness — pick length and character sets, copy in one tap.',
+    seoTitle: 'Strong Password Generator — Random & Secure, 100% Offline',
+    seoDescription:
+      'Generate strong, random passwords in your browser with crypto-grade randomness. Choose length, letters, numbers and symbols — free, private and fully offline.',
+    aliases: ['password', 'random password', 'strong password', 'passphrase', 'secure'],
+    keywords: ['generator', 'random', 'entropy', 'characters', 'symbols', 'security'],
+    category: 'security',
+    icon: KeyRound,
+    gradient: 'linear-gradient(135deg, #0EA5E9 0%, #243BFF 55%, #5B35FF 100%)',
+    chips: ['Crypto-random', '8–64 chars', 'Bulk generate'],
+    cta: 'Generate',
   },
 ];
 

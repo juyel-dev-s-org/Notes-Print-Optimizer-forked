@@ -14,6 +14,7 @@ const TOOLS = [
   { slug: 'protect-pdf', name: 'Password Protect PDF' },
   { slug: 'pdf-to-images', name: 'PDF to Images' },
   { slug: 'image-to-pdf', name: 'Image to PDF' },
+  { slug: 'password-generator', name: 'Strong Password Generator' },
 ];
 
 test.describe('tool routes — direct navigation', () => {

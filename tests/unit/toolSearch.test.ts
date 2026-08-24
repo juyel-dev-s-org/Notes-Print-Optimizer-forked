@@ -25,8 +25,9 @@ describe('searchTools', () => {
       'merge',
       'split',
       'to-pdf',
+      'password-gen',
     ]);
-    expect(ids(searchTools(TOOL_REGISTRY, '   '))).toHaveLength(7);
+    expect(ids(searchTools(TOOL_REGISTRY, '   '))).toHaveLength(8);
   });
 
   it('matches by title prefix first', () => {

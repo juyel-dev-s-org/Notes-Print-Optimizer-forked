@@ -16,7 +16,8 @@ export type ToolMode =
   | 'to-images'
   | 'merge'
   | 'split'
-  | 'to-pdf';
+  | 'to-pdf'
+  | 'password-gen';
 
 export type EnhanceStep = 'upload' | 'arrange' | 'enhance';
 

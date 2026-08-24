@@ -1,4 +1,4 @@
-const VERSION = 'v11';
+const VERSION = 'v12';
 const CACHE = `pw-optimizer-${VERSION}`;
 const STATIC_CACHE = `pw-optimizer-static-${VERSION}`;
 const DYNAMIC_CACHE = `pw-optimizer-dynamic-${VERSION}`;
@@ -19,6 +19,7 @@ const TOOL_ROUTES = [
   '/tools/merge-pdf/',
   '/tools/split-pdf/',
   '/tools/image-to-pdf/',
+  '/tools/password-generator/',
 ];
 
 const PRECACHE_URLS = [
