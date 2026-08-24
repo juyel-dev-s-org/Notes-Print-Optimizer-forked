@@ -98,11 +98,12 @@ lib/
   ui/                       Shared UI hooks (useDialogFocus, focus trap)
   workers/                  Web Worker pool and protocol
   workflow/                 State management (reducer, hooks, context)
-public/                     Static assets: sw.js (VERSION v8), icons (-v2, cache-busted),
+public/                     Static assets: sw.js (VERSION v11), icons (icon-master.png →
+                            scripts/apply-icon-art.mjs regenerates all -v2/favicon/apple/maskable),
                             content/ (user-facing markdown docs), wasm/, fixtures/pdf/
 tests/                      unit, integration, stress, smoke, benchmarks, fixtures/pdf
 wasm/                       Rust WASM source
-scripts/                    postbuild-strip-devtools.js, gen-pdf-fixtures.mjs, generate-icons.mjs
+scripts/                    postbuild-strip-devtools.js, gen-pdf-fixtures.mjs, apply-icon-art.mjs
 ```
 
 ### Processing pipeline
