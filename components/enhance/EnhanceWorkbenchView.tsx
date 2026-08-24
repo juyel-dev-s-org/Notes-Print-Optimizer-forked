@@ -139,19 +139,32 @@ export const EnhanceWorkbenchView: React.FC<EnhanceWorkbenchViewProps> = ({ work
           </div>
 
           <div
-            className="relative select-none overflow-hidden rounded-2xl border border-surface-2 bg-surface/80"
-            onPointerDown={() => setShowBefore(true)}
-            onPointerUp={() => setShowBefore(false)}
+            className="relative select-none overflow-hidden rounded-2xl border border-surface-2 bg-surface/80 [touch-action:none]"
+            style={{ WebkitTouchCallout: 'none' } as React.CSSProperties}
+            onContextMenu={(e) => e.preventDefault()}
+            onPointerDown={(e) => {
+              (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
+              setShowBefore(true);
+            }}
+            onPointerUp={(e) => {
+              try {
+                (e.currentTarget as HTMLElement).releasePointerCapture(e.pointerId);
+              } catch {
+                /* already released */
+              }
+              setShowBefore(false);
+            }}
+            onPointerCancel={() => setShowBefore(false)}
             onPointerLeave={() => setShowBefore(false)}
-            onTouchStart={() => setShowBefore(true)}
-            onTouchEnd={() => setShowBefore(false)}
           >
             <img
               src={showBefore ? selected.originalDataUrl : selected.dataUrl}
               alt={`Enhanced page ${selected.index + 1}`}
-              className="h-auto w-full"
+              className="pointer-events-none h-auto w-full select-none"
               loading="lazy"
               draggable={false}
+              onContextMenu={(e) => e.preventDefault()}
+              style={{ WebkitTouchCallout: 'none' } as React.CSSProperties}
             />
             <span
               className={`absolute left-3 top-3 rounded-full px-2.5 py-1 text-xs font-bold tracking-wide ${

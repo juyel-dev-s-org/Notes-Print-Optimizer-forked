@@ -154,11 +154,12 @@ html[data-theme='light'] {
     min-height: calc(100vh - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px));
   }
 
-  /* Prevent text selection during touch slider drag */
+  /* Prevent text selection + scroll during touch drag (slider / hold-preview) */
   .select-none-touch {
     user-select: none;
     -webkit-user-select: none;
-    touch-action: manipulation;
+    touch-action: none;
+    -webkit-touch-callout: none;
   }
 }
 

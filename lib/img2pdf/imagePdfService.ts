@@ -10,6 +10,7 @@
 import { PDFDocument } from 'pdf-lib';
 import { MAX_FILE_SIZE_MB, MAX_TOTAL_SIZE_MB, type DropzoneAccept, type PdfValidationResult } from '@/lib/services/UploadService';
 import type { ImageItem, ImagePageMode } from './imagePdfReducer';
+import { memoryManager } from '@/lib/optimizer/memoryManager';
 
 const A4_PORTRAIT: [number, number] = [595.28, 841.89];
 const MARGIN_PT = 24;
@@ -93,20 +94,30 @@ async function toJpegBytes(blob: Blob): Promise<Uint8Array<ArrayBuffer>> {
     throw new Error('This image format is not supported on this device.');
   }
   const bitmap = await createImageBitmap(blob);
-  const canvas = document.createElement('canvas');
-  canvas.width = bitmap.width;
-  canvas.height = bitmap.height;
+  const canvas = memoryManager.acquireCanvas(bitmap.width, bitmap.height);
   const ctx = canvas.getContext('2d');
-  if (!ctx) throw new Error('This image format is not supported on this device.');
-  ctx.drawImage(bitmap, 0, 0);
-  bitmap.close();
-  const jpegBlob = await new Promise<Blob>((resolve, reject) => {
-    canvas.toBlob(
-      (b) => (b && b.size > 0 ? resolve(b) : reject(new Error('Failed to encode image.'))),
-      'image/jpeg',
-      0.92,
-    );
-  });
+  if (!ctx) {
+    memoryManager.releaseCanvas(canvas);
+    bitmap.close();
+    throw new Error('This image format is not supported on this device.');
+  }
+  try {
+    ctx.drawImage(bitmap, 0, 0);
+  } finally {
+    bitmap.close();
+  }
+  let jpegBlob: Blob;
+  try {
+    jpegBlob = await new Promise<Blob>((resolve, reject) => {
+      canvas.toBlob(
+        (b) => (b && b.size > 0 ? resolve(b) : reject(new Error('Failed to encode image.'))),
+        'image/jpeg',
+        0.92,
+      );
+    });
+  } finally {
+    memoryManager.releaseCanvas(canvas);
+  }
   return new Uint8Array(await jpegBlob.arrayBuffer());
 }
 
@@ -153,9 +164,14 @@ export class ImagePdfService {
         const page = out.addPage([img.width * FIT_DPI_SCALE, img.height * FIT_DPI_SCALE]);
         page.drawImage(img, { x: 0, y: 0, width: page.getWidth(), height: page.getHeight() });
       }
+
+      // Keep the UI alive — spinner freezes without a micro-yield each
+      // iteration (toJpegBytes + embed + save are main-thread heavy).
+      await memoryManager.yieldToUI();
     }
 
     if (out.getPageCount() === 0) throw new Error('No images to convert.');
+    await memoryManager.yieldToUI();
     return { bytes: await out.save(), pages: out.getPageCount() };
   }
 }

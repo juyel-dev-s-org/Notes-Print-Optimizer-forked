@@ -181,7 +181,7 @@ export const BeforeAfterSlider: React.FC<BeforeAfterSliderProps> = ({ page, merg
         </div>
       </div>
 
-      {/* Interactive Split View Container with touch-action */}
+      {/* Interactive Split View Container — hardened for touch drag + no callout */}
       <div
         ref={containerRef}
         role="slider"
@@ -191,13 +191,16 @@ export const BeforeAfterSlider: React.FC<BeforeAfterSliderProps> = ({ page, merg
         aria-valuemax={100}
         aria-valuenow={Math.round(sliderPos)}
         aria-valuetext={`${Math.round(sliderPos)} percent optimized visible`}
-        className="relative h-[360px] sm:h-[480px] w-full cursor-col-resize select-none-touch overflow-hidden rounded-xl border border-surface-2 bg-bg flex items-center justify-center p-3 shadow-inner focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-soft"
+        className="relative h-[360px] sm:h-[480px] w-full cursor-col-resize select-none-touch overflow-hidden rounded-xl border border-surface-2 bg-bg flex items-center justify-center p-3 shadow-inner [touch-action:none] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-soft"
+        style={{ WebkitTouchCallout: 'none' } as React.CSSProperties}
+        onContextMenu={(e) => e.preventDefault()}
         onMouseDown={handleMouseDown}
         onMouseUp={handleMouseUp}
         onMouseLeave={handleMouseUp}
         onMouseMove={handleMouseMove}
         onTouchStart={handleTouchStart}
         onTouchEnd={handleMouseUp}
+        onTouchCancel={handleMouseUp}
         onTouchMove={handleTouchMove}
         onKeyDown={handleKeyDown}
       >
@@ -208,8 +211,10 @@ export const BeforeAfterSlider: React.FC<BeforeAfterSliderProps> = ({ page, merg
             <img
               src={optUrl}
               alt="Optimized PW Slide"
-              style={{ transform: `scale(${zoom})` }}
-              className="max-h-full max-w-full object-contain transition-transform duration-100 shadow-xl"
+              draggable={false}
+              onContextMenu={(e) => e.preventDefault()}
+              style={{ transform: `scale(${zoom})`, WebkitTouchCallout: 'none' } as React.CSSProperties}
+              className="pointer-events-none max-h-full max-w-full select-none object-contain transition-transform duration-100 shadow-xl"
             />
           </div>
         )}
@@ -224,8 +229,10 @@ export const BeforeAfterSlider: React.FC<BeforeAfterSliderProps> = ({ page, merg
             <img
               src={origUrl}
               alt="Original Raw PW Slide"
-              style={{ transform: `scale(${zoom})` }}
-              className="max-h-full max-w-full object-contain transition-transform duration-100 shadow-xl"
+              draggable={false}
+              onContextMenu={(e) => e.preventDefault()}
+              style={{ transform: `scale(${zoom})`, WebkitTouchCallout: 'none' } as React.CSSProperties}
+              className="pointer-events-none max-h-full max-w-full select-none object-contain transition-transform duration-100 shadow-xl"
             />
           </div>
         )}
