@@ -77,4 +77,36 @@ test.describe('navigation semantics', () => {
     expect(res.status()).toBe(200);
     expect(await res.text()).toContain('Sitemap:');
   });
+
+  test('FAQ accordion renders visible content + matching FAQPage JSON-LD', async ({ page }) => {
+    await page.goto('/tools/merge-pdf/');
+    const items = page.locator('.faq-item');
+    await expect(items).toHaveCount(5);
+
+    // Visible Q&A text (first question) is real DOM, not schema-only.
+    await expect(items.first().locator('h3')).toContainText(/How many PDFs/i);
+
+    // Expand works natively.
+    await items.first().click();
+    await expect(items.first()).toHaveAttribute('open', '');
+
+    // Schema mirrors the accordion: same count, same first question.
+    // (hasText can't see inside <script>; read raw textContent instead.
+    // The injector serializes ALL schemas as ONE array-valued script.)
+    const scripts = page.locator('script[type="application/ld+json"]');
+    const total = await scripts.count();
+    let payload: { mainEntity: Array<{ name: string }> } | null = null;
+    for (let i = 0; i < total && !payload; i += 1) {
+      const raw = (await scripts.nth(i).textContent()) ?? '';
+      if (!raw.includes('FAQPage')) continue;
+      const graph = Array.isArray(JSON.parse(raw)) ? (JSON.parse(raw) as unknown[]) : [JSON.parse(raw)];
+      const faqNode = graph.find((n) => (n as Record<string, unknown>)['@type'] === 'FAQPage') as
+        | { mainEntity: Array<{ name: string }> }
+        | undefined;
+      if (faqNode) payload = faqNode;
+    }
+    expect(payload, 'FAQPage JSON-LD present').not.toBeNull();
+    expect(payload!.mainEntity).toHaveLength(5);
+    expect(await items.first().locator('h3').textContent()).toBe(payload!.mainEntity[0].name);
+  });
 });

@@ -3,6 +3,8 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { TOOL_REGISTRY, getAllToolSlugs, getToolBySlug } from '@/lib/tools/registry';
 import { absoluteUrl, ogImageUrl } from '@/lib/site';
+import { buildFaqJsonLd, getFaqsForSlug } from '@/lib/content/faqs';
+import { FaqAccordion } from '@/components/seo/FaqAccordion';
 import { JsonLd } from '@/components/seo/JsonLd';
 
 /**
@@ -71,6 +73,7 @@ export default async function ToolPage({
   if (!tool) notFound();
 
   const related = TOOL_REGISTRY.filter((t) => t.id !== tool.id).slice(0, 3);
+  const faqs = getFaqsForSlug(tool.slug);
 
   return (
     <section aria-labelledby="tool-seo-title" className="mt-2 flex flex-col gap-3 rounded-2xl border border-surface-2/70 bg-surface/50 p-5 text-sm leading-relaxed text-ink-muted md:p-6">
@@ -89,6 +92,8 @@ export default async function ToolPage({
         Print Optimizer runs entirely on your device — files are processed locally in your
         browser and are never uploaded to any server. Free to use, no sign-up.
       </p>
+
+      <FaqAccordion faqs={faqs} />
 
       <nav aria-label="Related tools" className="border-t border-surface-2 pt-3">
         <h3 className="mb-2 text-xs font-bold uppercase tracking-wide text-ink-faint">Related tools</h3>
@@ -123,6 +128,7 @@ export default async function ToolPage({
               { '@type': 'ListItem', position: 2, name: tool.title, item: absoluteUrl(`/tools/${tool.slug}/`) },
             ],
           },
+          ...(faqs.length > 0 ? [buildFaqJsonLd(absoluteUrl(`/tools/${tool.slug}/`), faqs)] : []),
         ]}
       />
     </section>

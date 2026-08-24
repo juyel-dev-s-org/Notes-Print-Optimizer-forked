@@ -306,3 +306,19 @@ html, body {
     scroll-behavior: auto !important;
   }
 }
+/* FAQ accordion — smooth height expansion where supported.
+   Chrome 131+ animates to auto block-size; older browsers toggle instantly
+   (native <details> behavior), which is an acceptable degradation. */
+:root {
+  interpolate-size: allow-keywords;
+}
+details.faq-item::details-content {
+  block-size: 0;
+  overflow-y: clip;
+  transition:
+    block-size 300ms ease,
+    content-visibility 300ms allow-discrete;
+}
+details.faq-item[open]::details-content {
+  block-size: auto;
+}
