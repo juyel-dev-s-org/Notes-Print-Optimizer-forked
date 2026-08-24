@@ -1,9 +1,10 @@
 'use client';
 
-import React from 'react';
+import React, { useEffect } from 'react';
 import { ArrowLeft } from 'lucide-react';
 import { useMergeWorkflow } from '@/lib/tomerge/useMergeWorkflow';
 import type { MergeStep } from '@/lib/tomerge/mergeReducer';
+import { useSeoVisibility } from '@/components/seo/SeoVisibilityContext';
 import { MergeUploadView } from './MergeUploadView';
 import { MergeArrangeView } from './MergeArrangeView';
 import { MergeResultView } from './MergeResultView';
@@ -27,6 +28,11 @@ const STEP_LABEL: Record<MergeStep, string> = {
 export const MergeToolView: React.FC<MergeToolViewProps> = ({ onBack }) => {
   const workflow = useMergeWorkflow();
   const { state } = workflow;
+  const { setVisible } = useSeoVisibility();
+  useEffect(() => {
+    setVisible(state.step === 'upload' || state.step === 'done');
+    return () => setVisible(true);
+  }, [state.step, setVisible]);
 
   return (
     <div className="flex flex-col gap-4 animate-slide-up">

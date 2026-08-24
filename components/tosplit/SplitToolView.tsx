@@ -1,9 +1,10 @@
 'use client';
 
-import React from 'react';
+import React, { useEffect } from 'react';
 import { ArrowLeft } from 'lucide-react';
 import { useSplitWorkflow } from '@/lib/tosplit/useSplitWorkflow';
 import type { SplitStep } from '@/lib/tosplit/splitReducer';
+import { useSeoVisibility } from '@/components/seo/SeoVisibilityContext';
 import { SplitUploadView } from './SplitUploadView';
 import { SplitOptionsView } from './SplitOptionsView';
 import { SplitResultView } from './SplitResultView';
@@ -27,6 +28,11 @@ const STEP_LABEL: Record<SplitStep, string> = {
 export const SplitToolView: React.FC<SplitToolViewProps> = ({ onBack }) => {
   const workflow = useSplitWorkflow();
   const { state } = workflow;
+  const { setVisible } = useSeoVisibility();
+  useEffect(() => {
+    setVisible(state.step === 'upload' || state.step === 'done');
+    return () => setVisible(true);
+  }, [state.step, setVisible]);
 
   return (
     <div className="flex flex-col gap-4 animate-slide-up">

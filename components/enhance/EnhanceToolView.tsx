@@ -1,9 +1,10 @@
 'use client';
 
-import React from 'react';
+import React, { useEffect } from 'react';
 import { ArrowLeft } from 'lucide-react';
 import { useEnhanceWorkflow } from '@/lib/enhance/useEnhanceWorkflow';
 import type { EnhanceStep } from '@/lib/enhance/types';
+import { useSeoVisibility } from '@/components/seo/SeoVisibilityContext';
 import { EnhanceUploadView } from './EnhanceUploadView';
 import { EnhanceArrangeView } from './EnhanceArrangeView';
 import { EnhanceWorkbenchView } from './EnhanceWorkbenchView';
@@ -28,6 +29,14 @@ const STEP_LABEL: Record<EnhanceStep, string> = {
 export const EnhanceToolView: React.FC<EnhanceToolViewProps> = ({ onBack, onHandoffToLayout }) => {
   const workflow = useEnhanceWorkflow();
   const { state } = workflow;
+  const { setVisible } = useSeoVisibility();
+  // Premium: About/FAQ/Related visible only on upload + finished workbench (Download ready).
+  // While arranging or tweaking settings before any result, keep focus on the task.
+  useEffect(() => {
+    const isLastReady = state.step === 'enhance' && state.results.length > 0;
+    setVisible(state.step === 'upload' || isLastReady);
+    return () => setVisible(true);
+  }, [state.step, state.results.length, setVisible]);
 
   return (
     <div className="flex flex-col gap-4 animate-slide-up">
