@@ -1,10 +1,19 @@
 'use client';
 
 import React, { useMemo, useState } from 'react';
+import Link from 'next/link';
 import { Search, SearchX, X } from 'lucide-react';
 import { ToolCard } from './ToolCard';
-import { TOOL_REGISTRY, getToolCategories, toolHref, type ToolCategory } from '@/lib/tools/registry';
+import { TOOL_REGISTRY, getToolCategories, toolHref, type ToolCategory, type ToolDefinition } from '@/lib/tools/registry';
 import { searchTools } from '@/lib/tools/search';
+
+/** Most-requested conversion pair — pinned as quick pills under the search box. */
+const QUICK_TOOL_IDS = ['to-pdf', 'to-images'] as const;
+
+const QUICK_LABELS: Record<(typeof QUICK_TOOL_IDS)[number], string> = {
+  'to-pdf': 'Image → PDF',
+  'to-images': 'PDF → Images',
+};
 
 /**
  * Tool selector shown on all surfaces (mobile / tablet / desktop).
@@ -21,6 +30,14 @@ export const ToolsBox: React.FC = () => {
   const [activeCategory, setActiveCategory] = useState<'all' | ToolCategory>('all');
 
   const categories = useMemo(() => getToolCategories(TOOL_REGISTRY), []);
+
+  const quickTools = useMemo(
+    () =>
+      QUICK_TOOL_IDS.map((id) => TOOL_REGISTRY.find((t) => t.id === id)).filter(
+        (t): t is ToolDefinition => Boolean(t),
+      ),
+    [],
+  );
 
   const visibleTools = useMemo(
     () =>
@@ -45,7 +62,7 @@ export const ToolsBox: React.FC = () => {
           type="search"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
-          placeholder="Search tools — password, whiten, faint…"
+          placeholder="Search tools — image, password, whiten…"
           aria-label="Search tools"
           className="h-11 w-full rounded-xl border border-elevated bg-surface/80 pl-10 pr-10 text-sm text-ink placeholder:text-ink-faint transition-colors focus:border-primary/50 focus:outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-soft"
         />
@@ -59,6 +76,21 @@ export const ToolsBox: React.FC = () => {
             <X className="h-4 w-4" aria-hidden="true" />
           </button>
         )}
+      </div>
+
+      {/* Quick image-conversion shortcuts — top user intent, one tap away */}
+      <div className="flex flex-wrap gap-2" role="group" aria-label="Quick image tools">
+        {quickTools.map((tool) => (
+          <Link
+            key={tool.id}
+            href={toolHref(tool.id)}
+            prefetch={false}
+            className="inline-flex h-8 items-center gap-1.5 rounded-full border border-elevated bg-surface px-3 text-xs font-bold text-ink transition-colors hover:border-primary/40 hover:text-primary-soft"
+          >
+            <tool.icon className="h-3.5 w-3.5" aria-hidden="true" />
+            {QUICK_LABELS[tool.id as (typeof QUICK_TOOL_IDS)[number]]}
+          </Link>
+        ))}
       </div>
 
       {/* Category shortcut chips — auto-render once multiple categories exist */}
@@ -87,7 +119,7 @@ export const ToolsBox: React.FC = () => {
 
       {/* Cards */}
       {visibleTools.length > 0 ? (
-        <div className="grid grid-cols-1 gap-3 min-[375px]:grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 auto-rows-fr">
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 auto-rows-fr">
           {visibleTools.map((tool) => {
             const Icon = tool.icon;
             return (
@@ -109,7 +141,7 @@ export const ToolsBox: React.FC = () => {
           <SearchX className="h-6 w-6 text-ink-faint" aria-hidden="true" />
           <p className="text-sm font-bold text-ink">No tool found</p>
           <p className="text-xs text-ink-muted">
-            Nothing matches &ldquo;{query.trim()}&rdquo; — try &ldquo;print&rdquo;, &ldquo;scan&rdquo; or &ldquo;password&rdquo;.
+            Nothing matches &ldquo;{query.trim()}&rdquo; — try &ldquo;image&rdquo;, &ldquo;merge&rdquo; or &ldquo;password&rdquo;.
           </p>
         </div>
       )}

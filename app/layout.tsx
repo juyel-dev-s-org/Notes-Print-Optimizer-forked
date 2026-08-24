@@ -10,7 +10,7 @@ const jakarta = Plus_Jakarta_Sans({
 });
 
 const DESCRIPTION =
-  'Every PDF, print-perfect — merge, whiten dark notes, enhance light scans & build smart N-up layouts. 100% offline, on-device.';
+  'Every PDF, print-perfect — merge, split, protect, whiten & enhance, plus JPG/PNG image conversion. 100% free, private & on-device.';
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
