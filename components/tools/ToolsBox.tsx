@@ -93,24 +93,30 @@ export const ToolsBox: React.FC = () => {
         ))}
       </div>
 
-      {/* Category shortcut chips — auto-render once multiple categories exist */}
+      {/* Category shortcut chips — horizontal scroll, future-proof for many categories */}
       {categories.length > 1 && (
-        <div className="flex flex-wrap gap-2" role="group" aria-label="Filter tools by category">
+        <div
+          className="flex flex-nowrap gap-2 overflow-x-auto pb-1 -mx-1 px-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden snap-x snap-mandatory"
+          role="group"
+          aria-label="Filter tools by category"
+        >
           {(['all', ...categories] as const).map((cat) => {
             const active = activeCategory === cat;
+            const label =
+              cat === 'all' ? 'All' : cat === 'pdf' ? 'PDF Tools' : cat === 'image' ? 'Image Tools' : 'Security Tools';
             return (
               <button
                 key={cat}
                 type="button"
                 aria-pressed={active}
                 onClick={() => setActiveCategory(cat)}
-                className={`h-8 rounded-full border px-3.5 text-xs font-bold capitalize transition-colors ${
+                className={`h-8 shrink-0 snap-start rounded-full border px-3.5 text-xs font-bold capitalize transition-colors ${
                   active
                     ? 'border-primary/50 bg-primary-faint text-primary-soft'
                     : 'border-elevated bg-surface text-ink-muted hover:text-ink'
                 }`}
               >
-                {cat === 'all' ? 'All' : cat === 'pdf' ? 'PDF Tools' : `${cat} Tools`}
+                {label}
               </button>
             );
           })}

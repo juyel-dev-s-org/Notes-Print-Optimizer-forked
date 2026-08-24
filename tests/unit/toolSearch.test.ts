@@ -86,7 +86,7 @@ describe('searchTools', () => {
 });
 
 describe('getToolCategories', () => {
-  it('returns unique categories in registry order — chips appear once >1 exists', () => {
-    expect(getToolCategories(TOOL_REGISTRY)).toEqual(['pdf', 'security']);
+  it('returns unique categories in preferred order — chips appear once >1 exists', () => {
+    expect(getToolCategories(TOOL_REGISTRY)).toEqual(['pdf', 'image', 'security']);
   });
 });

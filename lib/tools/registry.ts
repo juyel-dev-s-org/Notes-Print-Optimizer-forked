@@ -9,7 +9,7 @@ import { Combine, Contrast, FileText, ImagePlus, Images, Scissors, ShieldCheck }
 import type { ToolMode } from '@/lib/enhance/types';
 
 /** Coarse groups used by the shortcut chips (rendered once >1 exists). */
-export type ToolCategory = 'pdf' | 'security';
+export type ToolCategory = 'pdf' | 'image' | 'security';
 
 export interface ToolDefinition {
   id: ToolMode;
@@ -95,7 +95,7 @@ export const TOOL_REGISTRY: ToolDefinition[] = [
       'Convert PDF pages to high-resolution JPG, PNG or WebP images right in your browser. Pick a DPI, preview every sheet and download one tidy ZIP — free and on-device.',
     aliases: ['jpg', 'jpeg', 'png', 'webp', 'image converter', 'extract images'],
     keywords: ['convert to image', 'render pages', 'dpi', 'resolution', 'zip export', 'photo', 'save pages as images'],
-    category: 'pdf',
+    category: 'image',
     icon: Images,
     gradient: 'linear-gradient(135deg, #059669 0%, #14B8A6 55%, #06B6D4 100%)',
     chips: ['JPG · PNG · WebP', 'Up to 300 DPI', 'One-click ZIP'],
@@ -146,7 +146,7 @@ export const TOOL_REGISTRY: ToolDefinition[] = [
       'Turn photos and screenshots into one tidy PDF in your browser. Arrange the order, choose fit-to-image or A4 pages and download a print-ready file — free, private, on-device.',
     aliases: ['jpg to pdf', 'png to pdf', 'photo to pdf', 'scan to pdf', 'pictures', 'upload images', 'add photos'],
     keywords: ['convert images', 'combine photos', 'screenshots', 'one document', 'image', 'gallery'],
-    category: 'pdf',
+    category: 'image',
     icon: ImagePlus,
     gradient: 'linear-gradient(135deg, #6366F1 0%, #8B5CF6 55%, #EC4899 100%)',
     chips: ['JPG · PNG · WebP', 'Fit or A4 pages', 'Reorderable'],
@@ -154,11 +154,14 @@ export const TOOL_REGISTRY: ToolDefinition[] = [
   },
 ];
 
-/** Unique categories in registry order — drives the shortcut chip row. */
+/** Preferred display order for category chips — keeps Image next to PDF. */
+const CATEGORY_ORDER: ToolCategory[] = ['pdf', 'image', 'security'];
+
+/** Unique categories in preferred order — drives the shortcut chip row. */
 export function getToolCategories(tools: ToolDefinition[]): ToolCategory[] {
   const seen = new Set<ToolCategory>();
   for (const tool of tools) seen.add(tool.category);
-  return Array.from(seen);
+  return CATEGORY_ORDER.filter((c) => seen.has(c));
 }
 
 // ---------------------------------------------------------------------------
