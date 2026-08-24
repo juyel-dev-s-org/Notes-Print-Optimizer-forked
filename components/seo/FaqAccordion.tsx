@@ -14,7 +14,7 @@ export function FaqAccordion({ faqs, headingId = 'faq-heading' }: { faqs: FaqIte
   return (
     <section
       aria-labelledby={headingId}
-      className="mt-2 rounded-2xl border border-surface-2/70 bg-surface/50 p-5 text-sm md:p-6"
+      className="rounded-2xl border border-surface-2/70 bg-surface/50 p-5 text-sm md:p-6"
     >
       <div className="mb-1 flex items-baseline justify-between gap-3">
         <h2 id={headingId} className="text-base font-bold text-ink">
