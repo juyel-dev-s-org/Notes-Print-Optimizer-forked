@@ -10,7 +10,7 @@ type Theme = 'light' | 'dark';
  * Initial paint is handled by the inline script in app/layout.tsx;
  * this control only reads the resolved value after mount.
  */
-export const ThemeToggle: React.FC = () => {
+export const ThemeToggle: React.FC<{ className?: string }> = ({ className }) => {
   const [theme, setTheme] = useState<Theme | null>(null);
 
   useEffect(() => {
@@ -33,7 +33,7 @@ export const ThemeToggle: React.FC = () => {
       type="button"
       onClick={toggle}
       aria-label={theme === 'light' ? 'Switch to dark theme' : 'Switch to light theme'}
-      className="flex h-11 w-11 items-center justify-center rounded-xl border border-elevated/60 bg-surface-2/80 text-ink-muted transition-all hover:bg-elevated hover:text-ink active:scale-95"
+      className={`flex h-10 w-10 items-center justify-center rounded-xl border border-elevated/60 bg-surface/80 text-ink-muted transition-all hover:bg-elevated hover:text-ink active:scale-95 sm:h-11 sm:w-11 ${className ?? ''}`}
     >
       {theme === 'light' ? (
         <Moon className="h-5 w-5" aria-hidden="true" />

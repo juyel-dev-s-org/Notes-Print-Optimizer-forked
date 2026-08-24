@@ -105,98 +105,110 @@ export const Header: React.FC<HeaderProps> = ({
 
   return (
     <>
-      <header id="app-header" className="sticky top-0 z-40 w-full bg-surface/95 backdrop-blur-md border-b border-surface-2 text-ink pt-safe">
-        <div className="mx-auto max-w-7xl px-3 py-2.5 sm:px-6 lg:py-3">
-          <div className="flex items-center justify-between gap-2 lg:grid lg:grid-cols-[1fr_auto_1fr] lg:gap-4">
-            {/* Left: Hamburger Menu Button, Theme Toggle & Logo */}
-            <div className="flex items-center gap-2 lg:justify-self-start">
-              <button
-                ref={hamburgerRef}
-                type="button"
-                onClick={() => setIsMenuOpen(!isMenuOpen)}
-                aria-label="Toggle App Menu"
-                aria-expanded={isMenuOpen}
-                aria-controls="settings-drawer"
-                className="flex h-11 w-11 items-center justify-center rounded-xl bg-surface-2/80 text-ink hover:bg-elevated active:scale-95 transition-all border border-elevated/60"
-              >
-                {isMenuOpen ? <X className="h-5 w-5 text-warning" /> : <Menu className="h-5 w-5 text-primary-soft" />}
-              </button>
+      <header
+        id="app-header"
+        className="sticky top-0 z-40 w-full border-b border-surface-2/60 bg-surface/80 backdrop-blur-xl supports-[backdrop-filter]:bg-surface/70 text-ink shadow-sm pt-safe"
+      >
+        <div className="mx-auto flex h-[56px] max-w-7xl items-center justify-between gap-3 px-3 sm:px-6 lg:h-[60px]">
+          {/* Left: Hamburger */}
+          <div className="flex items-center gap-2">
+            <button
+              ref={hamburgerRef}
+              type="button"
+              onClick={() => setIsMenuOpen(!isMenuOpen)}
+              aria-label="Toggle App Menu"
+              aria-expanded={isMenuOpen}
+              aria-controls="settings-drawer"
+              className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-elevated/60 bg-surface/80 text-ink shadow-sm transition-all hover:bg-elevated hover:shadow active:scale-95 sm:h-11 sm:w-11"
+            >
+              {isMenuOpen ? <X className="h-5 w-5 text-warning" /> : <Menu className="h-5 w-5 text-primary-soft" />}
+            </button>
+          </div>
 
-              <ThemeToggle />
+          {/* Logo — single h1, premium: landing mobile centred (absolute), otherwise left */}
+          <div
+            className={`flex items-center gap-2.5 ${showStepper ? '' : 'absolute left-1/2 -translate-x-1/2 sm:static sm:translate-x-0'}`}
+          >
+            <AppLogo className="h-8 w-8 lg:h-9 lg:w-9 drop-shadow-sm" />
+            <h1
+              className="text-[17px] font-bold tracking-[-0.02em] sm:text-[18px] lg:text-[19px]"
+              style={{ fontFamily: 'var(--font-display)' }}
+            >
+              <span className="bg-gradient-to-r from-[#5B8CFF] via-[#8B6BFF] to-[#C14DFF] bg-clip-text text-transparent">
+                Print
+              </span>{' '}
+              <span className="text-ink">Optimizer</span>
+            </h1>
+          </div>
 
-              <div className="flex items-center gap-2.5">
-                <AppLogo className="h-9 w-9 text-primary-soft drop-shadow-md lg:h-10 lg:w-10" />
-                <h1 className="text-[15px] font-bold tracking-tight text-ink sm:text-base">
-                  Print Optimizer
-                </h1>
-              </div>
-            </div>
+          {/* Middle: Stepper — centred, pill, premium */}
+          {showStepper && (
+            <nav
+              aria-label="Progress Stepper"
+              className="hidden items-center gap-1 rounded-full border border-elevated/40 bg-surface-2/60 p-1 shadow-sm backdrop-blur sm:flex"
+            >
+              {steps.map((step) => {
+                const isActive = currentPhase === step.phase;
+                const isCompleted = currentPhase > step.phase;
 
-            {/* Middle: Stepper — landing has no stepper, after tool choose it appears */}
-            {showStepper && (
-              <nav aria-label="Progress Stepper" className="hidden items-center gap-1 rounded-xl bg-surface-2/80 p-1 border border-elevated/60 sm:flex lg:justify-self-center">
-                {steps.map((step) => {
-                  const isActive = currentPhase === step.phase;
-                  const isCompleted = currentPhase > step.phase;
-
-                  return (
-                    <button
-                      key={step.phase}
-                      onClick={() => {
-                        if (isCompleted && onNavigatePhase) {
-                          onNavigatePhase(step.phase);
-                        }
-                      }}
-                      disabled={!isCompleted && !isActive}
-                      aria-current={isActive ? 'step' : undefined}
-                      aria-label={`Step ${step.phase}: ${step.label}`}
-                      className={`flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-semibold transition-all ${
-                        isActive
-                          ? 'bg-primary-strong text-white shadow-sm'
-                          : isCompleted
+                return (
+                  <button
+                    key={step.phase}
+                    onClick={() => {
+                      if (isCompleted && onNavigatePhase) {
+                        onNavigatePhase(step.phase);
+                      }
+                    }}
+                    disabled={!isCompleted && !isActive}
+                    aria-current={isActive ? 'step' : undefined}
+                    aria-label={`Step ${step.phase}: ${step.label}`}
+                    className={`flex items-center gap-1.5 rounded-full px-2.5 py-1.5 text-xs font-semibold transition-all ${
+                      isActive
+                        ? 'bg-primary-strong text-white shadow-sm'
+                        : isCompleted
                           ? 'bg-success/15 text-success-soft hover:bg-success/25 border border-success/20'
                           : 'text-ink bg-elevated/60 border border-elevated/60 cursor-not-allowed'
-                      }`}
-                    >
-                      <span
-                        className={`flex h-5 w-5 items-center justify-center rounded-full text-[11px] font-bold ring-1 ${
-                          isActive
-                            ? 'bg-white text-indigo-700 ring-white/20'
-                            : isCompleted
+                    }`}
+                  >
+                    <span
+                      className={`flex h-5 w-5 items-center justify-center rounded-full text-[11px] font-bold ring-1 ${
+                        isActive
+                          ? 'bg-white text-indigo-700 ring-white/20'
+                          : isCompleted
                             ? 'bg-success-strong text-white ring-success/30'
                             : 'bg-elevated text-ink ring-primary/20'
-                        }`}
-                      >
-                        {isCompleted ? <CheckCircle2 className="h-3.5 w-3.5" /> : step.phase}
-                      </span>
-                      <span className="hidden min-[400px]:inline text-xs tracking-wide">{step.label}</span>
-                    </button>
-                  );
-                })}
-              </nav>
-            )}
+                      }`}
+                    >
+                      {isCompleted ? <CheckCircle2 className="h-3.5 w-3.5" /> : step.phase}
+                    </span>
+                    <span className="hidden min-[400px]:inline text-xs tracking-wide">{step.label}</span>
+                  </button>
+                );
+              })}
+            </nav>
+          )}
 
-            {/* Right: Quick Action Buttons for Desktop / Tablet */}
-            <div className="hidden md:flex items-center gap-2 lg:justify-self-end">
-              {currentPhase > 1 && onReset && (
-                <button
-                  type="button"
-                  onClick={onReset}
-                  className="flex h-9 items-center gap-1.5 rounded-lg border border-elevated bg-surface-2 px-3 text-xs font-medium text-ink-muted hover:bg-elevated hover:text-ink transition-colors"
-                >
-                  <RefreshCw className="h-3.5 w-3.5" />
-                  <span>Start Over</span>
-                </button>
-              )}
-            </div>
+          {/* Right: Theme + Start Over */}
+          <div className="flex items-center gap-2">
+            <ThemeToggle />
+            {currentPhase > 1 && onReset && (
+              <button
+                type="button"
+                onClick={onReset}
+                className="hidden h-9 items-center gap-1.5 rounded-full border border-elevated bg-surface px-3 text-xs font-semibold text-ink-muted shadow-sm transition-colors hover:bg-elevated hover:text-ink sm:flex"
+              >
+                <RefreshCw className="h-3.5 w-3.5" />
+                <span>Start Over</span>
+              </button>
+            )}
           </div>
         </div>
 
-        {/* Top Progress Line — only after tool chosen */}
-        <div aria-hidden="true" className="h-0.5 w-full bg-surface-2">
+        {/* Progress line — premium 1px with glow */}
+        <div aria-hidden="true" className="h-1 w-full bg-surface-2/60">
           <div
             aria-hidden="true"
-            className="h-full bg-gradient-to-r from-primary via-accent-soft to-success transition-[width] duration-200 ease-in-out"
+            className="h-full rounded-full bg-gradient-to-r from-primary via-accent-soft to-success shadow-[0_0_8px_rgba(99,102,241,0.35)] transition-[width] duration-300 ease-out"
             style={{ width: showStepper ? `${(currentPhase / 4) * 100}%` : '0%' }}
           />
         </div>
@@ -224,9 +236,11 @@ export const Header: React.FC<HeaderProps> = ({
               {/* Drawer Header */}
               <div className="flex items-center justify-between border-b border-surface-2 p-4">
                 <div className="flex items-center gap-2.5">
-                  <AppLogo className="h-8 w-8 text-primary-soft" />
+                  <AppLogo className="h-8 w-8 text-primary-soft drop-shadow-sm" />
                   <div>
-                    <h2 className="text-sm font-bold text-ink">Print Optimizer</h2>
+                    <h2 className="text-sm font-bold tracking-[-0.01em] text-ink" style={{ fontFamily: 'var(--font-display)' }}>
+                      Print Optimizer
+                    </h2>
                     <p className="text-[11px] text-ink-muted">Settings &amp; Information</p>
                   </div>
                 </div>

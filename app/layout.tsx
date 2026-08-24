@@ -1,11 +1,18 @@
 import type { Metadata, Viewport } from 'next';
-import { Plus_Jakarta_Sans } from 'next/font/google';
+import { Plus_Jakarta_Sans, Outfit } from 'next/font/google';
 import { SITE_URL, ogImageUrl, withBase } from '@/lib/site';
 import './globals.css';
 
 const jakarta = Plus_Jakarta_Sans({
   subsets: ['latin'],
   variable: '--font-jakarta',
+  display: 'swap',
+});
+
+const outfit = Outfit({
+  subsets: ['latin'],
+  variable: '--font-display',
+  weight: ['600', '700'],
   display: 'swap',
 });
 
@@ -142,7 +149,7 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${jakarta.variable} h-full bg-bg text-ink antialiased`}
+      className={`${jakarta.variable} ${outfit.variable} h-full bg-bg text-ink antialiased`}
       suppressHydrationWarning
     >
       <head>
