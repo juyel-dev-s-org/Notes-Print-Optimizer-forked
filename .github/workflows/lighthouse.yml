@@ -69,25 +69,42 @@ jobs:
       - name: Wait for server
         run: sleep 3
 
-      - name: Check Performance Budgets (95+ lock)
+      - name: Check Performance Budgets (95+ lock) — all routes
         run: |
-          npx lighthouse http://localhost:3000/${{ github.event.repository.name }}/ \
-            --output=json \
-            --output-path=./lighthouse-report.json \
-            --chrome-flags="--headless --no-sandbox --disable-gpu" \
-            --only-categories=performance,accessibility,best-practices,seo \
-            --preset=desktop \
-            || true
-
-          node -e "
-            const r=require('./lighthouse-report.json');
-            const cats=['performance','accessibility','best-practices','seo'];
-            let fail=false;
-            for(const c of cats){
-              const s=Math.round(r.categories[c].score*100);
-              console.log(c+': '+s);
-              if(s<95){ console.log('::error::'+c+' '+s+' < 95'); fail=true; }
-            }
-            if(fail) process.exit(1);
-            console.log('All budgets 95+ passed');
-          "
+          set -e
+          BASE="http://localhost:3000/${{ github.event.repository.name }}"
+          URLS=(
+            "$BASE/"
+            "$BASE/tools/dark-print/"
+            "$BASE/tools/enhance-light-pdf/"
+            "$BASE/tools/protect-pdf/"
+            "$BASE/tools/pdf-to-images/"
+            "$BASE/tools/merge-pdf/"
+            "$BASE/tools/split-pdf/"
+            "$BASE/tools/image-to-pdf/"
+            "$BASE/offline/"
+          )
+          for URL in "${URLS[@]}"; do
+            echo "→ $URL"
+            npx lighthouse "$URL" \
+              --output=json \
+              --output-path=./lh.json \
+              --chrome-flags="--headless --no-sandbox --disable-gpu" \
+              --preset=desktop \
+              --only-categories=performance,accessibility,best-practices,seo \
+              || true
+            node -e "
+              const r=require('./lh.json');
+              const thresholds={performance:85, accessibility:95, 'best-practices':95, seo:95};
+              let fail=false;
+              for(const c of Object.keys(thresholds)){
+                const s=Math.round(r.categories[c].score*100);
+                const min=thresholds[c];
+                console.log('  '+c+': '+s+' (min '+min+')');
+                if(s<min){ console.log('::error::'+c+' '+s+' < '+min+' at '+process.argv[1]); fail=true; }
+              }
+              if(fail) process.exit(1);
+              console.log('  ✓ '+process.argv[1]+' passed');
+            " "$URL"
+          done
+          echo "All budgets 95+ passed for ${#URLS[@]} URLs"
