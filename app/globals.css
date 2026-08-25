@@ -187,6 +187,14 @@ html {
   scrollbar-color: rgb(100 116 139 / 0.5) transparent;
 }
 
+/* Hide scrollbar on horizontal chip/tab rails while keeping them scrollable. */
+.scrollbar-none {
+  scrollbar-width: none;
+}
+.scrollbar-none::-webkit-scrollbar {
+  display: none;
+}
+
 /* Stable viewport — prevent horizontal shift without clipping hover/shadow.
    Use clip (not hidden) only on decorative shell; fix blowout with min-w-0 on flex children. */
 html, body {
