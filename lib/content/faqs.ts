@@ -220,6 +220,28 @@ export const TOOL_FAQS: Record<string, FaqItem[]> = {
       a: 'QR capacity is fixed, so more characters mean smaller modules. Keep URLs short, use the highest size your print allows, and prefer lower error correction for very long text.',
     },
   ],
+  'word-counter': [
+    {
+      q: 'What counts as a word?',
+      a: 'Any run of characters separated by spaces or line breaks — the same rule most word processors use. Hyphenated terms like “state-of-the-art” count as one word.',
+    },
+    {
+      q: 'How is reading time calculated?',
+      a: 'At 200 words per minute, the average silent-reading speed for adults. Speaking time uses a slower 130 wpm, closer to a comfortable presentation pace.',
+    },
+    {
+      q: 'Do characters include spaces?',
+      a: 'Both are shown — one count with spaces (useful for forms and tweet-style limits) and one without (common in print and academic requirements).',
+    },
+    {
+      q: 'What are the top keywords for?',
+      a: 'They reveal your most repeated meaningful words, so you can spot overused terms before submitting an essay or article. Common filler words are filtered out.',
+    },
+    {
+      q: 'Is my text uploaded anywhere?',
+      a: 'Never — counting happens live in your browser as you type, and nothing is stored after you leave. Safe for drafts, contracts, and unpublished writing.',
+    },
+  ],
 };
 
 /** FAQs for a tool slug; empty array for unknown slugs (defensive). */

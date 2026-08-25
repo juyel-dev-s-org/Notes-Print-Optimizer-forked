@@ -5,7 +5,7 @@
  */
 
 import type { LucideIcon } from 'lucide-react';
-import { Combine, Contrast, FileText, ImagePlus, Images, KeyRound, QrCode, Scissors, ShieldCheck } from 'lucide-react';
+import { Combine, Contrast, FileText, ImagePlus, Images, KeyRound, QrCode, Scissors, ShieldCheck, Type } from 'lucide-react';
 import type { ToolMode } from '@/lib/enhance/types';
 
 /** Coarse groups used by the shortcut chips (rendered once >1 exists). */
@@ -185,6 +185,23 @@ export const TOOL_REGISTRY: ToolDefinition[] = [
     gradient: 'linear-gradient(135deg, #06B6D4 0%, #0EA5E9 55%, #243BFF 100%)',
     chips: ['PNG · SVG', 'Wi-Fi & URLs', 'Color control'],
     cta: 'Create QR',
+  },
+  {
+    id: 'word-count',
+    slug: 'word-counter',
+    title: 'Word Counter',
+    description:
+      'Count words, characters, sentences and reading time as you type — with top-keyword insight, fully offline.',
+    seoTitle: 'Word Counter — Words, Characters, Sentences & Reading Time',
+    seoDescription:
+      'Count words, characters with and without spaces, sentences, paragraphs and reading time live as you type. Top keywords included — free, private, fully offline.',
+    aliases: ['word count', 'character count', 'letter count', 'reading time', 'text length'],
+    keywords: ['words', 'characters', 'sentences', 'paragraphs', 'essay', 'keywords', 'speaking time'],
+    category: 'text',
+    icon: Type,
+    gradient: 'linear-gradient(135deg, #F59E0B 0%, #F43F5E 55%, #A12CFF 100%)',
+    chips: ['Live stats', 'Reading time', 'Top keywords'],
+    cta: 'Count',
   },
 ];
 

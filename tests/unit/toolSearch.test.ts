@@ -27,8 +27,9 @@ describe('searchTools', () => {
       'to-pdf',
       'password-gen',
       'qr-gen',
+      'word-count',
     ]);
-    expect(ids(searchTools(TOOL_REGISTRY, '   '))).toHaveLength(9);
+    expect(ids(searchTools(TOOL_REGISTRY, '   '))).toHaveLength(10);
   });
 
   it('matches by title prefix first', () => {
@@ -89,6 +90,6 @@ describe('searchTools', () => {
 
 describe('getToolCategories', () => {
   it('returns unique categories in preferred order — chips appear once >1 exists', () => {
-    expect(getToolCategories(TOOL_REGISTRY)).toEqual(['pdf', 'image', 'security', 'utility']);
+    expect(getToolCategories(TOOL_REGISTRY)).toEqual(['pdf', 'image', 'security', 'utility', 'text']);
   });
 });

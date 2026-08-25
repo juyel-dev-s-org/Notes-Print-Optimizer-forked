@@ -18,7 +18,8 @@ export type ToolMode =
   | 'split'
   | 'to-pdf'
   | 'password-gen'
-  | 'qr-gen';
+  | 'qr-gen'
+  | 'word-count';
 
 export type EnhanceStep = 'upload' | 'arrange' | 'enhance';
 
