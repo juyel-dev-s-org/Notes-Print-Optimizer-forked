@@ -57,6 +57,11 @@ const WordCountToolView = dynamic(() => import('@/components/wordcount/WordCount
   ssr: false,
 });
 
+const CaseConvertToolView = dynamic(() => import('@/components/caseconvert/CaseConvertToolView').then(m => m.CaseConvertToolView), {
+  loading: () => <CardSkeleton />,
+  ssr: false,
+});
+
 interface OrchestratorProps extends WorkflowUIProps {
   /** Enhance export -> N-Up layout handoff (optional for tests/storybook). */
   onEnhanceHandoff?: (pages: HandoffPageInput[]) => Promise<void>;
@@ -149,6 +154,14 @@ export const PlatformUIOrchestrator: React.FC<OrchestratorProps> = ({ state, act
     return (
       <div className="flex w-full max-w-full min-w-0 flex-col gap-4 pb-20 md:gap-6 md:pb-12">
         <WordCountToolView onBack={() => onToolModeChange?.(null)} />
+      </div>
+    );
+  }
+
+  if (toolMode === 'case-convert') {
+    return (
+      <div className="flex w-full max-w-full min-w-0 flex-col gap-4 pb-20 md:gap-6 md:pb-12">
+        <CaseConvertToolView onBack={() => onToolModeChange?.(null)} />
       </div>
     );
   }

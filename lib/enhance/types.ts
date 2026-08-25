@@ -19,7 +19,8 @@ export type ToolMode =
   | 'to-pdf'
   | 'password-gen'
   | 'qr-gen'
-  | 'word-count';
+  | 'word-count'
+  | 'case-convert';
 
 export type EnhanceStep = 'upload' | 'arrange' | 'enhance';
 

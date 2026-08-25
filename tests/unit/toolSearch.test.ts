@@ -28,8 +28,9 @@ describe('searchTools', () => {
       'password-gen',
       'qr-gen',
       'word-count',
+      'case-convert',
     ]);
-    expect(ids(searchTools(TOOL_REGISTRY, '   '))).toHaveLength(10);
+    expect(ids(searchTools(TOOL_REGISTRY, '   '))).toHaveLength(11);
   });
 
   it('matches by title prefix first', () => {

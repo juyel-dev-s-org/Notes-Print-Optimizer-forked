@@ -17,6 +17,7 @@ const TOOLS = [
   { slug: 'password-generator', name: 'Strong Password Generator' },
   { slug: 'qr-generator', name: 'QR Code Generator' },
   { slug: 'word-counter', name: 'Word Counter' },
+  { slug: 'case-converter', name: 'Case Converter' },
 ];
 
 test.describe('tool routes — direct navigation', () => {

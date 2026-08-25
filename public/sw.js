@@ -1,4 +1,4 @@
-const VERSION = 'v14';
+const VERSION = 'v15';
 const CACHE = `pw-optimizer-${VERSION}`;
 const STATIC_CACHE = `pw-optimizer-static-${VERSION}`;
 const DYNAMIC_CACHE = `pw-optimizer-dynamic-${VERSION}`;
@@ -22,6 +22,7 @@ const TOOL_ROUTES = [
   '/tools/password-generator/',
   '/tools/qr-generator/',
   '/tools/word-counter/',
+  '/tools/case-converter/',
 ];
 
 const PRECACHE_URLS = [

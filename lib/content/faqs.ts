@@ -242,6 +242,28 @@ export const TOOL_FAQS: Record<string, FaqItem[]> = {
       a: 'Never — counting happens live in your browser as you type, and nothing is stored after you leave. Safe for drafts, contracts, and unpublished writing.',
     },
   ],
+  'case-converter': [
+    {
+      q: 'What happens to punctuation when converting?',
+      a: 'Punctuation and numbers stay untouched — only letter cases change. That keeps emails, code snippets, and URLs recognizable after conversion.',
+    },
+    {
+      q: 'What is the difference between camelCase and PascalCase?',
+      a: 'camelCase starts lowercase (myVariable) and is the norm in JavaScript, while PascalCase starts uppercase (MyClass) and is common for class names. Both strip spaces and rejoin words.',
+    },
+    {
+      q: 'When should I use snake_case versus kebab-case?',
+      a: 'snake_case (my_variable) dominates Python and databases; kebab-case (my-variable) is idiomatic in CSS classes and many URLs. This tool outputs both instantly.',
+    },
+    {
+      q: 'Will converting affect my formatting?',
+      a: 'No line breaks, tabs, or multiple spaces are collapsed or trimmed. Each paragraph keeps its original shape so pasted documents stay tidy.',
+    },
+    {
+      q: 'Is my text sent to a server?',
+      a: 'Never — conversion runs entirely in your browser as you type, and nothing is retained after you leave. Safe for source code and confidential notes.',
+    },
+  ],
 };
 
 /** FAQs for a tool slug; empty array for unknown slugs (defensive). */

@@ -5,7 +5,7 @@
  */
 
 import type { LucideIcon } from 'lucide-react';
-import { Combine, Contrast, FileText, ImagePlus, Images, KeyRound, QrCode, Scissors, ShieldCheck, Type } from 'lucide-react';
+import { CaseSensitive, Combine, Contrast, FileText, ImagePlus, Images, KeyRound, QrCode, Scissors, ShieldCheck, Type } from 'lucide-react';
 import type { ToolMode } from '@/lib/enhance/types';
 
 /** Coarse groups used by the shortcut chips (rendered once >1 exists). */
@@ -202,6 +202,23 @@ export const TOOL_REGISTRY: ToolDefinition[] = [
     gradient: 'linear-gradient(135deg, #F59E0B 0%, #F43F5E 55%, #A12CFF 100%)',
     chips: ['Live stats', 'Reading time', 'Top keywords'],
     cta: 'Count',
+  },
+  {
+    id: 'case-convert',
+    slug: 'case-converter',
+    title: 'Case Converter',
+    description:
+      'Switch text between UPPERCASE, lowercase, Title Case, camelCase, snake_case and more — one tap each.',
+    seoTitle: 'Case Converter — UPPER, lower, Title, camel, snake & kebab',
+    seoDescription:
+      'Convert text between UPPERCASE, lowercase, Title Case, Sentence case, camelCase, PascalCase, snake_case and kebab-case instantly — free, private, on-device.',
+    aliases: ['uppercase', 'lowercase', 'title case', 'camelcase', 'snake case', 'kebab case', 'capitalize'],
+    keywords: ['convert case', 'text transform', 'sentence case', 'pascalcase', 'alternating', 'inverse'],
+    category: 'text',
+    icon: CaseSensitive,
+    gradient: 'linear-gradient(135deg, #14B8A6 0%, #059669 55%, #06B6D4 100%)',
+    chips: ['11 formats', 'One-tap copy', 'Live convert'],
+    cta: 'Convert',
   },
 ];
 
