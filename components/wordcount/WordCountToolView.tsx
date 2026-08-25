@@ -152,7 +152,7 @@ export const WordCountToolView: React.FC<WordCountToolViewProps> = ({ onBack }) 
                 className="flex items-center gap-1.5 rounded-full border border-primary/25 bg-primary/10 px-3 py-1.5 text-xs font-bold text-primary-soft"
               >
                 {word}
-                <span className="rounded-full bg-primary/20 px-1.5 py-0.5 text-[10px] tabular-nums">×{count}</span>
+                <span className="rounded-full bg-primary/20 px-1.5 py-0.5 text-2xs tabular-nums">×{count}</span>
               </li>
             ))}
           </ul>

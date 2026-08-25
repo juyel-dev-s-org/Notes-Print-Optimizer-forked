@@ -69,7 +69,7 @@ export const LandingHero: React.FC = () => {
         {heroStats.map((stat) => (
           <div key={stat.label} className="flex flex-col items-center gap-1 rounded-xl border border-surface-2/50 bg-surface/30 px-2 py-2.5 backdrop-blur-sm">
             <stat.icon className="h-3.5 w-3.5 text-[#8B6BFF]" />
-            <span className="text-[10px] font-semibold tracking-wide text-ink">{stat.label}</span>
+            <span className="text-2xs font-semibold tracking-wide text-ink">{stat.label}</span>
             <span className="hidden text-[9px] leading-none text-ink-faint sm:block">{stat.sub}</span>
           </div>
         ))}

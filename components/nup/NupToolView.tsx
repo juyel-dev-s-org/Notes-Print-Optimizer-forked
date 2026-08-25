@@ -309,7 +309,7 @@ export const NupToolView: React.FC<NupToolViewProps> = ({ onBack }) => {
                     format === o.format ? 'border-primary/50 bg-primary/15 text-primary-soft shadow-sm' : 'border-elevated/60 bg-surface-2/40 text-ink-muted hover:bg-elevated'
                   }`}>
                   <span className="text-sm font-extrabold">{o.label}</span>
-                  <span className="text-[10px] leading-none text-ink-faint">{o.sub}</span>
+                  <span className="text-2xs leading-none text-ink-faint">{o.sub}</span>
                 </button>
               ))}
             </div>

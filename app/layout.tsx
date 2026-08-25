@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from 'next';
-import { Plus_Jakarta_Sans, Outfit } from 'next/font/google';
+import { Plus_Jakarta_Sans, Outfit, Geist_Mono } from 'next/font/google';
 import { SITE_URL, ogImageUrl, withBase } from '@/lib/site';
 import './globals.css';
 
@@ -13,6 +13,12 @@ const outfit = Outfit({
   subsets: ['latin'],
   variable: '--font-display',
   weight: ['600', '700'],
+  display: 'swap',
+});
+
+const geistMono = Geist_Mono({
+  subsets: ['latin'],
+  variable: '--font-geist-mono',
   display: 'swap',
 });
 
@@ -149,7 +155,7 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${jakarta.variable} ${outfit.variable} h-full bg-bg text-ink antialiased`}
+      className={`${jakarta.variable} ${outfit.variable} ${geistMono.variable} h-full bg-bg text-ink antialiased`}
       suppressHydrationWarning
     >
       <head>

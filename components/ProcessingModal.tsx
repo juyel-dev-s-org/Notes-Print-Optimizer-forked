@@ -38,7 +38,7 @@ export const ProcessingModal: React.FC<ProcessingModalProps> = ({ progress, phas
               <Loader2 className="h-6 w-6 animate-spin" />
             </div>
             <div className="flex-1 min-w-0">
-              <span className="text-[10px] font-bold tracking-wider uppercase text-primary-soft">
+              <span className="text-2xs font-bold tracking-wider uppercase text-primary-soft">
                 {phaseTitle || 'Processing Workflow'}
               </span>
               <h3 id="processing-modal-title" className="text-sm font-bold text-ink truncate">
@@ -67,7 +67,7 @@ export const ProcessingModal: React.FC<ProcessingModalProps> = ({ progress, phas
 
           {thumbArray.length > 0 && (
             <div className="mt-4">
-              <span className="text-[10px] font-bold tracking-wider uppercase text-ink-muted mb-2 block">
+              <span className="text-2xs font-bold tracking-wider uppercase text-ink-muted mb-2 block">
                 Completed Pages ({thumbArray.length})
               </span>
               <div className="flex gap-2 overflow-x-auto pb-1" style={{ scrollbarWidth: 'thin' }}>
@@ -94,7 +94,7 @@ export const ProcessingModal: React.FC<ProcessingModalProps> = ({ progress, phas
                 <button
                   type="button"
                   onClick={onCancel}
-                  className="flex items-center gap-1 px-2.5 py-1.5 rounded-md bg-danger-faint/40 text-danger-soft hover:bg-danger-faint/60 transition-colors text-[10px] font-bold"
+                  className="flex items-center gap-1 px-2.5 py-1.5 rounded-md bg-danger-faint/40 text-danger-soft hover:bg-danger-faint/60 transition-colors text-2xs font-bold"
                 >
                   <XCircle className="h-3 w-3" /> Cancel
                 </button>

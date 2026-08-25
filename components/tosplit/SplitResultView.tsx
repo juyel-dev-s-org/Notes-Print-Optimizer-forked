@@ -59,7 +59,7 @@ export const SplitResultView: React.FC<{ workflow: SplitWorkflow }> = ({ workflo
               >
                 <FileText className="h-4 w-4 shrink-0 text-primary-soft" aria-hidden="true" />
                 <span className="min-w-0 flex-1 truncate text-xs font-bold text-ink">{o.name}</span>
-                <span className="shrink-0 text-[10px] tabular-nums text-ink-muted group-hover:text-primary-soft">save</span>
+                <span className="shrink-0 text-2xs tabular-nums text-ink-muted group-hover:text-primary-soft">save</span>
               </button>
             ))}
           </div>

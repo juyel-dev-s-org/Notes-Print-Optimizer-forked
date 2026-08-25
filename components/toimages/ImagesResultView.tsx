@@ -61,7 +61,7 @@ export const ImagesResultView: React.FC<{ workflow: ImagesWorkflow }> = ({ workf
               </div>
             )}
           </div>
-          <p className="mt-1.5 text-[10px] text-ink-faint">Tap a thumbnail to save that single image</p>
+          <p className="mt-1.5 text-2xs text-ink-faint">Tap a thumbnail to save that single image</p>
         </div>
       </div>
 
@@ -99,7 +99,7 @@ export const ImagesResultView: React.FC<{ workflow: ImagesWorkflow }> = ({ workf
         </a>
       </div>
 
-      <p className="pb-2 text-center text-[10px] text-ink-faint">
+      <p className="pb-2 text-center text-2xs text-ink-faint">
         Individual files: <span className="font-semibold">{zipBase}-p01.{state.results[0]?.name.split('.').pop() ?? 'jpg'}</span>, -p02, …
       </p>
       {state.error && (

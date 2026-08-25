@@ -261,7 +261,7 @@ export const Header: React.FC<HeaderProps> = ({
               </div>
 
               {/* Drawer Footer */}
-              <div className="space-y-0.5 border-t border-surface-2 p-3 text-center text-[10px] text-ink-muted">
+              <div className="space-y-0.5 border-t border-surface-2 p-3 text-center text-2xs text-ink-muted">
                 <div>&copy; 2026 Juyel Hossain &bull; JSL v1.0</div>
                 <a
                   href="mailto:myself.juyel.dev@gmail.com"

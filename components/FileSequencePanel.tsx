@@ -170,7 +170,7 @@ export const FileSequencePanel: React.FC<FileSequencePanelProps> = ({
                 </div>
                 <div className="min-w-0 flex-1">
                   <p className="truncate text-xs font-bold text-ink">{item.name}</p>
-                  <p className="text-[10px] text-ink-muted">{item.sizeMB} MB</p>
+                  <p className="text-2xs text-ink-muted">{item.sizeMB} MB</p>
                 </div>
               </div>
 

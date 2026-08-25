@@ -113,7 +113,7 @@ export const SettingsDrawer: React.FC<SettingsDrawerProps> = ({ onAppAction }) =
             )}
           </span>
           {item.description && (
-            <span className="block truncate text-[10px] text-ink-muted">{item.description}</span>
+            <span className="block truncate text-2xs text-ink-muted">{item.description}</span>
           )}
         </span>
         {item.action.type === 'link' && item.action.external && (
@@ -184,7 +184,7 @@ export const SettingsDrawer: React.FC<SettingsDrawerProps> = ({ onAppAction }) =
               <span className="flex-1 text-xs font-bold uppercase tracking-wide text-ink">
                 {section.title}
               </span>
-              <span className="text-[10px] font-medium text-ink-muted">{section.items.length}</span>
+              <span className="text-2xs font-medium text-ink-muted">{section.items.length}</span>
               <motion.span
                 animate={{ rotate: isOpen ? 180 : 0 }}
                 transition={{ duration: 0.18 }}

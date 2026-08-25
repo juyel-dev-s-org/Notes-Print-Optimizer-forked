@@ -89,11 +89,11 @@ export const FullPdfViewerPreview: React.FC<FullPdfViewerPreviewProps> = ({
           <div>
             <h3 className="text-xs sm:text-sm font-bold text-ink flex items-center gap-2">
               <span>{title}</span>
-              <span className="rounded-md bg-primary-strong/30 px-2 py-0.5 text-[10px] font-bold text-primary-soft border border-primary/30">
+              <span className="rounded-md bg-primary-strong/30 px-2 py-0.5 text-2xs font-bold text-primary-soft border border-primary/30">
                 {layoutConfig.gridFormat} Grid
               </span>
             </h3>
-            <p className="text-[10px] sm:text-xs text-ink-muted">
+            <p className="text-2xs sm:text-xs text-ink-muted">
               Sheet {currentSheetIdx + 1} of {totalSheets} &bull; A4 {layoutConfig.orientation}
             </p>
           </div>
@@ -108,7 +108,7 @@ export const FullPdfViewerPreview: React.FC<FullPdfViewerPreviewProps> = ({
               onClick={() => setViewMode('single')}
               aria-pressed={viewMode === 'single'}
               aria-label="View single sheet"
-              className={`flex items-center gap-1 px-2 py-1 rounded-md text-[10px] font-bold transition-all ${
+              className={`flex items-center gap-1 px-2 py-1 rounded-md text-2xs font-bold transition-all ${
                 viewMode === 'single'
                   ? 'bg-primary-strong text-white shadow-xs'
                   : 'text-ink-muted hover:text-ink'
@@ -124,7 +124,7 @@ export const FullPdfViewerPreview: React.FC<FullPdfViewerPreviewProps> = ({
               onClick={() => setViewMode('grid')}
               aria-pressed={viewMode === 'grid'}
               aria-label="Show grid overview"
-              className={`flex items-center gap-1 px-2 py-1 rounded-md text-[10px] font-bold transition-all ${
+              className={`flex items-center gap-1 px-2 py-1 rounded-md text-2xs font-bold transition-all ${
                 viewMode === 'grid'
                   ? 'bg-primary-strong text-white shadow-xs'
                   : 'text-ink-muted hover:text-ink'
@@ -138,7 +138,7 @@ export const FullPdfViewerPreview: React.FC<FullPdfViewerPreviewProps> = ({
 
           {/* Zoom controls (Single Sheet Mode) */}
           {viewMode === 'single' && (
-            <div className="hidden sm:flex items-center gap-1 rounded-lg bg-bg p-1 border border-surface-2 text-[10px]">
+            <div className="hidden sm:flex items-center gap-1 rounded-lg bg-bg p-1 border border-surface-2 text-2xs">
               <button
                 type="button"
                 onClick={handleZoomOut}
@@ -293,7 +293,7 @@ export const FullPdfViewerPreview: React.FC<FullPdfViewerPreviewProps> = ({
             >
               <div className="mb-2 flex items-center justify-between text-[11px] font-bold text-ink-muted">
                 <span>Sheet {sIdx + 1} of {totalSheets}</span>
-                <span className="text-[10px] text-primary-soft font-semibold">{layoutConfig.gridFormat}</span>
+                <span className="text-2xs text-primary-soft font-semibold">{layoutConfig.gridFormat}</span>
               </div>
 
               {/* Realistic A4 Thumbnail */}

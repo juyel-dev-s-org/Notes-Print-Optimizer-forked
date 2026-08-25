@@ -12,6 +12,15 @@
   --font-sans: var(--font-jakarta), ui-sans-serif, system-ui, -apple-system,
     "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
 
+  /* Technical data face — payloads, filenames, byte counts, coordinates. */
+  --font-mono: var(--font-geist-mono), ui-monospace, "SF Mono", Consolas,
+    "Liberation Mono", Menlo, monospace;
+
+  /* Micro type tier — sanctioned floor for chips/badges/captions.
+     The main scale starts at 12px; 11px exists so tiny labels never
+     dip to illegible 10px arbitrary values. */
+  --text-2xs: 0.6875rem;
+
   /* Semantic colors */
   --color-bg: #020617; /* slate-950 page background */
   --color-surface: #0f172a; /* slate-900 cards */
@@ -45,7 +54,7 @@
 
   --color-ink: #f1f5f9; /* slate-100 primary text */
   --color-ink-muted: #94a3b8; /* slate-400 secondary text */
-  --color-ink-faint: #64748b; /* slate-500 tertiary text */
+  --color-ink-faint: #7e8ca8; /* WCAG-AA (5.3:1 on surface) tertiary text */
 
   /* Component radii */
   --radius-btn: 0.75rem;
@@ -93,9 +102,9 @@
   --color-accent-soft: #6d28d9;
   --color-accent-deep: #5b21b6;
 
-  --color-success: #059669;
-  --color-success-strong: #047857;
-  --color-success-deep: #065f46;
+  --color-success: #047857; /* emerald-700 — AA on white (5.5:1) as small text */
+  --color-success-strong: #059669; /* emerald-600 */
+  --color-success-deep: #065f46; /* emerald-800 */
   --color-success-soft: #047857;
   --color-success-faint: #ecfdf5;
   --color-warning: #b45309;
@@ -193,6 +202,15 @@ html {
 }
 .scrollbar-none::-webkit-scrollbar {
   display: none;
+}
+
+/* Grounded headings — subtle optical tightening. Utility tracking-* classes
+   (higher specificity) still win where a component opts out. */
+h1, h2, h3 {
+  letter-spacing: -0.011em;
+}
+.font-display, [class*="font-display"] {
+  letter-spacing: -0.02em;
 }
 
 /* Stable viewport — prevent horizontal shift without clipping hover/shadow.

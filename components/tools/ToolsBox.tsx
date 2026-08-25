@@ -57,7 +57,7 @@ export const ToolsBox: React.FC = () => {
     >
       <div className="flex items-center justify-between px-1">
         <h2 className="text-sm font-bold tracking-wide text-ink">Choose a Tool</h2>
-        <span className="text-[10px] font-medium text-ink-faint">Free · No sign-up</span>
+        <span className="text-2xs font-medium text-ink-faint">Free · No sign-up</span>
       </div>
 
       {/* Search */}

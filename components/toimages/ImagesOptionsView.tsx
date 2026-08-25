@@ -213,7 +213,7 @@ export const ImagesOptionsView: React.FC<{ workflow: ImagesWorkflow }> = ({ work
               Convert to {FORMAT_EXT[state.format].toUpperCase()}
             </Button>
             {state.rangeMode === 'all' && !canConvert && state.pageCount === null && (
-              <p className="-mt-2 text-center text-[10px] font-semibold text-ink-faint">Reading page count…</p>
+              <p className="-mt-2 text-center text-2xs font-semibold text-ink-faint">Reading page count…</p>
             )}
             <Button variant="ghost" size="md" fullWidth onClick={handleReset}>
               Choose a different file

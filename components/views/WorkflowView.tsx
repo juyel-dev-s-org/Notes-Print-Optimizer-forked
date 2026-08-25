@@ -377,7 +377,7 @@ export const WorkflowView: React.FC<WorkflowUIProps> = ({ state, actions, handle
                     suffix="-PrintReady.pdf"
                     label="Print PDF filename"
                   />
-                  <p className="mt-1.5 text-[10px] text-ink-faint">Used by the Download button below.</p>
+                  <p className="mt-1.5 text-2xs text-ink-faint">Used by the Download button below.</p>
                 </div>
               )}
 

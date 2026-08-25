@@ -160,7 +160,7 @@ export const CaseConvertToolView: React.FC<CaseConvertToolViewProps> = ({ onBack
           >
             <div className="flex items-center justify-between gap-2">
               <span className="text-xs font-extrabold tracking-wide text-ink-muted">{c.label}</span>
-              <span className="truncate text-[10px] font-medium text-ink-faint">{c.hint}</span>
+              <span className="truncate text-2xs font-medium text-ink-faint">{c.hint}</span>
             </div>
             <div className="flex items-center gap-2">
               <output

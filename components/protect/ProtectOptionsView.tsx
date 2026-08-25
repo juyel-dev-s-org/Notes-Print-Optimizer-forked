@@ -22,7 +22,7 @@ const ISO_LINE = (
 );
 
 const HONESTY_NOTE = (
-  <p className="text-[10px] leading-relaxed text-warning-strong">
+  <p className="text-2xs leading-relaxed text-warning-strong">
     Note: permission locks are honoured by compliant PDF readers. A strong open
     password is what truly keeps the contents private.
   </p>
@@ -138,7 +138,7 @@ export const ProtectOptionsView: React.FC<{ workflow: ProtectWorkflow }> = ({ wo
                 value={state.ownerPassword}
                 onChange={handleSetOwnerPassword}
               />
-              <p className="text-[10px] leading-relaxed text-ink-faint">
+              <p className="text-2xs leading-relaxed text-ink-faint">
                 The owner password can lift every restriction above. Leave it blank and an
                 unguessable random key is generated on this device only.
               </p>
@@ -167,7 +167,7 @@ export const ProtectOptionsView: React.FC<{ workflow: ProtectWorkflow }> = ({ wo
               Protect PDF
             </Button>
             {!canProtect && (
-              <p className="-mt-2 text-center text-[10px] font-semibold text-ink-faint">
+              <p className="-mt-2 text-center text-2xs font-semibold text-ink-faint">
                 Set an open password or enable at least one lock.
               </p>
             )}

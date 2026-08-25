@@ -107,7 +107,7 @@ const LazyPageCard: React.FC<{
       </div>
 
       {/* Card Footer Badges */}
-      <div className="flex items-center justify-between p-2 text-[10px] bg-surface border-t border-surface-2">
+      <div className="flex items-center justify-between p-2 text-2xs bg-surface border-t border-surface-2">
         <span className="truncate rounded-sm bg-surface-2 px-1.5 py-0.5 font-medium text-ink-muted max-w-[80px]">
           {page.profile.classification.replace('_', ' ')}
         </span>

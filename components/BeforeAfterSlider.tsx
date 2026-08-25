@@ -243,7 +243,7 @@ export const BeforeAfterSlider: React.FC<BeforeAfterSliderProps> = ({ page, merg
           style={{ left: `${sliderPos}%` }}
         >
           <div className="absolute top-1/2 -translate-x-1/2 -translate-y-1/2 rounded-full bg-primary-strong p-2 text-white shadow-lg ring-2 ring-white/80 active:scale-110 transition-transform">
-            <div className="flex items-center gap-0.5 text-[10px] font-bold">
+            <div className="flex items-center gap-0.5 text-2xs font-bold">
               <ChevronLeft className="h-3 w-3" aria-hidden="true" />
               <ChevronRight className="h-3 w-3" aria-hidden="true" />
             </div>

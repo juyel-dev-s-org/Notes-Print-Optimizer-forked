@@ -67,7 +67,7 @@ function MetricsPanel({ defaultOpen = false }: MetricsPanelProps) {
       <button
         type="button"
         onClick={() => metricsBus.clearHistory()}
-        className="mt-2 w-full rounded border border-elevated py-1 text-[10px] text-ink-faint hover:text-ink"
+        className="mt-2 w-full rounded border border-elevated py-1 text-2xs text-ink-faint hover:text-ink"
       >
         Clear
       </button>

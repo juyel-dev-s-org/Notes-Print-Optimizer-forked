@@ -99,7 +99,7 @@ export const MergeArrangeView: React.FC<{ workflow: MergeWorkflow }> = ({ workfl
                 Merge {state.files.length >= 2 ? `${state.files.length} PDFs` : 'PDFs'}
               </Button>
               {state.files.length < 2 && (
-                <p className="-mt-1 text-center text-[10px] font-semibold text-ink-faint">Add at least two files to merge.</p>
+                <p className="-mt-1 text-center text-2xs font-semibold text-ink-faint">Add at least two files to merge.</p>
               )}
               <Button variant="ghost" size="md" fullWidth onClick={handleReset}>
                 <RotateCcw className="h-4 w-4" aria-hidden="true" />

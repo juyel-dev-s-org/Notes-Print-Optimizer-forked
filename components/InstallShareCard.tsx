@@ -157,13 +157,13 @@ export const InstallShareCard: React.FC = () => {
         </p>
 
         <div className="mt-3 flex flex-wrap gap-1.5">
-          <span className="flex items-center gap-1 rounded-full border border-elevated/60 bg-surface-2/60 px-2 py-0.5 text-[10px] font-medium text-ink-muted">
+          <span className="flex items-center gap-1 rounded-full border border-elevated/60 bg-surface-2/60 px-2 py-0.5 text-2xs font-medium text-ink-muted">
             <Zap className="h-3 w-3 text-warning" /> Fast
           </span>
-          <span className="flex items-center gap-1 rounded-full border border-elevated/60 bg-surface-2/60 px-2 py-0.5 text-[10px] font-medium text-ink-muted">
+          <span className="flex items-center gap-1 rounded-full border border-elevated/60 bg-surface-2/60 px-2 py-0.5 text-2xs font-medium text-ink-muted">
             <WifiOff className="h-3 w-3 text-primary-soft" /> Offline
           </span>
-          <span className="flex items-center gap-1 rounded-full border border-elevated/60 bg-surface-2/60 px-2 py-0.5 text-[10px] font-medium text-ink-muted">
+          <span className="flex items-center gap-1 rounded-full border border-elevated/60 bg-surface-2/60 px-2 py-0.5 text-2xs font-medium text-ink-muted">
             <ShieldCheck className="h-3 w-3 text-success" /> Private
           </span>
         </div>

@@ -227,7 +227,7 @@ export const ProcessingSettingsPanel: React.FC<ProcessingSettingsPanelProps> = (
             <span className="block text-xs font-bold text-ink sm:text-sm">
               Processing Settings
             </span>
-            <span className="block text-[10px] text-ink-muted">
+            <span className="block text-2xs text-ink-muted">
               Toggle &amp; fine-tune individual parameters
             </span>
           </div>
@@ -251,7 +251,7 @@ export const ProcessingSettingsPanel: React.FC<ProcessingSettingsPanelProps> = (
         <div id="processing-settings-body" className="border-t border-surface-2 px-4 py-4 space-y-4 animate-in fade-in slide-in-from-top-1 duration-200">
           {/* Preset Selector */}
           <div className="flex flex-col gap-1.5">
-            <label className="text-[10px] font-semibold text-ink-muted uppercase tracking-wider">
+            <label className="text-2xs font-semibold text-ink-muted uppercase tracking-wider">
               Preset Base
             </label>
             <select

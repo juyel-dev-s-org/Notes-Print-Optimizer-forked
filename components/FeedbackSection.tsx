@@ -344,7 +344,7 @@ export const FeedbackSection: React.FC<FeedbackSectionProps> = ({
                   <Paperclip className="h-3.5 w-3.5 text-primary-soft" />
                   <span>Attach Processed PDF (Optional)</span>
                   {!finalPrintPdfBlob && (
-                    <span className="text-[10px] text-warning/80">(Available after generating PDF)</span>
+                    <span className="text-2xs text-warning/80">(Available after generating PDF)</span>
                   )}
                 </div>
                 <span className="text-[11px] text-ink-muted">
@@ -402,7 +402,7 @@ export const FeedbackSection: React.FC<FeedbackSectionProps> = ({
             </button>
           </div>
 
-          <p className="text-center text-[10px] text-ink-muted">
+          <p className="text-center text-2xs text-ink-muted">
             Developer?{' '}
 <button
               ref={devModalTriggerRef}

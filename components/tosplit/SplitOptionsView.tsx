@@ -209,7 +209,7 @@ export const SplitOptionsView: React.FC<{ workflow: SplitWorkflow }> = ({ workfl
               {state.mode === 'extract' ? 'Extract Pages' : 'Split PDF'}
             </Button>
             {!canRun && state.pageCount === null && (
-              <p className="-mt-2 text-center text-[10px] font-semibold text-ink-faint">Reading page count…</p>
+              <p className="-mt-2 text-center text-2xs font-semibold text-ink-faint">Reading page count…</p>
             )}
             <Button variant="ghost" size="md" fullWidth onClick={handleReset}>
               Choose a different file

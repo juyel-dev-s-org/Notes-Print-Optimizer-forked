@@ -1009,7 +1009,7 @@ function Controls(props: {
             >
               <span className="text-sm font-extrabold">{ECC_META[k].label}</span>
               <span className="text-[11px] font-bold">{ECC_META[k].hint}</span>
-              <span className="mt-0.5 line-clamp-2 text-[10px] leading-tight text-ink-faint">{ECC_META[k].desc}</span>
+              <span className="mt-0.5 line-clamp-2 text-2xs leading-tight text-ink-faint">{ECC_META[k].desc}</span>
             </button>
           ))}
         </div>
