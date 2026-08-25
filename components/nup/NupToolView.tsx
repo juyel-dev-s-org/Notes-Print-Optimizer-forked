@@ -1,27 +1,22 @@
 'use client';
 
-import React, { useMemo, useRef, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
   ArrowLeft,
-  ArrowUp,
-  ArrowDown,
-  FileText,
-  Trash2,
-  Upload,
-  Download,
-  RotateCcw,
   Check,
+  Download,
+  FileText,
   Grid2x2Check,
   Loader2,
+  RotateCcw,
+  Upload,
 } from 'lucide-react';
-import { PDFDocument, rgb, StandardFonts } from 'pdf-lib';
+import { planSmartOrder } from '@/lib/rearrange';
+import { FileSequencePanel } from '@/components/FileSequencePanel';
 import {
   NUP_FORMATS,
-  cellRect,
-  fitInto,
   fmtBytes,
   nupGrid,
-  nupPaperSize,
   planSheet,
   totalSheetsFor,
   type NupFormat,
@@ -29,6 +24,8 @@ import {
   type NupOrientation,
   type NupPaper,
 } from '@/lib/nup/nupLayout';
+import { buildNup, loadNupDeps, mergeBytes, type BuildResult } from '@/lib/nup/nupService';
+import { HoldToPreview } from './HoldToPreview';
 
 export interface NupToolViewProps {
   onBack: () => void;
@@ -38,145 +35,64 @@ type Step = 'upload' | 'layout' | 'done';
 
 interface Uploaded {
   id: string;
-  file: File;
+  /** File name — doubles as the Smart Arrange series key. */
+  name: string;
   bytes: Uint8Array;
   pages: number;
-  /** First page aspect (w/h) for the mini page-icon. */
-  aspect: number;
-}
-
-interface BuildResult {
-  blob: Blob;
-  sheets: number;
-  ms: number;
-}
-
-/** Merge many PDFs (or pass single through) — one parse per source. */
-async function mergeBytes(files: Uploaded[]): Promise<{ bytes: Uint8Array; pages: number }> {
-  if (files.length === 1) return { bytes: files[0].bytes, pages: files[0].pages };
-  const out = await PDFDocument.create();
-  for (const f of files) {
-    const src = await PDFDocument.load(f.bytes.slice(), { ignoreEncryption: true });
-    const copied = await out.copyPages(src, src.getPageIndices());
-    copied.forEach((p) => out.addPage(p));
-  }
-  return { bytes: await out.save({ useObjectStreams: false }), pages: out.getPageCount() };
-}
-
-/**
- * Build the N-up document.
- * Perf notes:
- *  - Source doc parsed ONCE; every source page embedded ONCE via embedPages
- *    in a single batch (old code re-parsed bytes per sheet → O(sheets × parse)).
- *  - drawPage is vector — no raster, no canvas, no worker needed.
- *  - Rotation-aware: /Rotate 90/270 transposes the effective page size and
- *    draws with an extra rotation matrix so scans land upright.
- */
-async function buildNup(inputBytes: Uint8Array, opts: NupOptions, onProgress?: (done: number, total: number) => void): Promise<BuildResult> {
-  const t0 = performance.now();
-  const plan = planSheet(opts);
-  const { w: paperW, h: paperH } = nupPaperSize(opts.paper, opts.orientation);
-  const srcDoc = await PDFDocument.load(inputBytes.slice(), { ignoreEncryption: true });
-  const srcPages = srcDoc.getPages();
-
-  // Effective size honors /Rotate (90/270 swaps w/h).
-  const effSizes = srcPages.map((p) => {
-    const { width, height } = p.getSize();
-    const rot = ((p.getRotation().angle % 360) + 360) % 360;
-    return rot === 90 || rot === 270 ? { width: height, height: width } : { width, height };
-  });
-
-  // Batch-embed ALL pages once (pdf-lib copies objects once, shared refs reused).
-  const out = await PDFDocument.create();
-  const font = await out.embedFont(StandardFonts.Helvetica);
-  const embeddedAll = await out.embedPages(
-    srcPages.map((p) => p),
-    undefined,
-    srcPages.map((p) => {
-      const rot = ((p.getRotation().angle % 360) + 360) % 360;
-      if (rot === 90) return [0, 0, 1, 0, 0, 1] as [number, number, number, number, number, number];
-      if (rot === 270) return [0, -1, 1, 0, 0, 0] as [number, number, number, number, number, number];
-      return undefined;
-    })
-  );
-
-  const sheets = totalSheetsFor(srcPages.length, plan.perSheet);
-  const borderGray = rgb(0.82, 0.84, 0.88);
-  const numGray = rgb(0.42, 0.47, 0.55);
-
-  for (let si = 0; si < sheets; si++) {
-    if (onProgress && (si % 4 === 0 || si === sheets - 1)) onProgress(si + 1, sheets);
-    const page = out.addPage([paperW, paperH]);
-    const startIdx = si * plan.perSheet;
-    for (let k = 0; k < plan.perSheet; k++) {
-      const srcIdx = startIdx + k;
-      if (srcIdx >= srcPages.length) break;
-      const cell = cellRect(plan, k, paperH);
-      const emb = embeddedAll[srcIdx];
-      const eff = effSizes[srcIdx];
-      const fit = fitInto(eff.width, eff.height, cell);
-      page.drawPage(emb, { x: fit.x, y: fit.y, width: fit.w, height: fit.h });
-      if (opts.borders) {
-        page.drawRectangle({
-          x: cell.x, y: cell.y, width: cell.w, height: cell.h,
-          borderWidth: 0.6, borderColor: borderGray,
-        });
-      }
-      if (opts.numbers) {
-        const label = String(srcIdx + 1);
-        const size = Math.min(9, Math.max(6, plan.cellW * 0.03));
-        const tw = font.widthOfTextAtSize(label, size);
-        page.drawText(label, {
-          x: cell.x + (cell.w - tw) / 2,
-          y: cell.y + 3.5,
-          size,
-          font,
-          color: numGray,
-        });
-      }
-    }
-    if (onProgress && si % 4 === 3) await new Promise((r) => setTimeout(r, 0)); // yield to UI
-  }
-
-  const bytes = await out.save({ useObjectStreams: false });
-  return {
-    blob: new Blob([bytes.buffer as ArrayBuffer], { type: 'application/pdf' }),
-    sheets,
-    ms: Math.round(performance.now() - t0),
-  };
+  size: number;
 }
 
 const PAPER_MM = { A4: [210, 297], LETTER: [216, 279], LEGAL: [216, 356] } as const;
 
-/** Live SVG mini-preview of one sheet — true geometry, not a fake grid. */
+/** Live SVG mini-preview of one sheet — true shared geometry, zero cost. */
 const SheetPreview: React.FC<{ opts: NupOptions; pageCount: number }> = ({ opts, pageCount }) => {
   const plan = planSheet(opts);
-  const { w, h } = nupPaperSize(opts.paper, opts.orientation);
+  const { w, h } = (() => {
+    // keep in sync with nupPaperSize without importing pdf values twice
+    const p = opts.paper === 'A4' ? { w: 595, h: 842 } : opts.paper === 'LETTER' ? { w: 612, h: 792 } : { w: 612, h: 1008 };
+    return opts.orientation === 'LANDSCAPE' ? { w: p.h, h: p.w } : p;
+  })();
   const vbW = 240;
   const vbH = (h / w) * vbW;
   const sx = vbW / w;
   const sy = vbH / h;
   const shown = Math.min(plan.perSheet, pageCount);
   return (
-    <svg viewBox={`0 0 ${vbW} ${vbH}`} className="w-full" role="img" aria-label={`Sheet preview ${opts.format}`}>
+    <svg viewBox={`0 0 ${vbW} ${vbH}`} className="w-full" role="img" aria-label={`Layout diagram, ${opts.format}`}>
       <rect x={0} y={0} width={vbW} height={vbH} rx={4} className="fill-white stroke-slate-200" strokeWidth={1} />
       {Array.from({ length: shown }).map((_, i) => {
-        const c = cellRect(plan, i, h);
-        const x = c.x * sx;
-        const y = c.y * sy;
+        const c = (() => {
+          const col = i % plan.cols;
+          const row = Math.floor(i / plan.cols);
+          const x = plan.marginLeft + col * (plan.cellW + plan.gapX);
+          const yTop = plan.marginTop + row * (plan.cellH + plan.gapY);
+          return { x, y: h - yTop - plan.cellH, w: plan.cellW, h: plan.cellH };
+        })();
+        const cx = c.x * sx;
+        const cy = c.y * sy;
         const cw = c.w * sx;
         const ch = c.h * sy;
-        // letterbox inner rect mimics a portrait-ish content box
-        const ar = 0.75; // typical slide/page aspect
+        const ar = 0.75;
         let iw = cw * 0.92;
         let ih = iw / ar;
-        if (ih > ch * 0.94) { ih = ch * 0.94; iw = ih * ar; }
+        if (ih > ch * 0.94) {
+          ih = ch * 0.94;
+          iw = ih * ar;
+        }
         return (
           <g key={i}>
-            {opts.borders && <rect x={x} y={y} width={cw} height={ch} className="fill-none stroke-slate-300" strokeWidth={0.7} />}
-            <rect x={x + (cw - iw) / 2} y={y + (ch - ih) / 2} width={iw} height={ih} rx={1.5} className="fill-indigo-50 stroke-indigo-200" strokeWidth={0.7} />
+            {opts.borders && <rect x={cx} y={cy} width={cw} height={ch} className="fill-none stroke-slate-300" strokeWidth={0.7} />}
+            <rect
+              x={cx + (cw - iw) / 2}
+              y={cy + (ch - ih) / 2}
+              width={iw}
+              height={ih}
+              rx={1.5}
+              className="fill-indigo-50 stroke-indigo-200"
+              strokeWidth={0.7}
+            />
             {opts.numbers && (
-              <text x={x + cw / 2} y={(y + ch + 8) > y + ch ? y + ch - 2 : y + ch + 6} textAnchor="middle" fontSize={6.5} className="fill-slate-500">
+              <text x={cx + cw / 2} y={cy + ch - 2} textAnchor="middle" fontSize={6.5} className="fill-slate-500">
                 {i + 1}
               </text>
             )}
@@ -188,9 +104,10 @@ const SheetPreview: React.FC<{ opts: NupOptions; pageCount: number }> = ({ opts,
 };
 
 /**
- * N-up — rebuilt production version.
- * Upload (multi→merge, single→skip) → Layout with live true-geometry preview
- * → vector export via pdf-lib. Rotation-aware, margin control, 9 formats.
+ * N-up — production flow.
+ * Upload (Smart Arrange series detection like Tool-1) → Layout with a live
+ * geometry diagram plus hold-to-see REAL page rendering → vector export.
+ * pdf-lib and pdf.js both load lazily, on first real use.
  */
 export const NupToolView: React.FC<NupToolViewProps> = ({ onBack }) => {
   const [step, setStep] = useState<Step>('upload');
@@ -212,28 +129,39 @@ export const NupToolView: React.FC<NupToolViewProps> = ({ onBack }) => {
 
   const opts: NupOptions = useMemo(
     () => ({ format, paper, orientation, margins: { outer: outerMm, inner: innerMm }, borders, numbers }),
-    [format, paper, orientation, outerMm, innerMm, borders, numbers]
+    [format, paper, orientation, outerMm, innerMm, borders, numbers],
   );
-  const perSheet = useMemo(() => nupGrid(format, orientation).cols * nupGrid(format, orientation).rows, [format, orientation]);
+  const grid = useMemo(() => nupGrid(format, orientation), [format, orientation]);
+  const perSheet = grid.cols * grid.rows;
   const totalSheets = useMemo(() => (totalPages ? totalSheetsFor(totalPages, perSheet) : 0), [totalPages, perSheet]);
+
+  // Warm the deps only when the user commits to the tool (first Continue).
+  // Cheap enough here, but keeps upload typing instant even on cold devices.
+  useEffect(() => {
+    if (step === 'layout') void loadNupDeps();
+  }, [step]);
 
   const addFiles = async (list: FileList | File[]) => {
     setError(null);
     const arr = Array.from(list).filter((f) => f.type === 'application/pdf' || f.name.toLowerCase().endsWith('.pdf'));
-    if (!arr.length) { setError('Please choose PDF files.'); return; }
+    if (!arr.length) {
+      setError('Please choose PDF files.');
+      return;
+    }
     setBusy(true);
     setProgress('Reading…');
     const next: Uploaded[] = [];
     for (const file of arr) {
       try {
         const buf = new Uint8Array(await file.arrayBuffer());
+        const { PDFDocument } = await loadNupDeps();
         const doc = await PDFDocument.load(buf.slice(), { ignoreEncryption: true });
-        const first = doc.getPage(0);
-        const { width, height } = first.getSize();
         next.push({
           id: `${file.name}-${file.size}-${next.length}`,
-          file, bytes: buf, pages: doc.getPageCount(),
-          aspect: width / height,
+          name: file.name,
+          bytes: buf,
+          pages: doc.getPageCount(),
+          size: file.size,
         });
       } catch {
         setError(`Couldn't read "${file.name}" — is it a valid PDF?`);
@@ -245,19 +173,38 @@ export const NupToolView: React.FC<NupToolViewProps> = ({ onBack }) => {
     setProgress(null);
   };
 
-  const removeAt = (idx: number) => setFiles((p) => p.filter((_, i) => i !== idx));
-  const move = (idx: number, dir: 'up' | 'down') =>
+  // --- sequence handlers mirroring Tool-1's FileSequencePanel contract ---
+  const handleMove = (idx: number, direction: 'UP' | 'DOWN') =>
     setFiles((p) => {
-      const t = dir === 'up' ? idx - 1 : idx + 1;
+      const t = direction === 'UP' ? idx - 1 : idx + 1;
       if (t < 0 || t >= p.length) return p;
       const c = [...p];
       [c[idx], c[t]] = [c[t], c[idx]];
       return c;
     });
 
+  const handleRemove = (idx: number) => setFiles((p) => p.filter((_, i) => i !== idx));
+
+  const handleReorder = (from: number, to: number) =>
+    setFiles((p) => {
+      if (from === to || from < 0 || to < 0 || from >= p.length || to >= p.length) return p;
+      const c = [...p];
+      const [moved] = c.splice(from, 1);
+      c.splice(to, 0, moved);
+      return c;
+    });
+
+  const handleSmartArrange = () =>
+    setFiles((p) => {
+      const plan = planSmartOrder(p); // Uploaded has id+name → RearrangeableItem
+      return plan.changed ? plan.orderedItems : p;
+    });
+
   const goLayout = async () => {
     if (!files.length) return;
-    setBusy(true); setError(null); setProgress(files.length > 1 ? 'Merging…' : 'Preparing…');
+    setBusy(true);
+    setError(null);
+    setProgress(files.length > 1 ? 'Merging…' : 'Preparing…');
     try {
       const { bytes, pages } = await mergeBytes(files);
       setMergedBytes(bytes);
@@ -266,13 +213,15 @@ export const NupToolView: React.FC<NupToolViewProps> = ({ onBack }) => {
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : 'Merge failed.');
     } finally {
-      setBusy(false); setProgress(null);
+      setBusy(false);
+      setProgress(null);
     }
   };
 
   const generate = async () => {
     if (!mergedBytes) return;
-    setBusy(true); setError(null);
+    setBusy(true);
+    setError(null);
     try {
       const r = await buildNup(mergedBytes, opts, (d, t) => setProgress(`Building sheet ${d}/${t}…`));
       setResult(r);
@@ -280,13 +229,18 @@ export const NupToolView: React.FC<NupToolViewProps> = ({ onBack }) => {
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message.slice(0, 180) : 'N-up failed.');
     } finally {
-      setBusy(false); setProgress(null);
+      setBusy(false);
+      setProgress(null);
     }
   };
 
   const reset = () => {
-    setStep('upload'); setFiles([]); setMergedBytes(null); setTotalPages(0);
-    setResult(null); setError(null);
+    setStep('upload');
+    setFiles([]);
+    setMergedBytes(null);
+    setTotalPages(0);
+    setResult(null);
+    setError(null);
   };
 
   const download = () => {
@@ -294,12 +248,17 @@ export const NupToolView: React.FC<NupToolViewProps> = ({ onBack }) => {
     const a = document.createElement('a');
     a.href = URL.createObjectURL(result.blob);
     a.download = `n-up-${format}-${paper.toLowerCase()}-${orientation.toLowerCase()}.pdf`;
-    document.body.appendChild(a); a.click(); a.remove();
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
     setTimeout(() => URL.revokeObjectURL(a.href), 3000);
   };
 
   const [pwMM, phMM] = PAPER_MM[paper];
-  const previewLandscape = orientation === 'LANDSCAPE';
+  const panelItems = useMemo(
+    () => files.map((f) => ({ id: f.id, name: f.name, sizeMB: (f.size / (1024 * 1024)).toFixed(2) })),
+    [files],
+  );
 
   return (
     <div className="flex flex-col gap-4 animate-slide-up">
@@ -311,7 +270,7 @@ export const NupToolView: React.FC<NupToolViewProps> = ({ onBack }) => {
         <div className="flex min-w-0 flex-1 flex-col">
           <h1 className="truncate text-[15px] font-bold text-ink">N-up PDF</h1>
           <p className="truncate text-[11px] text-ink-faint">
-            {step === 'upload' && 'Upload → merge → layout'}
+            {step === 'upload' && 'Upload → smart order → layout'}
             {step === 'layout' && `${totalPages} pages → ${totalSheets} sheets · ${perSheet}/sheet`}
             {step === 'done' && `${result?.sheets} sheets in ${((result?.ms ?? 0) / 1000).toFixed(1)}s`}
           </p>
@@ -335,7 +294,10 @@ export const NupToolView: React.FC<NupToolViewProps> = ({ onBack }) => {
 
           <div
             onDragOver={(e) => e.preventDefault()}
-            onDrop={(e) => { e.preventDefault(); if (e.dataTransfer.files.length) void addFiles(e.dataTransfer.files); }}
+            onDrop={(e) => {
+              e.preventDefault();
+              if (e.dataTransfer.files.length) void addFiles(e.dataTransfer.files);
+            }}
             className="mt-3 flex flex-col items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-elevated/70 bg-surface-2/40 px-4 py-8 text-center transition hover:border-primary/40 hover:bg-primary/5"
           >
             <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-primary/10 text-primary-soft">
@@ -349,43 +311,27 @@ export const NupToolView: React.FC<NupToolViewProps> = ({ onBack }) => {
               Choose PDFs
             </button>
             <input ref={inputRef} type="file" accept="application/pdf,.pdf" multiple className="hidden"
-              onChange={(e) => { if (e.target.files) void addFiles(e.target.files); e.target.value = ''; }} />
+              onChange={(e) => {
+                if (e.target.files) void addFiles(e.target.files);
+                e.target.value = '';
+              }} />
           </div>
 
           {files.length > 0 && (
             <>
-              <ul className="mt-3 flex flex-col gap-2">
-                {files.map((f, i) => (
-                  <li key={f.id} className="flex items-center gap-2.5 rounded-xl border border-elevated/60 bg-surface px-3 py-2.5">
-                    {/* real aspect mini page icon */}
-                    <svg viewBox="0 0 24 24" className="h-8 w-8 shrink-0" style={{ maxWidth: f.aspect >= 1 ? 32 : 24 }} aria-hidden="true">
-                      <rect x={f.aspect >= 1 ? 2 : 5} y={2} width={f.aspect >= 1 ? 20 : 14} height={20} rx={2}
-                        className="fill-primary/10 stroke-primary/40" strokeWidth={1.4} />
-                      <line x1={f.aspect >= 1 ? 5 : 8} y1={8} x2={f.aspect >= 1 ? 19 : 16} y2={8} className="stroke-primary/50" strokeWidth={1.2} strokeLinecap="round" />
-                      <line x1={f.aspect >= 1 ? 5 : 8} y1={12} x2={f.aspect >= 1 ? 19 : 16} y2={12} className="stroke-primary/50" strokeWidth={1.2} strokeLinecap="round" />
-                      <line x1={f.aspect >= 1 ? 5 : 8} y1={16} x2={f.aspect >= 1 ? 15 : 13} y2={16} className="stroke-primary/50" strokeWidth={1.2} strokeLinecap="round" />
-                    </svg>
-                    <span className="min-w-0 flex-1">
-                      <span className="block truncate text-sm font-semibold text-ink">{f.file.name}</span>
-                      <span className="text-xs tabular-nums text-ink-muted">{f.pages} page{f.pages === 1 ? '' : 's'} · {fmtBytes(f.file.size)}</span>
-                    </span>
-                    <span className="flex shrink-0 items-center gap-1">
-                      <button type="button" onClick={() => move(i, 'up')} disabled={i === 0} aria-label={`Move ${f.file.name} up`}
-                        className="flex h-8 w-8 items-center justify-center rounded-full border border-elevated bg-surface-2/60 text-ink-muted hover:bg-elevated disabled:opacity-30">
-                        <ArrowUp className="h-3.5 w-3.5" aria-hidden="true" />
-                      </button>
-                      <button type="button" onClick={() => move(i, 'down')} disabled={i === files.length - 1} aria-label={`Move ${f.file.name} down`}
-                        className="flex h-8 w-8 items-center justify-center rounded-full border border-elevated bg-surface-2/60 text-ink-muted hover:bg-elevated disabled:opacity-30">
-                        <ArrowDown className="h-3.5 w-3.5" aria-hidden="true" />
-                      </button>
-                      <button type="button" onClick={() => removeAt(i)} aria-label={`Remove ${f.file.name}`}
-                        className="flex h-8 w-8 items-center justify-center rounded-full border border-elevated bg-surface text-ink-muted hover:bg-danger/10 hover:text-danger">
-                        <Trash2 className="h-3.5 w-3.5" aria-hidden="true" />
-                      </button>
-                    </span>
-                  </li>
-                ))}
-              </ul>
+              {/* Same Smart Arrange experience as Tool-1: series badge + drag & drop + one-tap arrange */}
+              <div className="mt-3">
+                <FileSequencePanel
+                  items={panelItems}
+                  isProcessing={busy}
+                  onMoveItem={handleMove}
+                  onRemoveItem={handleRemove}
+                  onReorderItem={handleReorder}
+                  onSmartArrange={handleSmartArrange}
+                  maxHeightClass="max-h-[300px]"
+                  compact
+                />
+              </div>
               <div className="mt-3 flex gap-2">
                 <button type="button" onClick={goLayout} disabled={busy}
                   className="inline-flex h-11 flex-1 items-center justify-center gap-2 rounded-full bg-primary-strong px-5 text-sm font-bold text-white shadow-md shadow-primary/20 hover:bg-primary active:scale-[0.98] disabled:opacity-40">
@@ -426,7 +372,6 @@ export const NupToolView: React.FC<NupToolViewProps> = ({ onBack }) => {
               ))}
             </div>
 
-            {/* Paper + Orientation segmented */}
             <div className="mt-4 flex flex-wrap gap-x-6 gap-y-3">
               <div role="group" aria-label="Paper size" className="flex flex-col gap-1.5">
                 <span className="text-xs font-bold text-ink-muted">Paper</span>
@@ -445,7 +390,6 @@ export const NupToolView: React.FC<NupToolViewProps> = ({ onBack }) => {
                   {(['PORTRAIT', 'LANDSCAPE'] as const).map((o) => (
                     <button key={o} type="button" onClick={() => setOrientation(o)} aria-pressed={orientation === o}
                       className={`inline-flex h-8 items-center gap-1.5 rounded-full px-3.5 text-xs font-bold transition ${orientation === o ? 'bg-primary-strong text-white shadow-sm' : 'text-ink-muted hover:text-ink'}`}>
-                      {/* tiny page glyph rotated */}
                       <svg viewBox="0 0 10 14" className={`h-3.5 ${o === 'LANDSCAPE' ? 'w-4 rotate-90' : 'w-2.5'}`} aria-hidden="true">
                         <rect x={0.5} y={0.5} width={9} height={13} rx={1} className={orientation === o ? 'fill-white/90' : 'fill-current opacity-60'} />
                       </svg>
@@ -456,7 +400,6 @@ export const NupToolView: React.FC<NupToolViewProps> = ({ onBack }) => {
               </div>
             </div>
 
-            {/* Margins */}
             <div className="mt-4 grid grid-cols-2 gap-4 border-t border-surface-2 pt-3">
               <label className="block">
                 <span className="flex items-center justify-between text-xs font-bold text-ink-muted">
@@ -499,19 +442,25 @@ export const NupToolView: React.FC<NupToolViewProps> = ({ onBack }) => {
             </div>
           </section>
 
-          {/* Live true-geometry preview */}
-          <section aria-label="Live sheet preview" className="rounded-2xl border border-surface-2 bg-surface/90 p-3.5 shadow-lg lg:sticky lg:top-[76px] sm:p-4">
-            <div className="mb-2 flex items-center justify-between">
+          {/* Live previews: cheap diagram always + hold-to-see real render */}
+          <section aria-label="Live sheet preview" className="flex flex-col gap-3 rounded-2xl border border-surface-2 bg-surface/90 p-3.5 shadow-lg lg:sticky lg:top-[76px] sm:p-4">
+            <div className="flex items-center justify-between">
               <span className="text-sm font-bold text-ink">Live preview</span>
               <span className="rounded-full border border-elevated bg-surface-2/60 px-2 py-0.5 text-[11px] font-bold tabular-nums text-ink-muted">
-                {previewLandscape ? 'landscape' : 'portrait'} · sheet 1
+                {orientation === 'LANDSCAPE' ? 'landscape' : 'portrait'} · sheet 1
               </span>
             </div>
+
+            {/* Diagram (instant, updates with every control) */}
             <div className="rounded-2xl border border-elevated/50 bg-surface-2/30 p-2.5">
               <SheetPreview opts={opts} pageCount={Math.max(totalPages, 1)} />
             </div>
-            <ul className="mt-2.5 flex flex-col gap-1 text-[11px] leading-relaxed text-ink-muted">
-              <li className="flex justify-between"><span>Format</span><span className="font-bold text-ink">{perSheet} per sheet · {nupGrid(format, orientation).cols}×{nupGrid(format, orientation).rows}</span></li>
+
+            {/* Real pages — press & hold, rendered on demand */}
+            <HoldToPreview mergedBytes={mergedBytes} opts={opts} pageCount={totalPages} />
+
+            <ul className="flex flex-col gap-1 border-t border-surface-2 pt-2 text-[11px] leading-relaxed text-ink-muted">
+              <li className="flex justify-between"><span>Format</span><span className="font-bold text-ink">{perSheet} per sheet · {grid.cols}×{grid.rows}</span></li>
               <li className="flex justify-between"><span>Cell size</span><span className="font-bold tabular-nums text-ink">{Math.round(planSheet(opts).cellW / 2.8346)}×{Math.round(planSheet(opts).cellH / 2.8346)} mm</span></li>
               <li className="flex justify-between"><span>Margins</span><span className="font-bold tabular-nums text-ink">{outerMm} mm outer · {innerMm} mm gap</span></li>
               <li className="flex justify-between"><span>Total</span><span className="font-bold tabular-nums text-ink">{totalPages} pages → {totalSheets} sheets</span></li>

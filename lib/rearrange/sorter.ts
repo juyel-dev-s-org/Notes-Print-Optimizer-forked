@@ -10,6 +10,25 @@
 const RUN_SPLIT_RE = /\d+|\D+/g;
 const DIGITS_ONLY_RE = /^\d+$/;
 
+/**
+ * Run-split cache — comparators re-visit the same names many times during a
+ * sort, so tokenizing once per distinct string removes the repeated regex
+ * work (the classic "parse inside the comparator" cost). Bounded to keep
+ * memory flat on pathological inputs.
+ */
+const RUNS_CACHE_MAX = 1000;
+const runsCache = new Map<string, string[]>();
+
+function getRuns(s: string): string[] {
+  let runs = runsCache.get(s);
+  if (!runs) {
+    runs = s.toLowerCase().match(RUN_SPLIT_RE) ?? [];
+    if (runsCache.size >= RUNS_CACHE_MAX) runsCache.clear();
+    runsCache.set(s, runs);
+  }
+  return runs;
+}
+
 /** Numeric compare of two digit strings without precision loss. */
 function compareDigitRuns(a: string, b: string): number {
   const sa = a.replace(/^0+/, '') || '0';
@@ -22,8 +41,8 @@ function compareDigitRuns(a: string, b: string): number {
 /** Natural comparison. Returns <0 / 0 / >0 like a usual comparator. */
 export function naturalCompare(a: string, b: string): number {
   if (a === b) return 0;
-  const runsA = a.toLowerCase().match(RUN_SPLIT_RE) ?? [];
-  const runsB = b.toLowerCase().match(RUN_SPLIT_RE) ?? [];
+  const runsA = getRuns(a);
+  const runsB = getRuns(b);
   const len = Math.min(runsA.length, runsB.length);
   for (let i = 0; i < len; i += 1) {
     const ra = runsA[i];
