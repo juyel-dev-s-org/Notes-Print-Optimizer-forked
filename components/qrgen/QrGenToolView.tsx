@@ -20,8 +20,19 @@ import {
   Trash2,
   Wifi,
 } from 'lucide-react';
-import QRCode from 'qrcode';
 import { QrScannerView } from './QrScannerView';
+
+/**
+ * Lazy qrcode loader — the lib (~30KB) is only imported on first actual
+ * render, never at module scope. Users who open the Scan tab (or leave
+ * before typing) never pay for it. Promise-deduplicated like pdfjsLoader.
+ */
+type QrLib = typeof import('qrcode');
+let qrLibPromise: Promise<QrLib> | null = null;
+function getQrLib(): Promise<QrLib> {
+  if (!qrLibPromise) qrLibPromise = import('qrcode');
+  return qrLibPromise;
+}
 
 export interface QrGenToolViewProps {
   onBack: () => void;
@@ -186,6 +197,7 @@ export const QrGenToolView: React.FC<QrGenToolViewProps> = ({ onBack }) => {
     const bg = transparent ? '#00000000' : light;
     const opts = { width: size, margin, errorCorrectionLevel: ecc, color: { dark, light: bg } } as const;
     try {
+      const QRCode = await getQrLib();
       if (canvasRef.current) await QRCode.toCanvas(canvasRef.current, value, opts);
       const svgStr = await QRCode.toString(value, { ...opts, type: 'svg' });
       setSvg(svgStr);
