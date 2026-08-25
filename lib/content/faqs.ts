@@ -201,23 +201,27 @@ export const TOOL_FAQS: Record<string, FaqItem[]> = {
   'qr-generator': [
     {
       q: 'What can I put inside a QR code?',
-      a: 'Any text — links, plain notes, phone numbers, or Wi-Fi credentials. Scanners automatically open links and offer to join Wi-Fi networks encoded in the standard format.',
+      a: 'Links, plain text, email (mailto:), phone (tel:), or Wi-Fi (WIFI:T:… ) — scanners open links, dial numbers, and offer to join Wi-Fi directly from the code.',
+    },
+    {
+      q: 'How does the scanner work — is my camera uploaded?',
+      a: 'Never — scanning runs on-device via your camera or an uploaded image. The BarcodeDetector fast path is used when available, otherwise html5-qrcode (lazy-loaded) decodes locally. Nothing leaves your browser.',
     },
     {
       q: 'Which error correction level should I pick?',
-      a: 'M is the sweet spot for most uses. Choose Q or H when the code might get dirty, folded, or printed small — higher levels survive more damage but pack in denser modules.',
+      a: 'M is the sweet spot. Use Q or H when printing small, folding, or adding a logo — higher levels survive damage but hold less data. Styled/logo QRs need Q or H.',
     },
     {
       q: 'PNG or SVG — which should I download?',
-      a: 'PNG for messaging apps, documents and social posts. SVG for print — it stays razor-sharp at any size, from business cards to posters.',
+      a: 'PNG for chat and docs, SVG for print. In Advanced style mode both carry your rounded dots, gradient and logo — still razor-sharp at any size.',
     },
     {
-      q: 'Do the QR codes expire or track scans?',
-      a: 'Never — these are static codes generated on your device. The data lives in the pattern itself; there is no redirect service, no expiry, and no scan tracking.',
+      q: 'Do QR codes expire or track scans?',
+      a: 'Never — these are static, offline-generated codes. The data lives in the pattern itself; no redirect, no expiry, no analytics.',
     },
     {
-      q: 'Why does my long text make a denser code?',
-      a: 'QR capacity is fixed, so more characters mean smaller modules. Keep URLs short, use the highest size your print allows, and prefer lower error correction for very long text.',
+      q: 'Can I add a logo or brand colors?',
+      a: 'Yes — enable Advanced style to pick dot and corner shapes (square/dots/rounded/classy), gradients, and a center logo. The QR stays scannable because error correction is enforced.',
     },
   ],
   'word-counter': [

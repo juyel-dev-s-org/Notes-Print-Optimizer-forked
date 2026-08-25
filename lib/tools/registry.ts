@@ -172,19 +172,19 @@ export const TOOL_REGISTRY: ToolDefinition[] = [
   {
     id: 'qr-gen',
     slug: 'qr-generator',
-    title: 'QR Code Generator',
+    title: 'QR Studio',
     description:
-      'Turn links, text or Wi-Fi details into a crisp QR code — pick size and colors, then download PNG or SVG.',
-    seoTitle: 'QR Code Generator — Download PNG or SVG, 100% Offline',
+      'Generate & scan QR codes in one place — styled dots, gradients & logos, plus camera, image & paste scanning, all on-device.',
+    seoTitle: 'QR Code Generator + Scanner — Generate & Scan, Styled, 100% Offline',
     seoDescription:
-      'Create QR codes for links, text and Wi-Fi in your browser. Choose size, colors and error correction, then download crisp PNG or SVG — free, private, on-device.',
-    aliases: ['qr code', 'qrcode', 'barcode', 'scan code', 'link to qr'],
-    keywords: ['generator', 'png', 'svg', 'wifi', 'url', 'download', 'error correction'],
+      'Generate & scan QR codes on-device. Create styled QR codes (dots, gradients, logo) and scan via camera, image or paste — links, Wi-Fi, contacts — free, private.',
+    aliases: ['qr code', 'qrcode', 'qr scanner', 'qr reader', 'scan code', 'link to qr'],
+    keywords: ['generator', 'scanner', 'png', 'svg', 'wifi', 'url', 'qr scan', 'qr code styling', 'camera'],
     category: 'utility',
     icon: QrCode,
     gradient: 'linear-gradient(135deg, #06B6D4 0%, #0EA5E9 55%, #243BFF 100%)',
-    chips: ['PNG · SVG', 'Wi-Fi & URLs', 'Color control'],
-    cta: 'Create QR',
+    chips: ['Generate + Scan', 'Styled QR', 'Camera & image'],
+    cta: 'Open Studio',
   },
   {
     id: 'word-count',
