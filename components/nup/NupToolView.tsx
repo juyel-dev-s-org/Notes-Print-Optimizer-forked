@@ -25,7 +25,7 @@ import {
   type NupPaper,
 } from '@/lib/nup/nupLayout';
 import { buildNup, loadNupDeps, mergeBytes, type BuildResult } from '@/lib/nup/nupService';
-import { HoldToPreview } from './HoldToPreview';
+import { NupLivePreview } from './NupLivePreview';
 
 export interface NupToolViewProps {
   onBack: () => void;
@@ -44,64 +44,6 @@ interface Uploaded {
 
 const PAPER_MM = { A4: [210, 297], LETTER: [216, 279], LEGAL: [216, 356] } as const;
 
-/** Live SVG mini-preview of one sheet — true shared geometry, zero cost. */
-const SheetPreview: React.FC<{ opts: NupOptions; pageCount: number }> = ({ opts, pageCount }) => {
-  const plan = planSheet(opts);
-  const { w, h } = (() => {
-    // keep in sync with nupPaperSize without importing pdf values twice
-    const p = opts.paper === 'A4' ? { w: 595, h: 842 } : opts.paper === 'LETTER' ? { w: 612, h: 792 } : { w: 612, h: 1008 };
-    return opts.orientation === 'LANDSCAPE' ? { w: p.h, h: p.w } : p;
-  })();
-  const vbW = 240;
-  const vbH = (h / w) * vbW;
-  const sx = vbW / w;
-  const sy = vbH / h;
-  const shown = Math.min(plan.perSheet, pageCount);
-  return (
-    <svg viewBox={`0 0 ${vbW} ${vbH}`} className="w-full" role="img" aria-label={`Layout diagram, ${opts.format}`}>
-      <rect x={0} y={0} width={vbW} height={vbH} rx={4} className="fill-white stroke-slate-200" strokeWidth={1} />
-      {Array.from({ length: shown }).map((_, i) => {
-        const c = (() => {
-          const col = i % plan.cols;
-          const row = Math.floor(i / plan.cols);
-          const x = plan.marginLeft + col * (plan.cellW + plan.gapX);
-          const yTop = plan.marginTop + row * (plan.cellH + plan.gapY);
-          return { x, y: h - yTop - plan.cellH, w: plan.cellW, h: plan.cellH };
-        })();
-        const cx = c.x * sx;
-        const cy = c.y * sy;
-        const cw = c.w * sx;
-        const ch = c.h * sy;
-        const ar = 0.75;
-        let iw = cw * 0.92;
-        let ih = iw / ar;
-        if (ih > ch * 0.94) {
-          ih = ch * 0.94;
-          iw = ih * ar;
-        }
-        return (
-          <g key={i}>
-            {opts.borders && <rect x={cx} y={cy} width={cw} height={ch} className="fill-none stroke-slate-300" strokeWidth={0.7} />}
-            <rect
-              x={cx + (cw - iw) / 2}
-              y={cy + (ch - ih) / 2}
-              width={iw}
-              height={ih}
-              rx={1.5}
-              className="fill-indigo-50 stroke-indigo-200"
-              strokeWidth={0.7}
-            />
-            {opts.numbers && (
-              <text x={cx + cw / 2} y={cy + ch - 2} textAnchor="middle" fontSize={6.5} className="fill-slate-500">
-                {i + 1}
-              </text>
-            )}
-          </g>
-        );
-      })}
-    </svg>
-  );
-};
 
 /**
  * N-up — production flow.
@@ -442,22 +384,16 @@ export const NupToolView: React.FC<NupToolViewProps> = ({ onBack }) => {
             </div>
           </section>
 
-          {/* Live previews: cheap diagram always + hold-to-see real render */}
+          {/* Live real-page preview — instant, auto-composed from cache */}
           <section aria-label="Live sheet preview" className="flex flex-col gap-3 rounded-2xl border border-surface-2 bg-surface/90 p-3.5 shadow-lg lg:sticky lg:top-[76px] sm:p-4">
             <div className="flex items-center justify-between">
               <span className="text-sm font-bold text-ink">Live preview</span>
               <span className="rounded-full border border-elevated bg-surface-2/60 px-2 py-0.5 text-[11px] font-bold tabular-nums text-ink-muted">
-                {orientation === 'LANDSCAPE' ? 'landscape' : 'portrait'} · sheet 1
+                {orientation === 'LANDSCAPE' ? 'landscape' : 'portrait'} · your pages
               </span>
             </div>
 
-            {/* Diagram (instant, updates with every control) */}
-            <div className="rounded-2xl border border-elevated/50 bg-surface-2/30 p-2.5">
-              <SheetPreview opts={opts} pageCount={Math.max(totalPages, 1)} />
-            </div>
-
-            {/* Real pages — press & hold, rendered on demand */}
-            <HoldToPreview mergedBytes={mergedBytes} opts={opts} pageCount={totalPages} />
+            <NupLivePreview mergedBytes={mergedBytes} opts={opts} totalPages={totalPages} />
 
             <ul className="flex flex-col gap-1 border-t border-surface-2 pt-2 text-[11px] leading-relaxed text-ink-muted">
               <li className="flex justify-between"><span>Format</span><span className="font-bold text-ink">{perSheet} per sheet · {grid.cols}×{grid.rows}</span></li>
