@@ -268,6 +268,28 @@ export const TOOL_FAQS: Record<string, FaqItem[]> = {
       a: 'Never — conversion runs entirely in your browser as you type, and nothing is retained after you leave. Safe for source code and confidential notes.',
     },
   ],
+  'n-up': [
+    {
+      q: 'What does N-up do?',
+      a: 'It tiles N source pages onto one output sheet — 2-up, 4-up, 6-up or 9-up. Perfect for handouts and saving paper while keeping every page readable.',
+    },
+    {
+      q: 'I selected several PDFs — are they merged first?',
+      a: 'Yes — all uploads are merged in the order you choose (drag to reorder), then the merged file is tiled. Pick one file and merging is skipped automatically.',
+    },
+    {
+      q: 'Will quality drop after N-up?',
+      a: 'No — pages are placed as vectors where possible, so text stays crisp and selectable. The sheet is just a new container for the same pages.',
+    },
+    {
+      q: 'Which sizes are supported?',
+      a: 'A4 and Letter, portrait or landscape. The grid auto-fits the sheet — 1, 2, 4, 6 or 9 per sheet — with thin borders and optional page numbers.',
+    },
+    {
+      q: 'Is it private and fast?',
+      a: 'Fully on-device with pdf-lib, no uploads and no WASM. A 200-page file N-ups in seconds — even offline.',
+    },
+  ],
 };
 
 /** FAQs for a tool slug; empty array for unknown slugs (defensive). */

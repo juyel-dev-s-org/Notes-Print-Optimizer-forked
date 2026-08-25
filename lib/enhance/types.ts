@@ -20,7 +20,8 @@ export type ToolMode =
   | 'password-gen'
   | 'qr-gen'
   | 'word-count'
-  | 'case-convert';
+  | 'case-convert'
+  | 'nup';
 
 export type EnhanceStep = 'upload' | 'arrange' | 'enhance';
 

@@ -62,6 +62,11 @@ const CaseConvertToolView = dynamic(() => import('@/components/caseconvert/CaseC
   ssr: false,
 });
 
+const NupToolView = dynamic(() => import('@/components/nup/NupToolView').then(m => m.NupToolView), {
+  loading: () => <CardSkeleton />,
+  ssr: false,
+});
+
 interface OrchestratorProps extends WorkflowUIProps {
   /** Enhance export -> N-Up layout handoff (optional for tests/storybook). */
   onEnhanceHandoff?: (pages: HandoffPageInput[]) => Promise<void>;
@@ -162,6 +167,14 @@ export const PlatformUIOrchestrator: React.FC<OrchestratorProps> = ({ state, act
     return (
       <div className="flex w-full max-w-full min-w-0 flex-col gap-4 pb-20 md:gap-6 md:pb-12">
         <CaseConvertToolView onBack={() => onToolModeChange?.(null)} />
+      </div>
+    );
+  }
+
+  if (toolMode === 'nup') {
+    return (
+      <div className="flex w-full max-w-full min-w-0 flex-col gap-4 pb-20 md:gap-6 md:pb-12">
+        <NupToolView onBack={() => onToolModeChange?.(null)} />
       </div>
     );
   }

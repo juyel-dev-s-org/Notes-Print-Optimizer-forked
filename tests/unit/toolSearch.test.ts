@@ -29,8 +29,9 @@ describe('searchTools', () => {
       'qr-gen',
       'word-count',
       'case-convert',
+      'nup',
     ]);
-    expect(ids(searchTools(TOOL_REGISTRY, '   '))).toHaveLength(11);
+    expect(ids(searchTools(TOOL_REGISTRY, '   '))).toHaveLength(12);
   });
 
   it('matches by title prefix first', () => {

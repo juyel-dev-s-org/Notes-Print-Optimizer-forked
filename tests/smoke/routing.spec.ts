@@ -18,6 +18,7 @@ const TOOLS = [
   { slug: 'qr-generator', name: 'QR Code Generator' },
   { slug: 'word-counter', name: 'Word Counter' },
   { slug: 'case-converter', name: 'Case Converter' },
+  { slug: 'n-up', name: 'N-up PDF' },
 ];
 
 test.describe('tool routes — direct navigation', () => {

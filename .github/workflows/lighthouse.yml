@@ -86,6 +86,7 @@ jobs:
             "$BASE/tools/qr-generator/"
             "$BASE/tools/word-counter/"
             "$BASE/tools/case-converter/"
+            "$BASE/tools/n-up/"
           )
           for URL in "${URLS[@]}"; do
             echo "→ $URL"

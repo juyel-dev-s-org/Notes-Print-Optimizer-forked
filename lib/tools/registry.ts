@@ -5,7 +5,7 @@
  */
 
 import type { LucideIcon } from 'lucide-react';
-import { CaseSensitive, Combine, Contrast, FileText, ImagePlus, Images, KeyRound, QrCode, Scissors, ShieldCheck, Type } from 'lucide-react';
+import { CaseSensitive, Combine, Contrast, FileText, ImagePlus, Images, KeyRound, LayoutGrid, QrCode, Scissors, ShieldCheck, Type } from 'lucide-react';
 import type { ToolMode } from '@/lib/enhance/types';
 
 /** Coarse groups used by the shortcut chips (rendered once >1 exists). */
@@ -219,6 +219,22 @@ export const TOOL_REGISTRY: ToolDefinition[] = [
     gradient: 'linear-gradient(135deg, #14B8A6 0%, #059669 55%, #06B6D4 100%)',
     chips: ['11 formats', 'One-tap copy', 'Live convert'],
     cta: 'Convert',
+  },
+  {
+    id: 'nup',
+    slug: 'n-up',
+    title: 'N-up PDF',
+    description: 'Put 2, 4, 6 or 9 pages on one sheet — upload one or many PDFs, merge if needed, then export.',
+    seoTitle: 'N-up PDF — 2, 4, 6, 9 Pages Per Sheet, Merge + Layout',
+    seoDescription:
+      'N-up PDFs on-device: upload one or many files (auto-merged), pick 1/2/4/6/9 per sheet, A4/Letter, portrait/landscape — export a print-ready N-up PDF instantly.',
+    aliases: ['nup', 'n-up', 'pages per sheet', 'handout', '2 up', '4 up', 'imposition'],
+    keywords: ['n-up', 'layout', 'handout', 'multiple pages', 'merge', 'sheets', 'print'],
+    category: 'pdf',
+    icon: LayoutGrid,
+    gradient: 'linear-gradient(135deg, #F59E0B 0%, #F97316 55%, #EF4444 100%)',
+    chips: ['Auto-merge', '1/2/4/6/9-up', 'A4/Letter'],
+    cta: 'N-up',
   },
 ];
 
