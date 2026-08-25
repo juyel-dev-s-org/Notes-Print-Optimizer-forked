@@ -7,8 +7,12 @@ import type { FaqItem } from '@/lib/content/faqs';
  * CSS-only progressive enhancement (see globals.css ::details-content).
  * Premium feel: card container, hairline dividers, rotating chevron,
  * token-driven theming for dark/light.
+ *
+ * Exclusive open: all items share the same `name` group, so opening one
+ * closes the others (native HTML behavior — Chrome 120+/Safari 17.2+/FF 130+).
+ * Older browsers gracefully fall back to independent items.
  */
-export function FaqAccordion({ faqs, headingId = 'faq-heading' }: { faqs: FaqItem[]; headingId?: string }) {
+export function FaqAccordion({ faqs, headingId = 'faq-heading', groupName = 'faq' }: { faqs: FaqItem[]; headingId?: string; groupName?: string }) {
   if (faqs.length === 0) return null;
 
   return (
@@ -27,7 +31,7 @@ export function FaqAccordion({ faqs, headingId = 'faq-heading' }: { faqs: FaqIte
 
       <div className="divide-y divide-surface-2/70">
         {faqs.map((item) => (
-          <details key={item.q} className="faq-item group">
+          <details key={item.q} name={groupName} className="faq-item group">
             <summary className="flex cursor-pointer list-none items-center justify-between gap-4 py-3.5 font-semibold text-ink transition-colors hover:text-primary [&::-webkit-details-marker]:hidden">
               <h3 className="text-sm font-semibold">{item.q}</h3>
               <svg

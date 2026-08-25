@@ -73,7 +73,11 @@ export default async function ToolPage({
   const tool = getToolBySlug(slug);
   if (!tool) notFound();
 
-  const related = TOOL_REGISTRY.filter((t) => t.id !== tool.id);
+  // Related tools: same category first (registry order), then the rest — top 4.
+  const related = [
+    ...TOOL_REGISTRY.filter((t) => t.id !== tool.id && t.category === tool.category),
+    ...TOOL_REGISTRY.filter((t) => t.id !== tool.id && t.category !== tool.category),
+  ].slice(0, 4);
   const faqs = getFaqsForSlug(tool.slug);
 
   return (
@@ -91,7 +95,7 @@ export default async function ToolPage({
 
           <details className="group mt-3 rounded-xl border border-elevated/60 bg-surface/60 open:bg-surface/80">
             <summary className="flex cursor-pointer list-none items-center justify-between gap-2 px-3.5 py-2.5 text-xs font-bold tracking-wide text-ink hover:text-primary-soft [&::-webkit-details-marker]:hidden">
-              <span>About this tool</span>
+              <span>How it works</span>
               <svg
                 aria-hidden="true"
                 viewBox="0 0 16 16"
@@ -126,7 +130,7 @@ export default async function ToolPage({
               Related tools
             </h3>
             <Link href="/" prefetch={false} className="text-xs font-semibold text-primary-soft hover:underline">
-              View all 7
+              View all {TOOL_REGISTRY.length}
             </Link>
           </div>
           <ul className="grid grid-cols-1 gap-2 sm:grid-cols-2">
