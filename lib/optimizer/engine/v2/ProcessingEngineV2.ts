@@ -45,6 +45,7 @@ import { ensureWasmKernels, isWasmLoaded, getKernels } from '../../../wasm/loade
 import { setWasmKernelsHooks } from '../../../kernels/processPage';
 import { WorkerPoolImageProcessor } from '../../processor/WorkerPoolImageProcessor';
 import { WorkerManager } from '../../../workers/WorkerManager';
+import { resolveEffectiveInvertMode } from './resolveInvertMode';
 import type { WorkerProcessResult } from '../../../workers/protocol';
 
 /* ------------------------------------------------------------------ */
@@ -360,13 +361,20 @@ export class ProcessingEngineV2 implements IProcessingEngine {
         if (localSignal.aborted) throw new DOMException('Aborted', 'AbortError');
       }
 
-      /* Phase 3: Process (merge preset defaults with user overrides) */
+      /* Phase 3: Process (merge preset defaults with user overrides).
+       * 'smart' inversion resolves per page — see resolveEffectiveInvertMode. */
       const baseParams = ParameterGenerator.getPresetParameters(
         profile.classification === 'DARK_SLIDE' ? 'PW_DARK_SLIDE' : 'LIGHT_HANDWRITTEN',
       );
-      const params = input.customParams
-        ? { ...baseParams, ...input.customParams }
-        : baseParams;
+      const params = {
+        ...(input.customParams
+          ? { ...baseParams, ...input.customParams }
+          : baseParams),
+        invertMode: resolveEffectiveInvertMode(
+          input.customParams?.invertMode ?? baseParams.invertMode,
+          profile.classification,
+        ),
+      };
       pending = {
         pageIndex: i - 1,
         profile,

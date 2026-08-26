@@ -27,6 +27,7 @@ export interface WorkflowState {
   processedPages: ProcessedPage[];
   selectedPageIndex: number;
   excludedPages: Set<number>;
+  keepOriginalPages: Set<number>;
   docProfile: DocumentProfile | null;
   masterParams: ProcessingParameters;
   processingToggles: ProcessingToggleState;
@@ -67,6 +68,7 @@ export interface WorkflowHandlers {
   handleDownloadMerged: () => void;
   handleProceedToPhase2: () => void;
   handleToggleExcludePage: (pageIdx: number) => void;
+  handleToggleKeepOriginalPage: (pageIdx: number) => void;
   handleDownloadOptimized1Up: () => void;
   handleProceedToPhase3: () => void;
   handleReprocess: () => void;

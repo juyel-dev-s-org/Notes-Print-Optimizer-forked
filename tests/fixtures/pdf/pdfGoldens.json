@@ -6,17 +6,17 @@
       "0": {
         "width": 1102,
         "height": 1426,
-        "sha256": "70ccc092947bbe9655c0756345fb368f2dd0a3044b6cd14cb200d7e07db9176c",
+        "sha256": "0b97f673da7f1517b4f968df69bf7cc56e067087d341927acbd3a14899bd6e13",
         "inkBeforePct": 1.58,
-        "inkAfterPct": 0,
+        "inkAfterPct": 1.58,
         "classification": "LIGHT_SLIDE"
       },
       "1": {
         "width": 1102,
         "height": 1426,
-        "sha256": "1b04260fb7ba3d9e7e3a3c8fd1d2817c136a446189f7890f1410a9f7f3064ec4",
+        "sha256": "1b8ebecc03c8d7ce476e5d1cdb258409ed20ffda9cc8f2db7b66c925d7b710fc",
         "inkBeforePct": 0.98,
-        "inkAfterPct": 0,
+        "inkAfterPct": 0.98,
         "classification": "LIGHT_SLIDE"
       },
       "2": {
@@ -38,9 +38,9 @@
       "4": {
         "width": 1102,
         "height": 1426,
-        "sha256": "b47192e01d01116f69f93f8c1735c85eca33c5c239d97b0935152f3b9ba7ad5f",
+        "sha256": "64af99ebe9b62bd43960833de0b251d974c6a51dac48961f5555b2259344e4bb",
         "inkBeforePct": 7.64,
-        "inkAfterPct": 0,
+        "inkAfterPct": 7.64,
         "classification": "LIGHT_SLIDE"
       },
       "5": {
@@ -64,25 +64,25 @@
       "1": {
         "width": 1728,
         "height": 972,
-        "sha256": "f8600f876e5da912deba60e530ebaf5ac09ebcc71210f7accb451e60962e4914",
+        "sha256": "7e39c5820727bf0d3df9b1337da1e082006323290f8558f3070cfbf0b30f16d0",
         "inkBeforePct": 8.71,
-        "inkAfterPct": 0,
+        "inkAfterPct": 8.71,
         "classification": "LIGHT_SLIDE"
       },
       "2": {
         "width": 1728,
         "height": 972,
-        "sha256": "f16689518c7dbcf7c5db9d986d77866001cf93f2662083156ee2a315e3433bb2",
+        "sha256": "53582c98884803c9987c1dec5c984e1aa2345bb857083803bd9bb37596b8c306",
         "inkBeforePct": 3.7,
-        "inkAfterPct": 0,
+        "inkAfterPct": 3.7,
         "classification": "LIGHT_SLIDE"
       },
       "3": {
         "width": 1728,
         "height": 972,
-        "sha256": "fe3b433676aa6eb4af6301f00e1559c925b3351f139209651d97aadaa7ac9fdf",
+        "sha256": "b74c29a5904b49d6a1030ebf8b5b58a42a82c69c661df7a85bf8425dd095c10d",
         "inkBeforePct": 40.42,
-        "inkAfterPct": 0,
+        "inkAfterPct": 40.42,
         "classification": "HANDWRITTEN_NOTES"
       }
     },
@@ -90,33 +90,33 @@
       "0": {
         "width": 1728,
         "height": 972,
-        "sha256": "dd8fbc9a36a3fd835ad18cf28238975742378349ead3dda581e94713cc786594",
+        "sha256": "a93c96ea363d34acc82f9c52b05a19f80a82f4ddab37d12456ed6f511bfb9729",
         "inkBeforePct": 4.53,
-        "inkAfterPct": 0,
+        "inkAfterPct": 4.53,
         "classification": "LIGHT_SLIDE"
       },
       "1": {
         "width": 1728,
         "height": 972,
-        "sha256": "18ab5517f099a69a2bc45bfeee02fa2de6987d0498725b57202f74449a7bc010",
+        "sha256": "6675bd468bf551f137db05f6167c4aacbae23d0956ae209045b5c3e75fb20366",
         "inkBeforePct": 4.45,
-        "inkAfterPct": 0,
+        "inkAfterPct": 4.45,
         "classification": "LIGHT_SLIDE"
       },
       "2": {
         "width": 1728,
         "height": 972,
-        "sha256": "9349d689b068390462c4f720e76135e48ad1bc5315e3372c111e5915513bb373",
+        "sha256": "0fb844a887a8bce2d086e81aa4dc2a6048c904a00f5e94d1f9372176e436477c",
         "inkBeforePct": 4.58,
-        "inkAfterPct": 0,
+        "inkAfterPct": 4.58,
         "classification": "LIGHT_SLIDE"
       },
       "3": {
         "width": 1728,
         "height": 972,
-        "sha256": "d4b4ea1be9c44eed8e221c98ea04d86b50858651c1c3717ba4632564da77b088",
+        "sha256": "bf927e738d07a65b91db58ef69f2744dd7bc9413774c708f78d9ab275a264aa2",
         "inkBeforePct": 4.63,
-        "inkAfterPct": 0,
+        "inkAfterPct": 4.63,
         "classification": "LIGHT_SLIDE"
       }
     },
@@ -132,18 +132,17 @@
       "1": {
         "width": 1728,
         "height": 972,
-        "sha256": "a196fc3320d03eafa30502ff03c83617571240df9f808d4abf824ff58b9d29f0",
-        "altSha256": "004fc8329840cfef7b9de79e8a5d8a877b279bcff50fc92cfd8de884701ac0cf",
+        "sha256": "2c44516f7fb624fd90bd8d5c43b4080410b35baf7394be6da5422edbfa0e6e3a",
         "inkBeforePct": 3.38,
-        "inkAfterPct": 0,
+        "inkAfterPct": 3.38,
         "classification": "LIGHT_SLIDE"
       },
       "2": {
         "width": 1728,
         "height": 972,
-        "sha256": "9bc56aa0f91f88d4d004e3c23201a6c509caf073fb9b95b1af3d670b358b4c26",
+        "sha256": "2bcf9b364edf0c477b770766b0707bd51434612b9354d27b4d49fb705a47cc29",
         "inkBeforePct": 4.82,
-        "inkAfterPct": 0,
+        "inkAfterPct": 4.82,
         "classification": "LIGHT_SLIDE"
       },
       "3": {

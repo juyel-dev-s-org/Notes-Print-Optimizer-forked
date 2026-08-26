@@ -39,6 +39,7 @@ export const initialState: WorkflowState = {
   optimized1UpBlob: null,
   selectedPageIndex: 0,
   excludedPages: new Set<number>(),
+  keepOriginalPages: new Set<number>(),
 
   masterParams: ParameterGenerator.getPresetParameters('AUTO_ADAPTIVE'),
 
@@ -82,6 +83,7 @@ function resetTransientState(): Omit<
     optimized1UpBlob: null,
     selectedPageIndex: 0,
     excludedPages: new Set<number>(),
+    keepOriginalPages: new Set<number>(),
 
     processingToggles: { ...DEFAULT_PROCESSING_TOGGLES },
     isPreviewProcessing: false,
@@ -140,7 +142,18 @@ export function workflowReducer(
 
     // Optimize
     case 'SET_PROCESSED_PAGES':
-      return { ...state, processedPages: action.pages };
+      return {
+        ...state,
+        processedPages: action.pages,
+        /* Fresh processing run → re-seed the auto "keep original" set.
+           LIGHT_SLIDE pages must never be inverted to black; seeding them
+           here gives the exporter an explicit, user-visible source choice. */
+        keepOriginalPages: new Set(
+          action.pages
+            .filter((p) => p.profile.classification === 'LIGHT_SLIDE')
+            .map((p) => p.pageIndex),
+        ),
+      };
 
     case 'SET_OPTIMIZED_1UP_BLOB':
       return { ...state, optimized1UpBlob: action.blob };
@@ -159,6 +172,19 @@ export function workflowReducer(
         next.add(action.pageIndex);
       }
       return { ...state, excludedPages: next };
+    }
+
+    case 'SET_KEEP_ORIGINAL_PAGES':
+      return { ...state, keepOriginalPages: action.pages };
+
+    case 'TOGGLE_KEEP_ORIGINAL_PAGE': {
+      const next = new Set(state.keepOriginalPages);
+      if (next.has(action.pageIndex)) {
+        next.delete(action.pageIndex);
+      } else {
+        next.add(action.pageIndex);
+      }
+      return { ...state, keepOriginalPages: next };
     }
 
     // Master params

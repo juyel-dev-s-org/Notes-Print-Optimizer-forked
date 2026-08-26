@@ -13,6 +13,7 @@
  */
 import { getLuminance } from './luminance';
 import { rgbToHsv, fastMinChannel } from './hsv';
+import { DARK_BG_RATIO_THRESHOLD } from './constants';
 import { applyMaskDilation, setDilationHook } from './maskOps';
 import { applyUnsharpMaskBW, setUnsharpHook, setUnsharpBwHook } from './sharpen';
 import { ensureCC, getCCLabels, getCCQueue, getCCMinX, getCCMinY, getCCMaxX, getCCMaxY, getCCArea, getCCDrop } from './connectedComponents';
@@ -149,7 +150,11 @@ export function processPage(
   const totalPixels = dw * dh;
 
   const convertColors = params.invertMode === 'smart';
-  const isDark = profile.classification === 'DARK_SLIDE' || profile.darkBackgroundRatio > 0.4;
+  /* Same threshold as the analyzer (analysis.ts) so a page classified MIXED
+     is never silently binarized by the kernel's own darker opinion. */
+  const isDark =
+    profile.classification === 'DARK_SLIDE' ||
+    profile.darkBackgroundRatio > DARK_BG_RATIO_THRESHOLD;
   const shouldProcess = params.invertMode !== 'none' || isDark;
 
   const ks = params.dilationKernelSize != null
@@ -190,8 +195,11 @@ export function processPage(
       const dstStart = y * dstRowBytes;
       dst.set(srcData.subarray(srcStart, srcStart + dstRowBytes), dstStart);
     }
-    const dst32 = new Uint32Array(dst.buffer);
-    for (let i = 0; i < totalPixels; i++) dst32[i] |= 0xFF; // set alpha = 255
+    /* Force opaque alpha. NOTE: this MUST be a byte-wise write on the alpha
+       channel (RGBA byte 3). A Uint32 `|= 0xFF` writes byte 0 on
+       little-endian — red pixels with zero alpha (latent bug, previously
+       unreachable because the fast path never ran). */
+    for (let i = 3; i < dst.length; i += 4) dst[i] = 0xFF;
     return { buffer: dst.buffer, width: dw, height: dh };
   }
 

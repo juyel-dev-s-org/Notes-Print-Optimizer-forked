@@ -9,6 +9,7 @@
 import type { PageProfile, PageClassification } from './types';
 import { getLuminance } from '../kernels';
 import { detectBanners } from '../kernels';
+import { DARK_BG_RATIO_THRESHOLD } from '../kernels/constants';
 
 export function analyzeImageData(imageData: ImageData, pageIndex: number): PageProfile {
   const { width, height, data } = imageData;
@@ -49,7 +50,7 @@ export function analyzeImageData(imageData: ImageData, pageIndex: number): PageP
   const inkDensity = 1 - lightBgRatio;
 
   let classification: PageClassification;
-  if (darkBgRatio > 0.45) {
+  if (darkBgRatio > DARK_BG_RATIO_THRESHOLD) {
     classification = 'DARK_SLIDE';
   } else if (contrast > 65) {
     classification = 'DIAGRAM_EQUATION';

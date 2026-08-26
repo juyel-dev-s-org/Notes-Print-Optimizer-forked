@@ -36,6 +36,8 @@ export interface WorkflowActions {
   setSelectedPageIndex: (index: number) => void;
   setExcludedPages: (pages: Set<number>) => void;
   togglePageExcluded: (pageIndex: number) => void;
+  setKeepOriginalPages: (pages: Set<number>) => void;
+  toggleKeepOriginalPage: (pageIndex: number) => void;
   setMasterParams: (params: ProcessingParameters) => void;
   setProcessingToggles: (toggles: ProcessingToggleState) => void;
   setPreviewProcessing: (isPreviewProcessing: boolean) => void;
@@ -91,6 +93,10 @@ export function useWorkflow(): {
         dispatch({ type: 'SET_EXCLUDED_PAGES', pages }),
       togglePageExcluded: (pageIndex) =>
         dispatch({ type: 'TOGGLE_PAGE_EXCLUDED', pageIndex }),
+      setKeepOriginalPages: (pages) =>
+        dispatch({ type: 'SET_KEEP_ORIGINAL_PAGES', pages }),
+      toggleKeepOriginalPage: (pageIndex) =>
+        dispatch({ type: 'TOGGLE_KEEP_ORIGINAL_PAGE', pageIndex }),
       setMasterParams: (params) =>
         dispatch({ type: 'SET_MASTER_PARAMS', params }),
       setProcessingToggles: (toggles) =>

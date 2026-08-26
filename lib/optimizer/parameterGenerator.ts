@@ -4,6 +4,7 @@ import {
   PresetMode,
   ProcessingParameters,
 } from './types';
+import { DARK_BG_RATIO_THRESHOLD } from '../kernels/constants';
 
 export class ParameterGenerator {
   /**
@@ -118,7 +119,7 @@ export class ParameterGenerator {
       return baseParams;
     }
 
-    const isDark = pageProfile.classification === 'DARK_SLIDE' || pageProfile.darkBackgroundRatio > 0.45;
+    const isDark = pageProfile.classification === 'DARK_SLIDE' || pageProfile.darkBackgroundRatio > DARK_BG_RATIO_THRESHOLD;
 
     // Default to 0 crop so slide content is never cut off
     const topCrop = 0;

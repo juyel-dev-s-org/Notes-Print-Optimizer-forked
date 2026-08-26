@@ -65,6 +65,7 @@ export const WorkflowView: React.FC<WorkflowUIProps> = ({ state, actions, handle
     processedPages,
     selectedPageIndex,
     excludedPages,
+    keepOriginalPages,
     masterParams,
     processingToggles,
     isPreviewProcessing,
@@ -95,6 +96,7 @@ export const WorkflowView: React.FC<WorkflowUIProps> = ({ state, actions, handle
     handleDownloadMerged: onDownloadMerged,
     handleProceedToPhase2: onProceedToPhase2,
     handleToggleExcludePage: onToggleExcludePage,
+    handleToggleKeepOriginalPage: onToggleKeepOriginalPage,
     handleProceedToPhase3: onProceedToPhase3,
     handleReprocess: onReprocess,
     handlePreviewReprocess: onPreviewReprocess,
@@ -249,6 +251,8 @@ export const WorkflowView: React.FC<WorkflowUIProps> = ({ state, actions, handle
                 excludedPages={excludedPages}
                 onToggleExcludePage={onToggleExcludePage}
                 onToggleExcludeAll={onToggleExcludeAll}
+                keepOriginalPages={keepOriginalPages}
+                onToggleKeepOriginalPage={onToggleKeepOriginalPage}
               />
 
               <ActionBar>

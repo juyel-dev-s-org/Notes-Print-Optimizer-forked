@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useRef, useState, useEffect } from 'react';
-import { Eye, CheckSquare, Square } from 'lucide-react';
+import { Eye, CheckSquare, Square, Image as ImageIcon } from 'lucide-react';
 import { ProcessedPage } from '@/lib/optimizer/types';
 import { InfoTooltip } from '@/components/InfoTooltip';
 
@@ -12,6 +12,8 @@ interface PageGridProps {
   excludedPages: Set<number>;
   onToggleExcludePage: (index: number) => void;
   onToggleExcludeAll?: (exclude: boolean) => void;
+  keepOriginalPages: Set<number>;
+  onToggleKeepOriginalPage: (index: number) => void;
 }
 
 // Lazy loaded & RAM-virtualized page item card
@@ -20,9 +22,11 @@ const LazyPageCard: React.FC<{
   idx: number;
   isSelected: boolean;
   isExcluded: boolean;
+  isKeptOriginal: boolean;
   onSelectPage: (index: number) => void;
   onToggleExcludePage: (index: number) => void;
-}> = ({ page, idx, isSelected, isExcluded, onSelectPage, onToggleExcludePage }) => {
+  onToggleKeepOriginalPage: (index: number) => void;
+}> = ({ page, idx, isSelected, isExcluded, isKeptOriginal, onSelectPage, onToggleExcludePage, onToggleKeepOriginalPage }) => {
   const [isVisible, setIsVisible] = useState(false);
   const cardRef = useRef<HTMLDivElement>(null);
 
@@ -52,9 +56,25 @@ const LazyPageCard: React.FC<{
           : 'border-surface-2 bg-surface hover:border-elevated hover:shadow-md'
       }`}
     >
-      {/* Card Header & Checkbox */}
-      <div className="flex items-center justify-between px-2.5 py-2 bg-surface-2/80 border-b border-elevated/60 text-xs">
-        <span className="font-bold text-ink">Page {idx + 1}</span>
+      {/* Card Header: keep-original (left) · Page N · exclude (right) */}
+      <div className="flex items-center justify-between px-1 py-2 bg-surface-2/80 border-b border-elevated/60 text-xs">
+        {/* Keep-original tick (LEFT) — pinned pages print their untouched scan */}
+        <button
+          type="button"
+          onClick={() => onToggleKeepOriginalPage(idx)}
+          aria-pressed={isKeptOriginal}
+          aria-label={isKeptOriginal ? `Use whitened page ${idx + 1}` : `Keep page ${idx + 1} original`}
+          className={`flex h-11 w-11 items-center justify-center rounded-md transition-transform active:scale-95 ${
+            isKeptOriginal
+              ? 'text-accent-soft bg-accent/15 hover:bg-accent/25'
+              : 'text-ink-faint hover:bg-elevated/60'
+          }`}
+          title={isKeptOriginal ? 'Keeping original — tap to whiten' : 'Black/white box here? Keep the original scan'}
+        >
+          <ImageIcon className="h-5 w-5" />
+        </button>
+
+        <span className="font-bold text-ink truncate px-0.5">Page {idx + 1}</span>
 
         {/* Exclude Checkbox with enlarged touch area */}
         <button
@@ -111,9 +131,15 @@ const LazyPageCard: React.FC<{
         <span className="truncate rounded-sm bg-surface-2 px-1.5 py-0.5 font-medium text-ink-muted max-w-[80px]">
           {page.profile.classification.replace('_', ' ')}
         </span>
-        <span className="font-bold text-success bg-success-strong/10 border border-success-strong/20 px-1.5 py-0.5 rounded-sm">
-          -{inkSaved}% Ink
-        </span>
+        {isKeptOriginal ? (
+          <span className="font-bold text-accent-soft bg-accent/10 border border-accent/25 px-1.5 py-0.5 rounded-sm">
+            Original
+          </span>
+        ) : (
+          <span className="font-bold text-success bg-success-strong/10 border border-success-strong/20 px-1.5 py-0.5 rounded-sm">
+            -{inkSaved}% Ink
+          </span>
+        )}
       </div>
     </div>
   );
@@ -126,8 +152,11 @@ export const PageGrid: React.FC<PageGridProps> = ({
   excludedPages,
   onToggleExcludePage,
   onToggleExcludeAll,
+  keepOriginalPages,
+  onToggleKeepOriginalPage,
 }) => {
   const activeCount = pages.length - excludedPages.size;
+  const keptCount = keepOriginalPages.size;
 
   return (
     <div className="flex flex-col gap-3 rounded-2xl border border-surface-2 bg-surface p-4 shadow-xl">
@@ -142,7 +171,7 @@ export const PageGrid: React.FC<PageGridProps> = ({
             />
           </div>
           <p className="text-xs text-ink-muted">
-            Tap a page to inspect before/after in split-view comparator. Uncheck to exclude.
+            Tap a page to inspect before/after. Left icon keeps the untouched original; uncheck to exclude.
           </p>
         </div>
 
@@ -168,6 +197,11 @@ export const PageGrid: React.FC<PageGridProps> = ({
           <span className="rounded-full bg-primary/20 px-3 py-1 text-xs font-bold text-primary-soft border border-primary/30">
             {activeCount} of {pages.length} Pages
           </span>
+          {keptCount > 0 && (
+            <span className="rounded-full bg-accent/15 px-3 py-1 text-xs font-bold text-accent-soft border border-accent/30">
+              {keptCount} Original
+            </span>
+          )}
         </div>
       </div>
 
@@ -180,8 +214,10 @@ export const PageGrid: React.FC<PageGridProps> = ({
             idx={idx}
             isSelected={selectedPageIndex === idx}
             isExcluded={excludedPages.has(idx)}
+            isKeptOriginal={keepOriginalPages.has(idx)}
             onSelectPage={onSelectPage}
             onToggleExcludePage={onToggleExcludePage}
+            onToggleKeepOriginalPage={onToggleKeepOriginalPage}
           />
         ))}
       </div>

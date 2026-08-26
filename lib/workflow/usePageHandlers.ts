@@ -56,6 +56,8 @@ export function usePageHandlers() {
   const layout = useLayoutEngine({
     processedPages: state.processedPages,
     excludedPages: state.excludedPages,
+    keepOriginalPages: state.keepOriginalPages,
+    mergedPdfBytes: state.mergedPdfBytes,
     layoutConfig: state.layoutConfig,
     layoutDirty: state.layoutDirty,
     actions,
@@ -65,6 +67,7 @@ export function usePageHandlers() {
 
   const exclusion = useExclusion({
     excludedPages: state.excludedPages,
+    keepOriginalPages: state.keepOriginalPages,
     currentPhase: state.currentPhase,
     processedPages: state.processedPages,
     layoutConfig: state.layoutConfig,
@@ -99,6 +102,7 @@ export function usePageHandlers() {
     handleReorderItem: fileQueue.handleReorderItem,
     handleProceedToPhase2: optimization.handleProceedToPhase2,
     handleToggleExcludePage: exclusion.handleToggleExcludePage,
+    handleToggleKeepOriginalPage: exclusion.handleToggleKeepOriginalPage,
     handleDownloadOptimized1Up: session.handleDownloadOptimized1Up,
     handleProceedToPhase3: session.handleProceedToPhase3,
     handleReprocess: optimization.handleReprocess,

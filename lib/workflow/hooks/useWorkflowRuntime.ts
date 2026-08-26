@@ -33,9 +33,13 @@ export function useWorkflowRuntime() {
   const previewBlobUrlRef = useRef<string | null>(null);
   const previewPdfDocRef = useRef<PreviewPdfDoc>(null);
 
-  /* Debounced phase-3 re-layout on exclude toggles (cancels stale compiles) */
+  /* Debounced phase-3 re-layout on exclude / keep-original toggles */
   const excludeLayoutTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const excludeLayoutArgsRef = useRef<{ config: LayoutConfig; excluded: Set<number> } | null>(null);
+  const excludeLayoutArgsRef = useRef<{
+    config: LayoutConfig;
+    excluded: Set<number>;
+    keepOriginal: Set<number>;
+  } | null>(null);
 
   /** Revokes the cached preview blob URL + destroys the cached pdfjs doc. */
   const revokePreviewAssets = useCallback(() => {

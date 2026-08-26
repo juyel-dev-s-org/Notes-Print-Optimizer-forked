@@ -7,21 +7,32 @@ import type { WorkflowActions } from '../useWorkflow';
 
 interface ExclusionParams {
   excludedPages: Set<number>;
+  keepOriginalPages: Set<number>;
   currentPhase: number;
   processedPages: ProcessedPage[];
   layoutConfig: LayoutConfig;
   actions: WorkflowActions;
-  compilePhase3PrintLayout: (config: LayoutConfig, overrideExcludedPages?: Set<number>) => Promise<void>;
+  compilePhase3PrintLayout: (
+    config: LayoutConfig,
+    overrideExcludedPages?: Set<number>,
+    overrideKeepOriginal?: Set<number>,
+  ) => Promise<void>;
   excludeLayoutTimerRef: React.MutableRefObject<ReturnType<typeof setTimeout> | null>;
-  excludeLayoutArgsRef: React.MutableRefObject<{ config: LayoutConfig; excluded: Set<number> } | null>;
+  excludeLayoutArgsRef: React.MutableRefObject<{
+    config: LayoutConfig;
+    excluded: Set<number>;
+    keepOriginal: Set<number>;
+  } | null>;
 }
 
 /**
- * Page exclusion with a 400ms debounce so rapid include/exclude
- * toggles collapse into a single phase-3 re-layout.
+ * Page include/exclude + keep-original toggles, debounced 400ms so rapid
+ * flips collapse into a single phase-3 re-layout. Both toggle kinds share
+ * one debounce slot — the latest combined state always wins.
  */
 export function useExclusion({
   excludedPages,
+  keepOriginalPages,
   currentPhase,
   processedPages,
   layoutConfig,
@@ -30,37 +41,47 @@ export function useExclusion({
   excludeLayoutTimerRef,
   excludeLayoutArgsRef,
 }: ExclusionParams) {
+  const scheduleRelayout = useCallback(
+    (nextExcluded: Set<number>, nextKeepOriginal: Set<number>) => {
+      if (!(currentPhase === 3 && processedPages.length > 0)) return;
+      const activePages = LayoutService.getActivePages(processedPages, nextExcluded);
+      if (activePages.length === 0) return;
+      excludeLayoutArgsRef.current = {
+        config: layoutConfig,
+        excluded: nextExcluded,
+        keepOriginal: nextKeepOriginal,
+      };
+      if (excludeLayoutTimerRef.current) clearTimeout(excludeLayoutTimerRef.current);
+      excludeLayoutTimerRef.current = setTimeout(() => {
+        excludeLayoutTimerRef.current = null;
+        const args = excludeLayoutArgsRef.current;
+        if (args) compilePhase3PrintLayout(args.config, args.excluded, args.keepOriginal);
+      }, 400);
+    },
+    [currentPhase, processedPages, layoutConfig, compilePhase3PrintLayout, excludeLayoutTimerRef, excludeLayoutArgsRef],
+  );
+
   const handleToggleExcludePage = useCallback(
     (pageIdx: number) => {
       const next = new Set(excludedPages);
       if (next.has(pageIdx)) next.delete(pageIdx);
       else next.add(pageIdx);
       actions.setExcludedPages(next);
-      if (currentPhase === 3 && processedPages.length > 0) {
-        const activePages = LayoutService.getActivePages(processedPages, next);
-        if (activePages.length > 0) {
-          /* Debounce rapid toggles into a single re-layout */
-          excludeLayoutArgsRef.current = { config: layoutConfig, excluded: next };
-          if (excludeLayoutTimerRef.current) clearTimeout(excludeLayoutTimerRef.current);
-          excludeLayoutTimerRef.current = setTimeout(() => {
-            excludeLayoutTimerRef.current = null;
-            const args = excludeLayoutArgsRef.current;
-            if (args) compilePhase3PrintLayout(args.config, args.excluded);
-          }, 400);
-        }
-      }
+      scheduleRelayout(next, keepOriginalPages);
     },
-    [
-      excludedPages,
-      currentPhase,
-      processedPages,
-      layoutConfig,
-      compilePhase3PrintLayout,
-      actions,
-      excludeLayoutTimerRef,
-      excludeLayoutArgsRef,
-    ],
+    [excludedPages, keepOriginalPages, actions, scheduleRelayout],
   );
 
-  return { handleToggleExcludePage };
+  const handleToggleKeepOriginalPage = useCallback(
+    (pageIdx: number) => {
+      const next = new Set(keepOriginalPages);
+      if (next.has(pageIdx)) next.delete(pageIdx);
+      else next.add(pageIdx);
+      actions.setKeepOriginalPages(next);
+      scheduleRelayout(excludedPages, next);
+    },
+    [keepOriginalPages, excludedPages, actions, scheduleRelayout],
+  );
+
+  return { handleToggleExcludePage, handleToggleKeepOriginalPage };
 }

@@ -113,6 +113,14 @@ export interface WorkflowState {
   optimized1UpBlob: Blob | null;
   selectedPageIndex: number;
   excludedPages: Set<number>;
+  /**
+   * Pages the user pinned to their ORIGINAL scan (left tick on thumbnails).
+   * A pinned page still participates in layout/export, but the exporter
+   * renders it from the merged source PDF instead of the whitened bitmap —
+   * no reprocessing, pure source swap. Auto-seeded with LIGHT_SLIDE pages
+   * whenever a fresh processing run completes.
+   */
+  keepOriginalPages: Set<number>;
 
   // Master parameters (user preferences)
   masterParams: ProcessingParameters;
@@ -164,6 +172,8 @@ export type WorkflowAction =
   | { type: 'SET_SELECTED_PAGE_INDEX'; index: number }
   | { type: 'SET_EXCLUDED_PAGES'; pages: Set<number> }
   | { type: 'TOGGLE_PAGE_EXCLUDED'; pageIndex: number }
+  | { type: 'SET_KEEP_ORIGINAL_PAGES'; pages: Set<number> }
+  | { type: 'TOGGLE_KEEP_ORIGINAL_PAGE'; pageIndex: number }
   // Master params
   | { type: 'SET_MASTER_PARAMS'; params: ProcessingParameters }
   // Processing toggles

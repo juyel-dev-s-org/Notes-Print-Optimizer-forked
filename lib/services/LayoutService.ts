@@ -6,6 +6,7 @@ export class LayoutService {
     activePages: ProcessedPage[],
     config: LayoutConfig,
     onProgress?: (current: number, total: number, action: string) => void,
+    opts?: { keepOriginalPages?: Set<number>; mergedPdfBytes?: Uint8Array | null },
   ): Promise<{ finalPdfBlob: Blob; sheetPreviews: string[]; metrics: OptimizationMetrics }> {
     /* Free only the previous sheet previews — a blanket revoke here used to
        kill live thumbnails (merged/processed pages) whose URLs are still
@@ -14,7 +15,7 @@ export class LayoutService {
     if (activePages.length === 0) throw new Error('No pages to layout');
     // Defer pdf-lib (via PdfExporter) until layout/export is actually requested.
     const { PdfExporter } = await import('../optimizer/pdfExporter');
-    return PdfExporter.compileSheetsAndExportPdf(activePages, config, onProgress);
+    return PdfExporter.compileSheetsAndExportPdf(activePages, config, onProgress, opts);
   }
 
   static updateGridFormat(config: LayoutConfig, format: GridFormat): LayoutConfig {

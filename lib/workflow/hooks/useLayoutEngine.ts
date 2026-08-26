@@ -14,6 +14,8 @@ import type { WithProcessingFn } from './useWorkflowRuntime';
 interface LayoutEngineParams {
   processedPages: ProcessedPage[];
   excludedPages: Set<number>;
+  keepOriginalPages: Set<number>;
+  mergedPdfBytes: Uint8Array | null;
   layoutConfig: LayoutConfig;
   layoutDirty: boolean;
   actions: WorkflowActions;
@@ -28,6 +30,8 @@ interface LayoutEngineParams {
 export function useLayoutEngine({
   processedPages,
   excludedPages,
+  keepOriginalPages,
+  mergedPdfBytes,
   layoutConfig,
   layoutDirty,
   actions,
@@ -35,7 +39,11 @@ export function useLayoutEngine({
   withProcessing,
 }: LayoutEngineParams) {
   const compilePhase3PrintLayout = useCallback(
-    async (config: LayoutConfig, overrideExcludedPages?: Set<number>) => {
+    async (
+      config: LayoutConfig,
+      overrideExcludedPages?: Set<number>,
+      overrideKeepOriginal?: Set<number>,
+    ) => {
       const startTime = Date.now();
       const abortController = new AbortController();
       abortRef.current = abortController;
@@ -63,6 +71,10 @@ export function useLayoutEngine({
               elapsedMs: Date.now() - startTime,
             });
           },
+          {
+            keepOriginalPages: overrideKeepOriginal || keepOriginalPages,
+            mergedPdfBytes,
+          },
         );
         if (signal.aborted) return;
         actions.setTiming({ layoutTimeMs: Math.round(Date.now() - startTime) });
@@ -70,7 +82,7 @@ export function useLayoutEngine({
       }, 'Failed to generate print layout PDF.', null);
       if (abortRef.current === abortController) abortRef.current = null;
     },
-    [processedPages, excludedPages, actions, withProcessing, abortRef],
+    [processedPages, excludedPages, keepOriginalPages, mergedPdfBytes, actions, withProcessing, abortRef],
   );
 
   const handleSelectLayoutFormat = useCallback(
