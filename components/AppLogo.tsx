@@ -4,7 +4,7 @@ import React from 'react';
 import Image from 'next/image';
 
 /**
- * Brand mark — the same artwork as the PWA icon (public/icon-master.png
+ * Brand mark — the same artwork as the PWA icon (public/icon-192-v2.png
  * pipeline), so the in-app logo, favicon and installed app icon are one
  * identical piece of art. Rendered from the 192px raster; basePath is
  * applied automatically by next/image.
