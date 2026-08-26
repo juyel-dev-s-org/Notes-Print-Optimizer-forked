@@ -1,158 +1,159 @@
 {
-  "version": 1,
-  "renderScale": 1.8,
-  "fixtures": {
-    "text": {
-      "0": {
-        "width": 1102,
-        "height": 1426,
-        "sha256": "0b97f673da7f1517b4f968df69bf7cc56e067087d341927acbd3a14899bd6e13",
-        "inkBeforePct": 1.58,
-        "inkAfterPct": 1.58,
-        "classification": "LIGHT_SLIDE"
-      },
-      "1": {
-        "width": 1102,
-        "height": 1426,
-        "sha256": "1b8ebecc03c8d7ce476e5d1cdb258409ed20ffda9cc8f2db7b66c925d7b710fc",
-        "inkBeforePct": 0.98,
-        "inkAfterPct": 0.98,
-        "classification": "LIGHT_SLIDE"
-      },
-      "2": {
-        "width": 1102,
-        "height": 1426,
-        "sha256": "cac0a7c3d69673f27baf6b6f7c0099ec8546da75de4988ff934beae1a52d6fdc",
-        "inkBeforePct": 97.98,
-        "inkAfterPct": 5.44,
-        "classification": "DARK_SLIDE"
-      },
-      "3": {
-        "width": 1102,
-        "height": 1426,
-        "sha256": "f0e8338b861dcca50e27289fedeb9a9b61337d6e4c937a81e0fd15f097fc2048",
-        "inkBeforePct": 98.92,
-        "inkAfterPct": 4.09,
-        "classification": "DARK_SLIDE"
-      },
-      "4": {
-        "width": 1102,
-        "height": 1426,
-        "sha256": "64af99ebe9b62bd43960833de0b251d974c6a51dac48961f5555b2259344e4bb",
-        "inkBeforePct": 7.64,
-        "inkAfterPct": 7.64,
-        "classification": "LIGHT_SLIDE"
-      },
-      "5": {
-        "width": 1102,
-        "height": 1426,
-        "sha256": "04a8912154a9393f7ce8e9c6780ffe5b5dcda036fa340a7385e6092847b8e103",
-        "inkBeforePct": 93.27,
-        "inkAfterPct": 21.83,
-        "classification": "DARK_SLIDE"
-      }
-    },
-    "image": {
-      "0": {
-        "width": 1728,
-        "height": 972,
-        "sha256": "f7f0fdef8912cfa967d69e7fc9f3b145cf06f6ed02e2802ea6c0ca8e7599e9c0",
-        "inkBeforePct": 97.08,
-        "inkAfterPct": 2.25,
-        "classification": "DARK_SLIDE"
-      },
-      "1": {
-        "width": 1728,
-        "height": 972,
-        "sha256": "7e39c5820727bf0d3df9b1337da1e082006323290f8558f3070cfbf0b30f16d0",
-        "inkBeforePct": 8.71,
-        "inkAfterPct": 8.71,
-        "classification": "LIGHT_SLIDE"
-      },
-      "2": {
-        "width": 1728,
-        "height": 972,
-        "sha256": "53582c98884803c9987c1dec5c984e1aa2345bb857083803bd9bb37596b8c306",
-        "inkBeforePct": 3.7,
-        "inkAfterPct": 3.7,
-        "classification": "LIGHT_SLIDE"
-      },
-      "3": {
-        "width": 1728,
-        "height": 972,
-        "sha256": "b74c29a5904b49d6a1030ebf8b5b58a42a82c69c661df7a85bf8425dd095c10d",
-        "inkBeforePct": 40.42,
-        "inkAfterPct": 40.42,
-        "classification": "HANDWRITTEN_NOTES"
-      }
-    },
-    "scanned": {
-      "0": {
-        "width": 1728,
-        "height": 972,
-        "sha256": "a93c96ea363d34acc82f9c52b05a19f80a82f4ddab37d12456ed6f511bfb9729",
-        "inkBeforePct": 4.53,
-        "inkAfterPct": 4.53,
-        "classification": "LIGHT_SLIDE"
-      },
-      "1": {
-        "width": 1728,
-        "height": 972,
-        "sha256": "6675bd468bf551f137db05f6167c4aacbae23d0956ae209045b5c3e75fb20366",
-        "inkBeforePct": 4.45,
-        "inkAfterPct": 4.45,
-        "classification": "LIGHT_SLIDE"
-      },
-      "2": {
-        "width": 1728,
-        "height": 972,
-        "sha256": "0fb844a887a8bce2d086e81aa4dc2a6048c904a00f5e94d1f9372176e436477c",
-        "inkBeforePct": 4.58,
-        "inkAfterPct": 4.58,
-        "classification": "LIGHT_SLIDE"
-      },
-      "3": {
-        "width": 1728,
-        "height": 972,
-        "sha256": "bf927e738d07a65b91db58ef69f2744dd7bc9413774c708f78d9ab275a264aa2",
-        "inkBeforePct": 4.63,
-        "inkAfterPct": 4.63,
-        "classification": "LIGHT_SLIDE"
-      }
-    },
-    "mixed": {
-      "0": {
-        "width": 1728,
-        "height": 972,
-        "sha256": "bc146f44e68c8de29dcee4557fbebc9b3d11b0c0ffbe7cdba2705fcbdb2d43f9",
-        "inkBeforePct": 98.29,
-        "inkAfterPct": 3.77,
-        "classification": "DARK_SLIDE"
-      },
-      "1": {
-        "width": 1728,
-        "height": 972,
-        "sha256": "2c44516f7fb624fd90bd8d5c43b4080410b35baf7394be6da5422edbfa0e6e3a",
-        "inkBeforePct": 3.38,
-        "inkAfterPct": 3.38,
-        "classification": "LIGHT_SLIDE"
-      },
-      "2": {
-        "width": 1728,
-        "height": 972,
-        "sha256": "2bcf9b364edf0c477b770766b0707bd51434612b9354d27b4d49fb705a47cc29",
-        "inkBeforePct": 4.82,
-        "inkAfterPct": 4.82,
-        "classification": "LIGHT_SLIDE"
-      },
-      "3": {
-        "width": 1728,
-        "height": 972,
-        "sha256": "dedd17cf54ec2c62649e43329b8c0caf3dc409c8ee68062baef3dc9930792997",
-        "inkBeforePct": 62.37,
-        "inkAfterPct": 0.81,
-        "classification": "DARK_SLIDE"
-      }
-    }
-  }
+    "version":  1,
+    "renderScale":  1.8,
+    "fixtures":  {
+                     "text":  {
+                                  "0":  {
+                                            "width":  1102,
+                                            "height":  1426,
+                                            "sha256":  "0b97f673da7f1517b4f968df69bf7cc56e067087d341927acbd3a14899bd6e13",
+                                            "inkBeforePct":  1.58,
+                                            "inkAfterPct":  1.58,
+                                            "classification":  "LIGHT_SLIDE"
+                                        },
+                                  "1":  {
+                                            "width":  1102,
+                                            "height":  1426,
+                                            "sha256":  "1b8ebecc03c8d7ce476e5d1cdb258409ed20ffda9cc8f2db7b66c925d7b710fc",
+                                            "inkBeforePct":  0.98,
+                                            "inkAfterPct":  0.98,
+                                            "classification":  "LIGHT_SLIDE"
+                                        },
+                                  "2":  {
+                                            "width":  1102,
+                                            "height":  1426,
+                                            "sha256":  "cac0a7c3d69673f27baf6b6f7c0099ec8546da75de4988ff934beae1a52d6fdc",
+                                            "inkBeforePct":  97.98,
+                                            "inkAfterPct":  5.44,
+                                            "classification":  "DARK_SLIDE"
+                                        },
+                                  "3":  {
+                                            "width":  1102,
+                                            "height":  1426,
+                                            "sha256":  "f0e8338b861dcca50e27289fedeb9a9b61337d6e4c937a81e0fd15f097fc2048",
+                                            "inkBeforePct":  98.92,
+                                            "inkAfterPct":  4.09,
+                                            "classification":  "DARK_SLIDE"
+                                        },
+                                  "4":  {
+                                            "width":  1102,
+                                            "height":  1426,
+                                            "sha256":  "64af99ebe9b62bd43960833de0b251d974c6a51dac48961f5555b2259344e4bb",
+                                            "inkBeforePct":  7.64,
+                                            "inkAfterPct":  7.64,
+                                            "classification":  "LIGHT_SLIDE"
+                                        },
+                                  "5":  {
+                                            "width":  1102,
+                                            "height":  1426,
+                                            "sha256":  "04a8912154a9393f7ce8e9c6780ffe5b5dcda036fa340a7385e6092847b8e103",
+                                            "inkBeforePct":  93.27,
+                                            "inkAfterPct":  21.83,
+                                            "classification":  "DARK_SLIDE"
+                                        }
+                              },
+                     "image":  {
+                                   "0":  {
+                                             "width":  1728,
+                                             "height":  972,
+                                             "sha256":  "f7f0fdef8912cfa967d69e7fc9f3b145cf06f6ed02e2802ea6c0ca8e7599e9c0",
+                                             "inkBeforePct":  97.08,
+                                             "inkAfterPct":  2.25,
+                                             "classification":  "DARK_SLIDE"
+                                         },
+                                   "1":  {
+                                             "width":  1728,
+                                             "height":  972,
+                                             "sha256":  "7e39c5820727bf0d3df9b1337da1e082006323290f8558f3070cfbf0b30f16d0",
+                                             "inkBeforePct":  8.71,
+                                             "inkAfterPct":  8.71,
+                                             "classification":  "LIGHT_SLIDE"
+                                         },
+                                   "2":  {
+                                             "width":  1728,
+                                             "height":  972,
+                                             "sha256":  "53582c98884803c9987c1dec5c984e1aa2345bb857083803bd9bb37596b8c306",
+                                             "inkBeforePct":  3.7,
+                                             "inkAfterPct":  3.7,
+                                             "classification":  "LIGHT_SLIDE"
+                                         },
+                                   "3":  {
+                                             "width":  1728,
+                                             "height":  972,
+                                             "sha256":  "b74c29a5904b49d6a1030ebf8b5b58a42a82c69c661df7a85bf8425dd095c10d",
+                                             "inkBeforePct":  40.42,
+                                             "inkAfterPct":  40.42,
+                                             "classification":  "HANDWRITTEN_NOTES"
+                                         }
+                               },
+                     "scanned":  {
+                                     "0":  {
+                                               "width":  1728,
+                                               "height":  972,
+                                               "sha256":  "a93c96ea363d34acc82f9c52b05a19f80a82f4ddab37d12456ed6f511bfb9729",
+                                               "inkBeforePct":  4.53,
+                                               "inkAfterPct":  4.53,
+                                               "classification":  "LIGHT_SLIDE"
+                                           },
+                                     "1":  {
+                                               "width":  1728,
+                                               "height":  972,
+                                               "sha256":  "6675bd468bf551f137db05f6167c4aacbae23d0956ae209045b5c3e75fb20366",
+                                               "inkBeforePct":  4.45,
+                                               "inkAfterPct":  4.45,
+                                               "classification":  "LIGHT_SLIDE"
+                                           },
+                                     "2":  {
+                                               "width":  1728,
+                                               "height":  972,
+                                               "sha256":  "0fb844a887a8bce2d086e81aa4dc2a6048c904a00f5e94d1f9372176e436477c",
+                                               "inkBeforePct":  4.58,
+                                               "inkAfterPct":  4.58,
+                                               "classification":  "LIGHT_SLIDE"
+                                           },
+                                     "3":  {
+                                               "width":  1728,
+                                               "height":  972,
+                                               "sha256":  "bf927e738d07a65b91db58ef69f2744dd7bc9413774c708f78d9ab275a264aa2",
+                                               "inkBeforePct":  4.63,
+                                               "inkAfterPct":  4.63,
+                                               "classification":  "LIGHT_SLIDE"
+                                           }
+                                 },
+                     "mixed":  {
+                                   "0":  {
+                                             "width":  1728,
+                                             "height":  972,
+                                             "sha256":  "bc146f44e68c8de29dcee4557fbebc9b3d11b0c0ffbe7cdba2705fcbdb2d43f9",
+                                             "inkBeforePct":  98.29,
+                                             "inkAfterPct":  3.77,
+                                             "classification":  "DARK_SLIDE"
+                                         },
+                                   "1":  {
+                                             "width":  1728,
+                                             "height":  972,
+                                             "sha256":  "2c44516f7fb624fd90bd8d5c43b4080410b35baf7394be6da5422edbfa0e6e3a",
+                                             "inkBeforePct":  3.38,
+                                             "inkAfterPct":  3.38,
+                                             "classification":  "LIGHT_SLIDE",
+                                             "altSha256":  "283707a05b423069aa2e3a2308e00e79c6899a0f445f6f7b13ae09b094ceeac3"
+                                         },
+                                   "2":  {
+                                             "width":  1728,
+                                             "height":  972,
+                                             "sha256":  "2bcf9b364edf0c477b770766b0707bd51434612b9354d27b4d49fb705a47cc29",
+                                             "inkBeforePct":  4.82,
+                                             "inkAfterPct":  4.82,
+                                             "classification":  "LIGHT_SLIDE"
+                                         },
+                                   "3":  {
+                                             "width":  1728,
+                                             "height":  972,
+                                             "sha256":  "dedd17cf54ec2c62649e43329b8c0caf3dc409c8ee68062baef3dc9930792997",
+                                             "inkBeforePct":  62.37,
+                                             "inkAfterPct":  0.81,
+                                             "classification":  "DARK_SLIDE"
+                                         }
+                               }
+                 }
 }
