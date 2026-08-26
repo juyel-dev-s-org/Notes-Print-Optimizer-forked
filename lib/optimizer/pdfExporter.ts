@@ -7,6 +7,7 @@ import { getProcessingEngine, EngineVersion } from './engine';
 import { getPdfjsLib } from './pdfjsLoader';
 import type { PDFDocumentProxy } from 'pdfjs-dist';
 import { DocumentProfile, LayoutConfig, OptimizationMetrics, PresetMode, ProcessedPage } from './types';
+import { getCropTopPx } from '../kernels/whiteBox';
 import '../workers/init';
 
 /**
@@ -217,11 +218,14 @@ export class PdfExporter {
         const userRects = manualRegions?.[p.pageIndex];
         if (userRects && userRects.length > 0 && mergedBytes && !keepOriginal?.has(p.pageIndex)) {
           try {
+            // Render original at same scale as processed image for exact pixel alignment
             const orig = await this.loadOriginalImageData(p, mergedBytes, img.width);
             // Allow 2px tolerance for rounding (pdfjs viewport Math.floor)
             if (Math.abs(orig.width - img.width) <= 2 && Math.abs(orig.height - img.height) <= 2) {
-              const { compositeWhiteBoxRegions } = await import('../kernels/whiteBox');
-              compositeWhiteBoxRegions(img.data, orig.data, img.width, img.height, userRects, 0);
+              const { compositeWhiteBoxRegions, getCropTopPx } = await import('../kernels/whiteBox');
+              // Manual regions are in cropped coordinates — pass cropTopPx for banner crop offset
+              const cropTopPx = getCropTopPx(p.profile, p.parameters, img.height);
+              compositeWhiteBoxRegions(img.data, orig.data, img.width, img.height, userRects, cropTopPx);
             } else {
               console.warn(`[export] Dimension mismatch for manual composite page ${p.pageIndex + 1}: opt ${img.width}x${img.height} vs orig ${orig.width}x${orig.height}`);
             }

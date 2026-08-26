@@ -14,6 +14,16 @@
  * Everything downstream (thumbnail, IndexedDB persist, before/after
  * preview, N-up export) inherits the healed bitmap with zero extra work.
  *
+ * COORDINATE SYSTEM (CRITICAL)
+ * All regions (auto + manual) are stored in **CROPPED coordinates** —
+ * i.e., coordinates relative to the post-banner-crop page render.
+ * The kernel processes cropped pages (top/bottom banner crop removed).
+ * Manual regions from the editor are drawn on the cropped canvas,
+ * so they are naturally in cropped coordinates.
+ * Export MUST pass the correct `cropTopPx` to `compositeWhiteBoxRegions`
+ * so the regions align with the cropped processed pages.
+ * For pages without banner crop, `cropTopPx = 0`.
+ *
  * ALGORITHM (detect)
  *  1. Downsample to a block grid (~200-400 blocks wide) averaging
  *     luminance + saturation per block — cheap and JPEG-noise tolerant.
@@ -80,6 +90,21 @@ export const WHITE_BOX_TUNING = {
   /** Safety cap per page. */
   maxRegions: 6,
 } as const;
+
+/**
+ * Calculate the top crop in pixels based on profile and parameters.
+ * Used to align manual regions (stored in cropped coordinates) with
+ * the original full-page render during export.
+ */
+export function getCropTopPx(
+  profile: Pick<PageProfile, 'topBannerHeightPct'>,
+  params: Pick<ProcessingParameters, 'bannerCropTopPct'>,
+  pageHeight: number
+): number {
+  // Use the profile's detected banner height percentage, fallback to params
+  const bannerPct = profile.topBannerHeightPct ?? params.bannerCropTopPct ?? 0;
+  return Math.floor(pageHeight * (bannerPct / 100));
+}
 
 interface BlockComponent {
   area: number;
