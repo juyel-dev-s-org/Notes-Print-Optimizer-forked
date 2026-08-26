@@ -6,6 +6,8 @@ export type PageClassification =
   | 'DIAGRAM_EQUATION'
   | 'MIXED';
 
+import type { WhiteBoxRegion } from '../kernels/whiteBox';
+
 export interface PageProfile {
   pageIndex: number;
   width: number;
@@ -59,6 +61,9 @@ export interface ProcessingParameters {
   outputQuality: number; // JPEG quality 0.5 - 1.0
   strokeEnhancement?: 'none' | 'normal' | 'strong';
   dilationKernelSize?: number; // 0=off, 3=light, 5=medium, 7=heavy (overrides strokeEnhancement)
+  /** Pipeline flag (not a pixel op): restore large white boxes on dark
+   *  pages from the original render. Default ON; see kernels/whiteBox. */
+  autoWhiteBoxFix?: boolean;
 }
 
 export type GridFormat = '1x1' | '2x1' | '1x2' | '2x2' | '2x3' | '2x4' | '2x5' | '3x3' | 'original' | '2up' | '4up' | '6up' | '8up' | '10up';
@@ -116,4 +121,7 @@ export interface ProcessedPage {
   width?: number;
   height?: number;
   storageKey?: string;
+  /** White boxes auto-restored from the original render (dark pages only).
+   *  Powers the thumbnail badge and the future manual region editor. */
+  whiteBoxRegions?: WhiteBoxRegion[];
 }

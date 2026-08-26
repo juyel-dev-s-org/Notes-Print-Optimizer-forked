@@ -127,7 +127,7 @@ const LazyPageCard: React.FC<{
       </div>
 
       {/* Card Footer Badges */}
-      <div className="flex items-center justify-between p-2 text-2xs bg-surface border-t border-surface-2">
+      <div className="flex items-center justify-between gap-1 p-2 text-2xs bg-surface border-t border-surface-2">
         <span className="truncate rounded-sm bg-surface-2 px-1.5 py-0.5 font-medium text-ink-muted max-w-[80px]">
           {page.profile.classification.replace('_', ' ')}
         </span>
@@ -136,8 +136,18 @@ const LazyPageCard: React.FC<{
             Original
           </span>
         ) : (
-          <span className="font-bold text-success bg-success-strong/10 border border-success-strong/20 px-1.5 py-0.5 rounded-sm">
-            -{inkSaved}% Ink
+          <span className="flex items-center gap-1">
+            {(page.whiteBoxRegions?.length ?? 0) > 0 && (
+              <span
+                className="font-bold text-accent-soft bg-accent/10 border border-accent/25 px-1.5 py-0.5 rounded-sm"
+                title="White boxes kept from the original scan"
+              >
+                {page.whiteBoxRegions!.length} fixed
+              </span>
+            )}
+            <span className="font-bold text-success bg-success-strong/10 border border-success-strong/20 px-1.5 py-0.5 rounded-sm">
+              -{inkSaved}% Ink
+            </span>
           </span>
         )}
       </div>

@@ -6,7 +6,8 @@
  *  - Direct postMessage with transferable buffer (zero-copy to main thread)
  *  - Lazy WASM initialization (only on first task)
  */
-import { processPage, calculateInkCoverage, setWasmKernelsHooks } from '../kernels';
+import { calculateInkCoverage, setWasmKernelsHooks } from '../kernels';
+import { processPageWithWhiteBoxHeal } from '../kernels/whiteBox';
 import { ensureWasmKernels } from '../wasm/loader';
 import type { WorkerRequest, WorkerResponse } from './protocol';
 
@@ -42,7 +43,10 @@ workerSelf.onmessage = async (e: MessageEvent<WorkerRequest>) => {
     try {
       await ensureInit();
       const srcData = new Uint8ClampedArray(task.buffer);
-      const result = processPage(srcData, task.width, task.height, task.params, task.profile);
+      /* Kernel process + auto white-box heal (dark pages). Regions travel
+         with the result for UI badges / future manual editor. */
+      const healed = processPageWithWhiteBoxHeal(srcData, task.width, task.height, task.params, task.profile);
+      const result = { buffer: healed.buffer, width: healed.width, height: healed.height };
 
       /* Zero-copy ink coverage on raw buffers */
       const inkBefore = calculateInkCoverage(srcData);
@@ -57,6 +61,7 @@ workerSelf.onmessage = async (e: MessageEvent<WorkerRequest>) => {
         height: result.height,
         inkBefore,
         inkAfter,
+        whiteBoxRegions: healed.whiteBoxRegions,
       };
       /* Transfer buffer ownership to main thread (zero-copy) */
       workerSelf.postMessage(response, [result.buffer]);

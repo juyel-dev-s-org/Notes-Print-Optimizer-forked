@@ -61,5 +61,8 @@ export function buildEffectiveParams(
     ? masterParams.backgroundWhiteningThreshold
     : presetDefaults.backgroundWhiteningThreshold;
 
+  // Auto white-box heal — pipeline flag, no preset involvement.
+  effective.autoWhiteBoxFix = toggles.autoWhiteBoxFix;
+
   return effective;
 }

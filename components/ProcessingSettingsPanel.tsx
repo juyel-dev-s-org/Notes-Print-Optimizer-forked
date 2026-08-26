@@ -14,6 +14,7 @@ import {
   RefreshCw,
   PenLine,
   Sparkles,
+  Wand2,
 } from 'lucide-react';
 
 /* -- Props -------------------------------------------------------- */
@@ -305,6 +306,34 @@ export const ProcessingSettingsPanel: React.FC<ProcessingSettingsPanelProps> = (
                 </div>
               );
             })}
+          </div>
+
+          {/* -- Auto white-box heal (standalone switch, no slider) -- */}
+          <div
+            className={`flex items-center justify-between rounded-xl border p-3 transition-colors duration-200 ${
+              toggles.autoWhiteBoxFix
+                ? 'border-accent/40 bg-accent/10'
+                : 'border-surface-2 bg-bg/60'
+            }`}
+          >
+            <div className="flex items-center gap-1.5">
+              <span className={toggles.autoWhiteBoxFix ? 'text-accent-soft' : 'text-ink-muted'}>
+                <Wand2 className="h-3.5 w-3.5" />
+              </span>
+              <span className={`text-[11px] font-bold ${toggles.autoWhiteBoxFix ? 'text-ink' : 'text-ink-muted'}`}>
+                Auto-fix white boxes
+              </span>
+              <InfoTooltip
+                title="Auto-fix white boxes"
+                content="Dark pages with big white notes or question boxes: the box is kept exactly as the original scan instead of turning into a black block. Turn off if you prefer full whitening everywhere."
+                position="top"
+              />
+            </div>
+            <ToggleSwitch
+              enabled={toggles.autoWhiteBoxFix}
+              onChange={(on) => handleToggleChange('autoWhiteBoxFix', on)}
+              label="Auto-fix white boxes"
+            />
           </div>
 
           {/* -- Preview note -- */}

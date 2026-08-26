@@ -1,7 +1,8 @@
 import type { PageProfile, ProcessingParameters } from '../types';
 import type { WorkerProcessResult } from '../../workers/protocol';
 import type { IImageProcessor, ProcessorCapabilities } from './IImageProcessor';
-import { processPage, calculateInkCoverage, createImageDataFromBuffer } from '../../kernels';
+import { calculateInkCoverage, createImageDataFromBuffer } from '../../kernels';
+import { processPageWithWhiteBoxHeal } from '../../kernels/whiteBox';
 import { analyzeImageData } from '../analysis';
 
 export class MainThreadImageProcessor implements IImageProcessor {
@@ -22,15 +23,17 @@ export class MainThreadImageProcessor implements IImageProcessor {
     params: ProcessingParameters,
     profile: PageProfile
   ): Promise<WorkerProcessResult> {
-    const result = processPage(imageData.data, imageData.width, imageData.height, params, profile);
-    const optimizedImageData = createImageDataFromBuffer(result.buffer, result.width, result.height);
+    /* Same heal wrapper as the worker — identical output either path. */
+    const healed = processPageWithWhiteBoxHeal(imageData.data, imageData.width, imageData.height, params, profile);
+    const optimizedImageData = createImageDataFromBuffer(healed.buffer, healed.width, healed.height);
     const ib = calculateInkCoverage(imageData.data);
-    const ia = calculateInkCoverage(new Uint8ClampedArray(result.buffer));
+    const ia = calculateInkCoverage(new Uint8ClampedArray(healed.buffer));
     return {
       pageIndex,
       optimizedImageData,
       inkCoverageBeforePct: ib,
       inkCoverageAfterPct: ia,
+      whiteBoxRegions: healed.whiteBoxRegions,
     };
   }
 

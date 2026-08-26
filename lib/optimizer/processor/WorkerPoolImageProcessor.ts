@@ -42,6 +42,11 @@ export class WorkerPoolImageProcessor implements IImageProcessor {
             bannerCropBottomPct: params.bannerCropBottomPct,
             strokeEnhancement: params.strokeEnhancement,
             sharpenAmount: params.sharpenAmount,
+            /* Previously dropped here: the worker re-derived the kernel
+               size from strokeEnhancement, silently capping the slider at
+               'strong' (5px). Forward the exact value. */
+            dilationKernelSize: params.dilationKernelSize,
+            autoWhiteBoxFix: params.autoWhiteBoxFix,
           },
           profile: { classification: profile.classification, darkBackgroundRatio: profile.darkBackgroundRatio },
         });
@@ -50,6 +55,7 @@ export class WorkerPoolImageProcessor implements IImageProcessor {
           optimizedImageData: new ImageData(new Uint8ClampedArray(result.buffer), result.width, result.height),
           inkCoverageBeforePct: result.inkCoverageBeforePct,
           inkCoverageAfterPct: result.inkCoverageAfterPct,
+          whiteBoxRegions: result.whiteBoxRegions,
         };
       } catch {
         // Worker failed — fall through to main thread

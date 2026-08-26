@@ -34,7 +34,6 @@ import { bufferPool } from '../../perf/bufferPool';
 /* Hoisted imports: eliminate per-page dynamic import overhead */
 import { analyzeImageData } from '../../analysis';
 import {
-  processPage as runProcessPage,
   calculateInkCoverage,
   createImageDataFromBuffer,
 } from '../../../kernels';
@@ -43,6 +42,7 @@ import { getPdfjsLib } from '../../pdfjsLoader';
 import { metricsBus } from '../../../metrics/MetricsBus';
 import { ensureWasmKernels, isWasmLoaded, getKernels } from '../../../wasm/loader';
 import { setWasmKernelsHooks } from '../../../kernels/processPage';
+import { processPageWithWhiteBoxHeal } from '../../../kernels/whiteBox';
 import { WorkerPoolImageProcessor } from '../../processor/WorkerPoolImageProcessor';
 import { WorkerManager } from '../../../workers/WorkerManager';
 import { resolveEffectiveInvertMode } from './resolveInvertMode';
@@ -156,19 +156,18 @@ export class ProcessingEngineV2 implements IProcessingEngine {
     profile: PageProfile,
   ): Promise<EnginePageProcessResult> {
     const t0 = performance.now();
-    const result = runProcessPage(
-      imageData.data, imageData.width, imageData.height, params, profile,
-    );
-    const optimizedImageData = createImageDataFromBuffer(
-      result.buffer, result.width, result.height,
-    );
+    /* Heal wrapper keeps the single-page (preview reprocess) path
+       consistent with the document loop. */
+    const healed = processPageWithWhiteBoxHeal(imageData.data, imageData.width, imageData.height, params, profile);
+    const optimizedImageData = createImageDataFromBuffer(healed.buffer, healed.width, healed.height);
     const ib = calculateInkCoverage(imageData.data);
-    const ia = calculateInkCoverage(result.buffer);
+    const ia = calculateInkCoverage(healed.buffer);
     return {
       pageIndex,
       optimizedImageData,
       inkCoverageBeforePct: ib,
       inkCoverageAfterPct: ia,
+      whiteBoxRegions: healed.whiteBoxRegions,
       processingTimeMs: Math.round(performance.now() - t0),
     };
   }
@@ -219,6 +218,7 @@ export class ProcessingEngineV2 implements IProcessingEngine {
       width: number;
       height: number;
       profile: PageProfile;
+      whiteBoxRegions?: Array<{ x: number; y: number; width: number; height: number }>;
     }> = [];
 
     let sumBrightness = 0;
@@ -264,7 +264,7 @@ export class ProcessingEngineV2 implements IProcessingEngine {
 
       if (localSignal.aborted) throw new DOMException('Aborted', 'AbortError');
 
-      const { optimizedImageData, inkCoverageBeforePct: inkBefore, inkCoverageAfterPct: inkAfter } = result;
+      const { optimizedImageData, inkCoverageBeforePct: inkBefore, inkCoverageAfterPct: inkAfter, whiteBoxRegions } = result;
 
       /* Phase 4: Thumbnail */
       const thumbStart = performance.now();
@@ -303,6 +303,7 @@ export class ProcessingEngineV2 implements IProcessingEngine {
         width: optimizedImageData.width,
         height: optimizedImageData.height,
         profile: p.profile,
+        whiteBoxRegions,
       });
 
       onProgress?.(p.pageIndex + 1, totalPages, `[V2] Completed page ${p.pageIndex + 1}/${totalPages}`);
@@ -418,6 +419,7 @@ export class ProcessingEngineV2 implements IProcessingEngine {
       width: m.width,
       height: m.height,
       storageKey: pdfId,
+      whiteBoxRegions: m.whiteBoxRegions,
     }));
 
     const totalMs = Math.round(performance.now() - t0);

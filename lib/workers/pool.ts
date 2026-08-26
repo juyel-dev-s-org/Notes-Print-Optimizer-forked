@@ -299,6 +299,7 @@ export class WorkerPool {
     height: number;
     inkCoverageBeforePct: number;
     inkCoverageAfterPct: number;
+    whiteBoxRegions?: Array<{ x: number; y: number; width: number; height: number }>;
   }> {
     return this.submitTask<PixelTask>(task, 'PROCESS_PIXEL', timeout);
   }

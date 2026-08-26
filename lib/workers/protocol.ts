@@ -7,13 +7,18 @@ export interface PixelTask {
   width: number;
   height: number;
   params: {
-    invertMode: string;
+    invertMode: 'smart' | 'simple' | 'none';
     bannerCropTopPct: number;
     bannerCropBottomPct: number;
-    strokeEnhancement?: string;
+    strokeEnhancement?: 'none' | 'normal' | 'strong';
     sharpenAmount: number;
+    /** Exact kernel size (was previously re-derived in the worker,
+     *  silently capping the slider at 'strong'). */
+    dilationKernelSize?: number;
+    /** Auto white-box heal flag (kernels/whiteBox). */
+    autoWhiteBoxFix?: boolean;
   };
-  profile: { classification: string; darkBackgroundRatio: number };
+  profile: { classification: 'DARK_SLIDE' | 'LIGHT_SLIDE' | 'HANDWRITTEN_NOTES' | 'SCREENSHOT_HEAVY' | 'DIAGRAM_EQUATION' | 'MIXED'; darkBackgroundRatio: number };
 }
 
 export interface ComposeTask {
@@ -47,7 +52,7 @@ export type WorkerRequest =
   | { type: 'TERMINATE' };
 
 export type WorkerResponse =
-  | { type: 'PIXEL_PROCESSED'; taskId: string; pageIndex: number; buffer: ArrayBuffer; width: number; height: number; inkBefore: number; inkAfter: number }
+  | { type: 'PIXEL_PROCESSED'; taskId: string; pageIndex: number; buffer: ArrayBuffer; width: number; height: number; inkBefore: number; inkAfter: number; whiteBoxRegions?: Array<{ x: number; y: number; width: number; height: number }> }
   | { type: 'SHEET_COMPOSED'; taskId: string; sheetIndex: number; buffer: ArrayBuffer; width: number; height: number }
   | { type: 'PONG' }
   | { type: 'BUFFER_STATS'; bufferedCount: number; maxBuffered: number }
@@ -78,6 +83,8 @@ export interface WorkerProcessResult {
   optimizedImageData: ImageData;
   inkCoverageBeforePct: number;
   inkCoverageAfterPct: number;
+  /** White boxes restored from the original (dark pages, autoWhiteBoxFix). */
+  whiteBoxRegions?: Array<{ x: number; y: number; width: number; height: number }>;
 }
 
 export function generateTaskId(): string {

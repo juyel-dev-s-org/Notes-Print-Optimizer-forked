@@ -41,6 +41,8 @@ export interface EnginePageProcessResult {
   inkCoverageBeforePct: number;
   inkCoverageAfterPct: number;
   processingTimeMs: number;
+  /** White boxes restored from the original render (see kernels/whiteBox). */
+  whiteBoxRegions?: Array<{ x: number; y: number; width: number; height: number }>;
 }
 
 export interface EngineDocumentOutput {

@@ -81,15 +81,21 @@ export interface ProcessingToggleState {
   contrast: boolean;
   denoise: boolean;
   bgWhitening: boolean;
+  /** Auto white-box heal on dark pages (kernels/whiteBox). Intentionally
+   *  defaults ON — the safe, ink-saving behavior users expect; the P0
+   *  manual left-tick remains as the per-page override. */
+  autoWhiteBoxFix: boolean;
 }
 
-/** All toggles OFF — every parameter uses its preset default. */
+/** All toggles OFF — every parameter uses its preset default.
+ *  autoWhiteBoxFix is the deliberate exception: it defaults ON. */
 export const DEFAULT_PROCESSING_TOGGLES: ProcessingToggleState = {
   strokeDilation: false,
   sharpen: false,
   contrast: false,
   denoise: false,
   bgWhitening: false,
+  autoWhiteBoxFix: true,
 };
 
 /**
