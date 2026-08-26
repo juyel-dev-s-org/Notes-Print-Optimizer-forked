@@ -40,6 +40,7 @@ export const initialState: WorkflowState = {
   selectedPageIndex: 0,
   excludedPages: new Set<number>(),
   keepOriginalPages: new Set<number>(),
+  manualWhiteBoxRegions: {},
 
   masterParams: ParameterGenerator.getPresetParameters('AUTO_ADAPTIVE'),
 
@@ -84,6 +85,7 @@ function resetTransientState(): Omit<
     selectedPageIndex: 0,
     excludedPages: new Set<number>(),
     keepOriginalPages: new Set<number>(),
+    manualWhiteBoxRegions: {},
 
     processingToggles: { ...DEFAULT_PROCESSING_TOGGLES },
     isPreviewProcessing: false,
@@ -153,6 +155,8 @@ export function workflowReducer(
             .filter((p) => p.profile.classification === 'LIGHT_SLIDE')
             .map((p) => p.pageIndex),
         ),
+        /* Manual regions belong to the previous document — clear. */
+        manualWhiteBoxRegions: {},
       };
 
     case 'SET_OPTIMIZED_1UP_BLOB':
@@ -186,6 +190,22 @@ export function workflowReducer(
       }
       return { ...state, keepOriginalPages: next };
     }
+
+    case 'SET_MANUAL_WHITEBOX_REGIONS': {
+      const next = { ...state.manualWhiteBoxRegions };
+      if (action.regions.length === 0) delete next[action.pageIndex];
+      else next[action.pageIndex] = action.regions;
+      return { ...state, manualWhiteBoxRegions: next };
+    }
+
+    case 'CLEAR_MANUAL_WHITEBOX_REGIONS': {
+      const next = { ...state.manualWhiteBoxRegions };
+      delete next[action.pageIndex];
+      return { ...state, manualWhiteBoxRegions: next };
+    }
+
+    case 'CLEAR_ALL_MANUAL_WHITEBOX_REGIONS':
+      return { ...state, manualWhiteBoxRegions: {} };
 
     // Master params
     case 'SET_MASTER_PARAMS':

@@ -1,8 +1,9 @@
 'use client';
 
 import React, { useRef, useState, useEffect } from 'react';
-import { Eye, CheckSquare, Square, Image as ImageIcon } from 'lucide-react';
+import { Eye, CheckSquare, Square, Image as ImageIcon, Pencil } from 'lucide-react';
 import { ProcessedPage } from '@/lib/optimizer/types';
+import type { WhiteBoxRegion } from '@/lib/kernels/whiteBox';
 import { InfoTooltip } from '@/components/InfoTooltip';
 
 interface PageGridProps {
@@ -14,6 +15,8 @@ interface PageGridProps {
   onToggleExcludeAll?: (exclude: boolean) => void;
   keepOriginalPages: Set<number>;
   onToggleKeepOriginalPage: (index: number) => void;
+  manualWhiteBoxRegions: Record<number, WhiteBoxRegion[]>;
+  onEditPage: (index: number) => void;
 }
 
 // Lazy loaded & RAM-virtualized page item card
@@ -23,10 +26,12 @@ const LazyPageCard: React.FC<{
   isSelected: boolean;
   isExcluded: boolean;
   isKeptOriginal: boolean;
+  manualCount: number;
   onSelectPage: (index: number) => void;
   onToggleExcludePage: (index: number) => void;
   onToggleKeepOriginalPage: (index: number) => void;
-}> = ({ page, idx, isSelected, isExcluded, isKeptOriginal, onSelectPage, onToggleExcludePage, onToggleKeepOriginalPage }) => {
+  onEditPage: (index: number) => void;
+}> = ({ page, idx, isSelected, isExcluded, isKeptOriginal, manualCount, onSelectPage, onToggleExcludePage, onToggleKeepOriginalPage, onEditPage }) => {
   const [isVisible, setIsVisible] = useState(false);
   const cardRef = useRef<HTMLDivElement>(null);
 
@@ -76,21 +81,32 @@ const LazyPageCard: React.FC<{
 
         <span className="font-bold text-ink truncate px-0.5">Page {idx + 1}</span>
 
-        {/* Exclude Checkbox with enlarged touch area */}
-        <button
-          type="button"
-          onClick={() => onToggleExcludePage(idx)}
-          aria-pressed={isExcluded}
-          aria-label={isExcluded ? `Include page ${idx + 1}` : `Exclude page ${idx + 1}`}
-          className="flex h-11 w-11 items-center justify-center rounded-md text-primary-soft hover:bg-elevated/60 active:scale-95 transition-transform"
-          title={isExcluded ? 'Include page' : 'Exclude page'}
-        >
-          {isExcluded ? (
-            <Square className="h-5 w-5 text-ink-muted" />
-          ) : (
-            <CheckSquare className="h-5 w-5 text-primary-soft fill-primary/20" />
-          )}
-        </button>
+        <div className="flex items-center gap-0.5">
+          <button
+            type="button"
+            onClick={() => onEditPage(idx)}
+            aria-label={`Edit regions for page ${idx + 1}`}
+            className="flex h-11 w-11 items-center justify-center rounded-md text-ink-muted hover:bg-elevated/60 hover:text-ink active:scale-95 transition-transform"
+            title="Edit white-box regions"
+          >
+            <Pencil className="h-4 w-4" />
+          </button>
+          {/* Exclude Checkbox with enlarged touch area */}
+          <button
+            type="button"
+            onClick={() => onToggleExcludePage(idx)}
+            aria-pressed={isExcluded}
+            aria-label={isExcluded ? `Include page ${idx + 1}` : `Exclude page ${idx + 1}`}
+            className="flex h-11 w-11 items-center justify-center rounded-md text-primary-soft hover:bg-elevated/60 active:scale-95 transition-transform"
+            title={isExcluded ? 'Include page' : 'Exclude page'}
+          >
+            {isExcluded ? (
+              <Square className="h-5 w-5 text-ink-muted" />
+            ) : (
+              <CheckSquare className="h-5 w-5 text-primary-soft fill-primary/20" />
+            )}
+          </button>
+        </div>
       </div>
 
       {/* Thumbnail Image with IntersectionObserver lazy loading */}
@@ -140,9 +156,17 @@ const LazyPageCard: React.FC<{
             {(page.whiteBoxRegions?.length ?? 0) > 0 && (
               <span
                 className="font-bold text-accent-soft bg-accent/10 border border-accent/25 px-1.5 py-0.5 rounded-sm"
-                title="White boxes kept from the original scan"
+                title="White boxes auto-kept from the original scan"
               >
                 {page.whiteBoxRegions!.length} fixed
+              </span>
+            )}
+            {manualCount > 0 && (
+              <span
+                className="font-bold text-primary-soft bg-primary/10 border border-primary/25 px-1.5 py-0.5 rounded-sm"
+                title="Manually marked regions"
+              >
+                +{manualCount} edit
               </span>
             )}
             <span className="font-bold text-success bg-success-strong/10 border border-success-strong/20 px-1.5 py-0.5 rounded-sm">
@@ -164,6 +188,8 @@ export const PageGrid: React.FC<PageGridProps> = ({
   onToggleExcludeAll,
   keepOriginalPages,
   onToggleKeepOriginalPage,
+  manualWhiteBoxRegions,
+  onEditPage,
 }) => {
   const activeCount = pages.length - excludedPages.size;
   const keptCount = keepOriginalPages.size;
@@ -225,9 +251,11 @@ export const PageGrid: React.FC<PageGridProps> = ({
             isSelected={selectedPageIndex === idx}
             isExcluded={excludedPages.has(idx)}
             isKeptOriginal={keepOriginalPages.has(idx)}
+            manualCount={manualWhiteBoxRegions[page.pageIndex]?.length ?? 0}
             onSelectPage={onSelectPage}
             onToggleExcludePage={onToggleExcludePage}
             onToggleKeepOriginalPage={onToggleKeepOriginalPage}
+            onEditPage={onEditPage}
           />
         ))}
       </div>

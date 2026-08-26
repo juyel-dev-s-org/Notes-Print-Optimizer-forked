@@ -5,6 +5,7 @@ import { useFileQueue } from './hooks/useFileQueue';
 import { useOptimization } from './hooks/useOptimization';
 import { useLayoutEngine } from './hooks/useLayoutEngine';
 import { useExclusion } from './hooks/useExclusion';
+import { useManualRegions } from './hooks/useManualRegions';
 import { useSessionFlow } from './hooks/useSessionFlow';
 
 /**
@@ -57,6 +58,7 @@ export function usePageHandlers() {
     processedPages: state.processedPages,
     excludedPages: state.excludedPages,
     keepOriginalPages: state.keepOriginalPages,
+    manualWhiteBoxRegions: state.manualWhiteBoxRegions,
     mergedPdfBytes: state.mergedPdfBytes,
     layoutConfig: state.layoutConfig,
     layoutDirty: state.layoutDirty,
@@ -68,9 +70,24 @@ export function usePageHandlers() {
   const exclusion = useExclusion({
     excludedPages: state.excludedPages,
     keepOriginalPages: state.keepOriginalPages,
+    manualWhiteBoxRegions: state.manualWhiteBoxRegions,
     currentPhase: state.currentPhase,
     processedPages: state.processedPages,
     layoutConfig: state.layoutConfig,
+    actions,
+    compilePhase3PrintLayout: layout.compilePhase3PrintLayout,
+    excludeLayoutTimerRef,
+    excludeLayoutArgsRef,
+  });
+
+  const manualRegions = useManualRegions({
+    processedPages: state.processedPages,
+    excludedPages: state.excludedPages,
+    manualWhiteBoxRegions: state.manualWhiteBoxRegions,
+    keepOriginalPages: state.keepOriginalPages,
+    mergedPdfBytes: state.mergedPdfBytes,
+    layoutConfig: state.layoutConfig,
+    currentPhase: state.currentPhase,
     actions,
     compilePhase3PrintLayout: layout.compilePhase3PrintLayout,
     excludeLayoutTimerRef,
@@ -103,6 +120,8 @@ export function usePageHandlers() {
     handleProceedToPhase2: optimization.handleProceedToPhase2,
     handleToggleExcludePage: exclusion.handleToggleExcludePage,
     handleToggleKeepOriginalPage: exclusion.handleToggleKeepOriginalPage,
+    handleSetManualRegions: manualRegions.handleSetManualRegions,
+    handleClearManualRegions: manualRegions.handleClearManualRegions,
     handleDownloadOptimized1Up: session.handleDownloadOptimized1Up,
     handleProceedToPhase3: session.handleProceedToPhase3,
     handleReprocess: optimization.handleReprocess,

@@ -33,12 +33,13 @@ export function useWorkflowRuntime() {
   const previewBlobUrlRef = useRef<string | null>(null);
   const previewPdfDocRef = useRef<PreviewPdfDoc>(null);
 
-  /* Debounced phase-3 re-layout on exclude / keep-original toggles */
+  /* Debounced phase-3 re-layout on exclude / keep-original / manual-region toggles */
   const excludeLayoutTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const excludeLayoutArgsRef = useRef<{
     config: LayoutConfig;
     excluded: Set<number>;
     keepOriginal: Set<number>;
+    manualRegions: Record<number, import('../../kernels/whiteBox').WhiteBoxRegion[]>;
   } | null>(null);
 
   /** Revokes the cached preview blob URL + destroys the cached pdfjs doc. */

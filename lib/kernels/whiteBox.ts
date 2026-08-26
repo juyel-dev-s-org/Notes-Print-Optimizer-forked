@@ -52,6 +52,8 @@ export interface WhiteBoxRegion {
   y: number;
   width: number;
   height: number;
+  /** Shape of the restored area. Defaults to 'rect' when omitted (back-compat). */
+  shape?: 'rect' | 'ellipse';
 }
 
 /**
@@ -241,9 +243,9 @@ export function detectWhiteBoxRegions(
 
 /**
  * Paste original pixels back over the processed result, region by region.
- * Row-blocked memcpy — the fastest safe primitive on typed arrays.
- * `cropTopPx` shifts source coordinates when the kernel cropped the top
- * (banner crop); regions fully above the crop line are skipped.
+ * Row-blocked memcpy for rects; per-pixel ellipse test for circular
+ * selections. `cropTopPx` shifts source coordinates when the kernel cropped
+ * the top (banner crop); regions fully above the crop line are skipped.
  */
 export function compositeWhiteBoxRegions(
   dst: Uint8ClampedArray,
@@ -259,13 +261,43 @@ export function compositeWhiteBoxRegions(
     const x0 = Math.max(0, r.x);
     const x1 = Math.min(srcWidth, r.x + r.width);
     if (y1 <= y0 || x1 <= x0) continue;
-    const rowBytes = (x1 - x0) * 4;
-    for (let y = y0; y < y1; y++) {
-      const srcRow = (y + cropTopPx) * srcWidth;
-      dst.set(
-        src.subarray((srcRow + x0) * 4, (srcRow + x0) * 4 + rowBytes),
-        (y * srcWidth + x0) * 4,
-      );
+    const isEllipse = r.shape === 'ellipse';
+    if (!isEllipse) {
+      // Fast path: rectangular memcpy per row.
+      const rowBytes = (x1 - x0) * 4;
+      for (let y = y0; y < y1; y++) {
+        const srcRow = (y + cropTopPx) * srcWidth;
+        dst.set(
+          src.subarray((srcRow + x0) * 4, (srcRow + x0) * 4 + rowBytes),
+          (y * srcWidth + x0) * 4,
+        );
+      }
+    } else {
+      // Ellipse: only pixels inside ((x-cx)/rx)^2 + ((y-cy)/ry)^2 <= 1
+      // are copied. Bounding-box iteration keeps it bounded.
+      const cx = x0 + (x1 - x0) / 2;
+      const cy = y0 + (y1 - y0) / 2;
+      const rx = (x1 - x0) / 2;
+      const ry = (y1 - y0) / 2;
+      if (rx <= 0 || ry <= 0) continue;
+      const rx2 = rx * rx;
+      const ry2 = ry * ry;
+      for (let y = y0; y < y1; y++) {
+        const dy = y - cy;
+        const dy2_ry2 = (dy * dy) / ry2;
+        if (dy2_ry2 > 1) continue;
+        // Solve for horizontal chord at this scanline
+        const dx = rx * Math.sqrt(1 - dy2_ry2);
+        const lx = Math.max(x0, Math.ceil(cx - dx));
+        const rxBound = Math.min(x1, Math.floor(cx + dx) + 1);
+        if (rxBound <= lx) continue;
+        const srcRow = (y + cropTopPx) * srcWidth;
+        const rowBytes = (rxBound - lx) * 4;
+        dst.set(
+          src.subarray((srcRow + lx) * 4, (srcRow + lx) * 4 + rowBytes),
+          (y * srcWidth + lx) * 4,
+        );
+      }
     }
   }
 }

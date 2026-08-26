@@ -8,6 +8,7 @@ import type { WorkflowActions } from '../useWorkflow';
 interface ExclusionParams {
   excludedPages: Set<number>;
   keepOriginalPages: Set<number>;
+  manualWhiteBoxRegions: Record<number, import('../../kernels/whiteBox').WhiteBoxRegion[]>;
   currentPhase: number;
   processedPages: ProcessedPage[];
   layoutConfig: LayoutConfig;
@@ -16,12 +17,14 @@ interface ExclusionParams {
     config: LayoutConfig,
     overrideExcludedPages?: Set<number>,
     overrideKeepOriginal?: Set<number>,
+    overrideManualRegions?: Record<number, import('../../kernels/whiteBox').WhiteBoxRegion[]>,
   ) => Promise<void>;
   excludeLayoutTimerRef: React.MutableRefObject<ReturnType<typeof setTimeout> | null>;
   excludeLayoutArgsRef: React.MutableRefObject<{
     config: LayoutConfig;
     excluded: Set<number>;
     keepOriginal: Set<number>;
+    manualRegions: Record<number, import('../../kernels/whiteBox').WhiteBoxRegion[]>;
   } | null>;
 }
 
@@ -33,6 +36,7 @@ interface ExclusionParams {
 export function useExclusion({
   excludedPages,
   keepOriginalPages,
+  manualWhiteBoxRegions,
   currentPhase,
   processedPages,
   layoutConfig,
@@ -50,15 +54,16 @@ export function useExclusion({
         config: layoutConfig,
         excluded: nextExcluded,
         keepOriginal: nextKeepOriginal,
+        manualRegions: manualWhiteBoxRegions,
       };
       if (excludeLayoutTimerRef.current) clearTimeout(excludeLayoutTimerRef.current);
       excludeLayoutTimerRef.current = setTimeout(() => {
         excludeLayoutTimerRef.current = null;
         const args = excludeLayoutArgsRef.current;
-        if (args) compilePhase3PrintLayout(args.config, args.excluded, args.keepOriginal);
+        if (args) compilePhase3PrintLayout(args.config, args.excluded, args.keepOriginal, args.manualRegions);
       }, 400);
     },
-    [currentPhase, processedPages, layoutConfig, compilePhase3PrintLayout, excludeLayoutTimerRef, excludeLayoutArgsRef],
+    [currentPhase, processedPages, manualWhiteBoxRegions, layoutConfig, compilePhase3PrintLayout, excludeLayoutTimerRef, excludeLayoutArgsRef],
   );
 
   const handleToggleExcludePage = useCallback(

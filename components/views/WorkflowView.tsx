@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import dynamic from 'next/dynamic';
 import {
   Download,
@@ -17,6 +17,7 @@ import { FileSequencePanel } from '@/components/FileSequencePanel';
 import { BeforeAfterSlider } from '@/components/BeforeAfterSlider';
 import { PageGrid } from '@/components/PageGrid';
 import { PageSequencePreview } from '@/components/PageSequencePreview';
+import { WhiteBoxEditor } from '@/components/whitebox/WhiteBoxEditor';
 import { InfoTooltip } from '@/components/InfoTooltip';
 import { GridFormatPicker } from '@/components/GridFormatPicker';
 import { Button } from '@/components/ui/Button';
@@ -66,6 +67,7 @@ export const WorkflowView: React.FC<WorkflowUIProps> = ({ state, actions, handle
     selectedPageIndex,
     excludedPages,
     keepOriginalPages,
+    manualWhiteBoxRegions,
     masterParams,
     processingToggles,
     isPreviewProcessing,
@@ -97,6 +99,8 @@ export const WorkflowView: React.FC<WorkflowUIProps> = ({ state, actions, handle
     handleProceedToPhase2: onProceedToPhase2,
     handleToggleExcludePage: onToggleExcludePage,
     handleToggleKeepOriginalPage: onToggleKeepOriginalPage,
+    handleSetManualRegions: onSetManualRegions,
+    handleClearManualRegions: onClearManualRegions,
     handleProceedToPhase3: onProceedToPhase3,
     handleReprocess: onReprocess,
     handlePreviewReprocess: onPreviewReprocess,
@@ -119,6 +123,17 @@ export const WorkflowView: React.FC<WorkflowUIProps> = ({ state, actions, handle
   const [printBase, setPrintBase] = useState(() =>
     uploadedItems[0]?.name ? uploadedItems[0].name.replace(/\.pdf$/i, '') : 'PW_Print_Ready_Notes',
   );
+
+  // Manual region editor — which page is being edited (null = closed)
+  const [editingPageIdx, setEditingPageIdx] = useState<number | null>(null);
+  const editingPage = editingPageIdx !== null ? processedPages.find((p) => p.pageIndex === editingPageIdx) ?? null : null;
+  const handleEditPage = useCallback((idx: number) => setEditingPageIdx(idx), []);
+  const handleEditorApply = useCallback((regions: import('@/lib/kernels/whiteBox').WhiteBoxRegion[]) => {
+    if (editingPage) {
+      onSetManualRegions(editingPage.pageIndex, regions);
+    }
+    setEditingPageIdx(null);
+  }, [editingPage, onSetManualRegions]);
 
   const stepLabel =
     currentPhase === 1 ? '1 · Upload' : currentPhase === 2 ? '2 · Whiten' : currentPhase === 3 ? '3 · Layout' : '4 · Done';
@@ -253,7 +268,19 @@ export const WorkflowView: React.FC<WorkflowUIProps> = ({ state, actions, handle
                 onToggleExcludeAll={onToggleExcludeAll}
                 keepOriginalPages={keepOriginalPages}
                 onToggleKeepOriginalPage={onToggleKeepOriginalPage}
+                manualWhiteBoxRegions={manualWhiteBoxRegions}
+                onEditPage={handleEditPage}
               />
+              {editingPage && (
+                <WhiteBoxEditor
+                  page={editingPage}
+                  mergedPdfBytes={mergedPdfBytes}
+                  autoRegions={editingPage.whiteBoxRegions ?? []}
+                  manualRegions={manualWhiteBoxRegions[editingPage.pageIndex] ?? []}
+                  onApply={handleEditorApply}
+                  onClose={() => setEditingPageIdx(null)}
+                />
+              )}
 
               <ActionBar>
                 <Button variant="secondary" size="md" onClick={() => setCurrentPhase(1)}>

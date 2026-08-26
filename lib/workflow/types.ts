@@ -138,6 +138,11 @@ export interface WorkflowState {
    * whenever a fresh processing run completes.
    */
   keepOriginalPages: Set<number>;
+  /** Per-page manual white-box rects drawn by the user in the region
+   *  editor (popup). Stored as full-res page pixels (same coords as
+   *  WhiteBoxRegion). Export composites them on top of the auto-healed
+   *  bitmap — no reprocessing, pure source swap per rect. */
+  manualWhiteBoxRegions: Record<number, import('../kernels/whiteBox').WhiteBoxRegion[]>;
 
   // Master parameters (user preferences)
   masterParams: ProcessingParameters;
@@ -191,6 +196,9 @@ export type WorkflowAction =
   | { type: 'TOGGLE_PAGE_EXCLUDED'; pageIndex: number }
   | { type: 'SET_KEEP_ORIGINAL_PAGES'; pages: Set<number> }
   | { type: 'TOGGLE_KEEP_ORIGINAL_PAGE'; pageIndex: number }
+  | { type: 'SET_MANUAL_WHITEBOX_REGIONS'; pageIndex: number; regions: import('../kernels/whiteBox').WhiteBoxRegion[] }
+  | { type: 'CLEAR_MANUAL_WHITEBOX_REGIONS'; pageIndex: number }
+  | { type: 'CLEAR_ALL_MANUAL_WHITEBOX_REGIONS' }
   // Master params
   | { type: 'SET_MASTER_PARAMS'; params: ProcessingParameters }
   // Processing toggles

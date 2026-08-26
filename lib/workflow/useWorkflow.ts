@@ -38,6 +38,9 @@ export interface WorkflowActions {
   togglePageExcluded: (pageIndex: number) => void;
   setKeepOriginalPages: (pages: Set<number>) => void;
   toggleKeepOriginalPage: (pageIndex: number) => void;
+  setManualWhiteBoxRegions: (pageIndex: number, regions: import('../kernels/whiteBox').WhiteBoxRegion[]) => void;
+  clearManualWhiteBoxRegions: (pageIndex: number) => void;
+  clearAllManualWhiteBoxRegions: () => void;
   setMasterParams: (params: ProcessingParameters) => void;
   setProcessingToggles: (toggles: ProcessingToggleState) => void;
   setPreviewProcessing: (isPreviewProcessing: boolean) => void;
@@ -97,6 +100,12 @@ export function useWorkflow(): {
         dispatch({ type: 'SET_KEEP_ORIGINAL_PAGES', pages }),
       toggleKeepOriginalPage: (pageIndex) =>
         dispatch({ type: 'TOGGLE_KEEP_ORIGINAL_PAGE', pageIndex }),
+      setManualWhiteBoxRegions: (pageIndex, regions) =>
+        dispatch({ type: 'SET_MANUAL_WHITEBOX_REGIONS', pageIndex, regions }),
+      clearManualWhiteBoxRegions: (pageIndex) =>
+        dispatch({ type: 'CLEAR_MANUAL_WHITEBOX_REGIONS', pageIndex }),
+      clearAllManualWhiteBoxRegions: () =>
+        dispatch({ type: 'CLEAR_ALL_MANUAL_WHITEBOX_REGIONS' }),
       setMasterParams: (params) =>
         dispatch({ type: 'SET_MASTER_PARAMS', params }),
       setProcessingToggles: (toggles) =>

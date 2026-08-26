@@ -182,7 +182,7 @@ export class PdfExporter {
     activePages: ProcessedPage[],
     layoutConfig: LayoutConfig,
     onProgress?: (current: number, total: number, action: string) => void,
-    opts?: { keepOriginalPages?: Set<number>; mergedPdfBytes?: Uint8Array | null },
+    opts?: { keepOriginalPages?: Set<number>; manualWhiteBoxRegions?: Record<number, import('../kernels/whiteBox').WhiteBoxRegion[]>; mergedPdfBytes?: Uint8Array | null },
   ): Promise<{ finalPdfBlob: Blob; sheetPreviews: string[]; metrics: OptimizationMetrics }> {
     const startTime = performance.now();
     const keepOriginal = opts?.keepOriginalPages;
@@ -201,8 +201,10 @@ export class PdfExporter {
       const chunk = activePages.slice(si * totalPerSheet, Math.min(activePages.length, (si + 1) * totalPerSheet));
 
       /* Pinned pages render from the ORIGINAL merged PDF (pure source swap,
-         zero reprocessing). Falls back to the processed bitmap if the
-         original render fails for any reason. */
+         zero reprocessing). Manual white-box regions are composited on top
+         of the optimized bitmap (original pixels pasted back per rect/ellipse).
+         Falls back to the processed bitmap if any render fails. */
+      const manualRegions = opts?.manualWhiteBoxRegions;
       const chunkImages = await Promise.all(chunk.map(async (p) => {
         if (keepOriginal?.has(p.pageIndex) && mergedBytes) {
           try {
@@ -211,7 +213,21 @@ export class PdfExporter {
             console.warn(`[export] Original render failed for page ${p.pageIndex + 1}, using processed:`, err);
           }
         }
-        return this.loadPageImageDataOrBlank(p);
+        const img = await this.loadPageImageDataOrBlank(p);
+        const userRects = manualRegions?.[p.pageIndex];
+        if (userRects && userRects.length > 0 && mergedBytes && !keepOriginal?.has(p.pageIndex)) {
+          try {
+            const orig = await this.loadOriginalImageData(p, mergedBytes, img.width);
+            // Ensure dimensions match (original rendered at img.width)
+            if (orig.width === img.width && orig.height === img.height) {
+              const { compositeWhiteBoxRegions } = await import('../kernels/whiteBox');
+              compositeWhiteBoxRegions(img.data, orig.data, img.width, img.height, userRects, 0);
+            }
+          } catch (err) {
+            console.warn(`[export] Manual region composite failed for page ${p.pageIndex + 1}:`, err);
+          }
+        }
+        return img;
       }));
 
       const { jpegBuffer, width, height } = await this.composeSheetWithWorker(

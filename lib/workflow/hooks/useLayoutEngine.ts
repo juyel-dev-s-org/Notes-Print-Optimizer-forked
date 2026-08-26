@@ -15,6 +15,7 @@ interface LayoutEngineParams {
   processedPages: ProcessedPage[];
   excludedPages: Set<number>;
   keepOriginalPages: Set<number>;
+  manualWhiteBoxRegions: Record<number, import('../../kernels/whiteBox').WhiteBoxRegion[]>;
   mergedPdfBytes: Uint8Array | null;
   layoutConfig: LayoutConfig;
   layoutDirty: boolean;
@@ -31,6 +32,7 @@ export function useLayoutEngine({
   processedPages,
   excludedPages,
   keepOriginalPages,
+  manualWhiteBoxRegions,
   mergedPdfBytes,
   layoutConfig,
   layoutDirty,
@@ -43,6 +45,7 @@ export function useLayoutEngine({
       config: LayoutConfig,
       overrideExcludedPages?: Set<number>,
       overrideKeepOriginal?: Set<number>,
+      overrideManualRegions?: Record<number, import('../../kernels/whiteBox').WhiteBoxRegion[]>,
     ) => {
       const startTime = Date.now();
       const abortController = new AbortController();
@@ -73,6 +76,7 @@ export function useLayoutEngine({
           },
           {
             keepOriginalPages: overrideKeepOriginal || keepOriginalPages,
+            manualWhiteBoxRegions: overrideManualRegions || manualWhiteBoxRegions,
             mergedPdfBytes,
           },
         );
@@ -82,7 +86,7 @@ export function useLayoutEngine({
       }, 'Failed to generate print layout PDF.', null);
       if (abortRef.current === abortController) abortRef.current = null;
     },
-    [processedPages, excludedPages, keepOriginalPages, mergedPdfBytes, actions, withProcessing, abortRef],
+    [processedPages, excludedPages, keepOriginalPages, manualWhiteBoxRegions, mergedPdfBytes, actions, withProcessing, abortRef],
   );
 
   const handleSelectLayoutFormat = useCallback(

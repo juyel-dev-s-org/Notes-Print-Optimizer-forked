@@ -28,6 +28,7 @@ export interface WorkflowState {
   selectedPageIndex: number;
   excludedPages: Set<number>;
   keepOriginalPages: Set<number>;
+  manualWhiteBoxRegions: Record<number, import('@/lib/kernels/whiteBox').WhiteBoxRegion[]>;
   docProfile: DocumentProfile | null;
   masterParams: ProcessingParameters;
   processingToggles: ProcessingToggleState;
@@ -69,6 +70,8 @@ export interface WorkflowHandlers {
   handleProceedToPhase2: () => void;
   handleToggleExcludePage: (pageIdx: number) => void;
   handleToggleKeepOriginalPage: (pageIdx: number) => void;
+  handleSetManualRegions: (pageIndex: number, regions: import('@/lib/kernels/whiteBox').WhiteBoxRegion[]) => void;
+  handleClearManualRegions: (pageIndex: number) => void;
   handleDownloadOptimized1Up: () => void;
   handleProceedToPhase3: () => void;
   handleReprocess: () => void;
