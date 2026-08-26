@@ -64,8 +64,16 @@ export interface ResumeInfo {
  *
  * - Stroke/Dilation OFF  → raw PDF preserved, NO morphology applied at all.
  * - Stroke/Dilation ON   → manual slider controls stroke thickness.
- * - Sharpen/Contrast/Denoise/BG-Whitening OFF → uses preset default value.
- * - Sharpen/Contrast/Denoise/BG-Whitening ON  → manual slider overrides preset.
+ * - Sharpen ON → manual slider; OFF → preset default.
+ *
+ * contrast / denoise / bgWhitening are RESERVED but currently unused by the
+ * whiten kernel: its output is pure binary (black/white composite), so a
+ * contrast curve, background whitening threshold and a denoise pass have no
+ * meaningful effect there (denoise duplicates the built-in CC noise
+ * removal). They stay in the state shape so the Enhance-style grayscale
+ * pipeline can adopt them later without a type migration. The settings UI
+ * deliberately does not render them — exposing a no-op slider is exactly
+ * the kind of dishonest UI this project avoids.
  */
 export interface ProcessingToggleState {
   strokeDilation: boolean;
@@ -101,6 +109,9 @@ export interface WorkflowState {
   uploadedItems: UploadedPdfItem[];
   mergedPdfBlob: Blob | null;
   mergedPdfBytes: Uint8Array | null;
+  /** Arrange-step page thumbnails. Despite the historical name these are
+   *  blob: URLs (≤12, 0.3-scale JPEG) created via memoryManager, not data:
+   *  URLs — see UploadService.mergeAndPreview. */
   mergedPageDataUrls: string[];
 
   // Raw page extraction / analysis

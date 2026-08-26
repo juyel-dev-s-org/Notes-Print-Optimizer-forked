@@ -14,9 +14,6 @@ import {
   RefreshCw,
   PenLine,
   Sparkles,
-  Eraser,
-  Contrast,
-  Droplets,
 } from 'lucide-react';
 
 /* -- Props -------------------------------------------------------- */
@@ -77,45 +74,13 @@ const SLIDERS: SliderConfig[] = [
     tooltipBody:
       'Makes edges look crisper. Higher = sharper, but too much can look harsh.',
   },
-  {
-    key: 'contrastEnhancement',
-    toggleKey: 'contrast',
-    label: 'Contrast',
-    icon: <Contrast className="h-3.5 w-3.5" />,
-    min: 0,
-    max: 100,
-    step: 5,
-    unit: '%',
-    tooltipTitle: 'Contrast',
-    tooltipBody:
-      'Darkens strokes so faint text is easier to read. Higher = stronger contrast.',
-  },
-  {
-    key: 'denoiseAmount',
-    toggleKey: 'denoise',
-    label: 'Denoise',
-    icon: <Eraser className="h-3.5 w-3.5" />,
-    min: 0,
-    max: 100,
-    step: 5,
-    unit: '%',
-    tooltipTitle: 'Denoise',
-    tooltipBody:
-      'Cleans up dust spots and background noise. Higher = cleaner, but may remove fine details.',
-  },
-  {
-    key: 'backgroundWhiteningThreshold',
-    toggleKey: 'bgWhitening',
-    label: 'BG Whitening',
-    icon: <Droplets className="h-3.5 w-3.5" />,
-    min: 180,
-    max: 255,
-    step: 5,
-    unit: '',
-    tooltipTitle: 'Background Whitening',
-    tooltipBody:
-      'Turns light backgrounds pure white for cleaner prints. Lower = more aggressive cleanup.',
-  },
+  /* Contrast / Denoise / BG Whitening are intentionally NOT exposed here.
+   * The whiten kernel outputs pure binary pages (mask -> black/white
+   * composite), so a contrast curve and a background whitening threshold
+   * have nothing to act on, and denoise duplicates the built-in
+   * connected-component noise removal. Wiring them would be a silent
+   * no-op again. Real tonal control lives in the Enhance Light PDF tool,
+   * whose grayscale kernel supports it. See ProcessingToggleState docs. */
 ];
 
 const PRESET_LABELS: Record<string, string> = {
