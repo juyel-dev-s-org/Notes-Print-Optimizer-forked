@@ -218,10 +218,12 @@ export class PdfExporter {
         if (userRects && userRects.length > 0 && mergedBytes && !keepOriginal?.has(p.pageIndex)) {
           try {
             const orig = await this.loadOriginalImageData(p, mergedBytes, img.width);
-            // Ensure dimensions match (original rendered at img.width)
-            if (orig.width === img.width && orig.height === img.height) {
+            // Allow 2px tolerance for rounding (pdfjs viewport Math.floor)
+            if (Math.abs(orig.width - img.width) <= 2 && Math.abs(orig.height - img.height) <= 2) {
               const { compositeWhiteBoxRegions } = await import('../kernels/whiteBox');
               compositeWhiteBoxRegions(img.data, orig.data, img.width, img.height, userRects, 0);
+            } else {
+              console.warn(`[export] Dimension mismatch for manual composite page ${p.pageIndex + 1}: opt ${img.width}x${img.height} vs orig ${orig.width}x${orig.height}`);
             }
           } catch (err) {
             console.warn(`[export] Manual region composite failed for page ${p.pageIndex + 1}:`, err);

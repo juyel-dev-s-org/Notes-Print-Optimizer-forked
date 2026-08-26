@@ -84,8 +84,8 @@ const LazyPageCard: React.FC<{
         <div className="flex items-center gap-0.5">
           <button
             type="button"
-            onClick={() => onEditPage(idx)}
-            aria-label={`Edit regions for page ${idx + 1}`}
+            onClick={() => onEditPage(page.pageIndex)}
+            aria-label={`Edit regions for page ${page.pageIndex + 1}`}
             className="flex h-11 w-11 items-center justify-center rounded-md text-ink-muted hover:bg-elevated/60 hover:text-ink active:scale-95 transition-transform"
             title="Edit white-box regions"
           >

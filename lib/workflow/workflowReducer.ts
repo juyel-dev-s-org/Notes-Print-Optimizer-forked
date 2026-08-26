@@ -220,10 +220,10 @@ export function workflowReducer(
       return { ...state, isPreviewProcessing: action.isPreviewProcessing };
 
     case 'UPDATE_SINGLE_PROCESSED_PAGE': {
+      const idx = state.processedPages.findIndex((p) => p.pageIndex === action.pageIndex);
+      if (idx === -1) return state;
       const pages = [...state.processedPages];
-      if (action.pageIndex >= 0 && action.pageIndex < pages.length) {
-        pages[action.pageIndex] = action.page;
-      }
+      pages[idx] = action.page;
       return { ...state, processedPages: pages };
     }
 

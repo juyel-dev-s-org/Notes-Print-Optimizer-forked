@@ -82,9 +82,11 @@ export function useManualRegions({
       let displayData = opt;
       if (regions.length > 0 && mergedPdfBytes) {
         const orig = await PdfExporter.loadOriginalImageData(page, mergedPdfBytes, opt.width);
-        if (orig.width === opt.width && orig.height === opt.height) {
+        if (Math.abs(orig.width - opt.width) <= 2 && Math.abs(orig.height - opt.height) <= 2) {
           compositeWhiteBoxRegions(opt.data, orig.data, opt.width, opt.height, regions, 0);
           displayData = opt;
+        } else {
+          console.warn(`[manualRegions] Dimension mismatch for thumbnail regen page ${page.pageIndex + 1}`);
         }
       }
       // Downscale to thumbnail (same as ProcessingEngineV2.generateThumbnail 1/5)

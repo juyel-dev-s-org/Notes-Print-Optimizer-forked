@@ -273,6 +273,7 @@ export const WorkflowView: React.FC<WorkflowUIProps> = ({ state, actions, handle
               />
               {editingPage && (
                 <WhiteBoxEditor
+                  key={editingPage.pageIndex}
                   page={editingPage}
                   mergedPdfBytes={mergedPdfBytes}
                   autoRegions={editingPage.whiteBoxRegions ?? []}

@@ -1,4 +1,4 @@
-const VERSION = 'v28';
+const VERSION = 'v29';
 const CACHE = `pw-optimizer-${VERSION}`;
 const STATIC_CACHE = `pw-optimizer-static-${VERSION}`;
 const DYNAMIC_CACHE = `pw-optimizer-dynamic-${VERSION}`;
