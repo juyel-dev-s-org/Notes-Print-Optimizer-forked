@@ -2,10 +2,8 @@
 @import "tw-animate-css";
 
 /* ------------------------------------------------------------------ */
-/* Design tokens (Tailwind v4 @theme)                                  */
-/* Primitive -> Semantic -> Component layers: a muted dark-theme       */
-/* interpretation of the app icon's indigo #243BFF -> violet #A12CFF   */
-/* gradient (the icon itself keeps the richer neon stops).             */
+/* Design tokens (Tailwind v4 @theme) — Emerald/Mint/Teal/Cyan identity */
+/* Student-focused: fresh, calm, print-ready. Violet kept minimal.     */
 /* ------------------------------------------------------------------ */
 @theme {
   /* Fonts (Plus Jakarta Sans self-hosted via next/font) */
@@ -16,32 +14,30 @@
   --font-mono: var(--font-geist-mono), ui-monospace, "SF Mono", Consolas,
     "Liberation Mono", Menlo, monospace;
 
-  /* Micro type tier — sanctioned floor for chips/badges/captions.
-     The main scale starts at 12px; 11px exists so tiny labels never
-     dip to illegible 10px arbitrary values. */
+  /* Micro type tier — sanctioned floor for chips/badges/captions. */
   --text-2xs: 0.6875rem;
 
-  /* Semantic colors */
+  /* Semantic colors — Emerald/Mint/Teal/Cyan */
   --color-bg: #020617; /* slate-950 page background */
   --color-surface: #0f172a; /* slate-900 cards */
   --color-surface-2: #1e293b; /* slate-800 wells / inputs */
   --color-elevated: #334155; /* slate-700 borders on dark */
   --color-line: #e2e8f0; /* slate-200 borders on white paper surfaces */
 
-  --color-primary: #6366f1; /* indigo-500 */
-  --color-primary-strong: #4f46e5; /* indigo-600 buttons */
-  --color-primary-deep: #4338ca; /* indigo-700 hover */
-  --color-primary-faint: #1e1b4b; /* indigo-950 deep wells */
-  --color-primary-soft: #818cf8; /* indigo-400 links/focus */
-  --color-accent: #8b5cf6; /* violet-500 (icon gradient end) */
-  --color-accent-soft: #a78bfa; /* violet-400 */
-  --color-accent-deep: #6d28d9; /* violet-700 */
+  --color-primary: #10b981; /* emerald-500 — main brand */
+  --color-primary-strong: #059669; /* emerald-600 buttons */
+  --color-primary-deep: #047857; /* emerald-700 hover */
+  --color-primary-faint: #022c22; /* emerald-950 deep wells */
+  --color-primary-soft: #34d399; /* emerald-400 links/focus */
+  --color-accent: #14b8a6; /* teal-500 — secondary */
+  --color-accent-soft: #2dd4bf; /* teal-400 */
+  --color-accent-deep: #0f766e; /* teal-700 */
 
-  --color-success: #34d399; /* emerald-400 */
-  --color-success-strong: #10b981; /* emerald-500 */
-  --color-success-deep: #059669; /* emerald-600 */
-  --color-success-soft: #6ee7b7; /* emerald-300 */
-  --color-success-faint: #022c22; /* emerald-950 */
+  --color-success: #06b6d4; /* cyan-500 — success/info */
+  --color-success-strong: #0891b2; /* cyan-600 */
+  --color-success-deep: #0e7490; /* cyan-700 */
+  --color-success-soft: #22d3ee; /* cyan-400 */
+  --color-success-faint: #083344; /* cyan-950 */
   --color-warning: #fbbf24; /* amber-400 */
   --color-warning-strong: #f59e0b; /* amber-500 */
   --color-warning-soft: #fde047; /* amber-300 */
@@ -55,6 +51,10 @@
   --color-ink: #f1f5f9; /* slate-100 primary text */
   --color-ink-muted: #94a3b8; /* slate-400 secondary text */
   --color-ink-faint: #7e8ca8; /* WCAG-AA (5.3:1 on surface) tertiary text */
+
+  /* Violet — minimal use only (tiny accents) */
+  --color-violet: #8b5cf6;
+  --color-violet-soft: #a78bfa;
 
   /* Component radii */
   --radius-btn: 0.75rem;
@@ -70,13 +70,12 @@
   /* Motion */
   --ease-soft: cubic-bezier(0.22, 1, 0.36, 1);
 
-  /* Type scale — the ONLY sizes allowed: 12 / 14 / 16 / 20 / 24 / 32 px.
-     Map: text-xs=12 · text-sm=14 · text-base=16 · text-xl=20 · text-2xl=24 · text-display=32.
-     Arbitrary text-[Npx] is banned in new code. */
+  /* Type scale */
   --text-display: 2rem;
 
-  /* Brand gradient — single source (was duplicated across 4 components) */
-  --gradient-brand: linear-gradient(90deg, #243bff 0%, #5b35ff 55%, #a12cff 100%);
+  /* Brand gradient — Emerald → Teal → Cyan (Student Mint) */
+  --gradient-brand: linear-gradient(90deg, #10b981 0%, #14b8a6 35%, #06b6d4 70%, #0ea5e9 100%);
+  --gradient-brand-soft: linear-gradient(90deg, #34d399 0%, #2dd4bf 50%, #22d3ee 100%);
 }
 
 /* ------------------------------------------------------------------ */
@@ -93,20 +92,20 @@
 
   /* On light surfaces, "soft" accents must stay readable as text/icons,
      so soft variants map to their deeper saturated stops. */
-  --color-primary: #4f46e5;
-  --color-primary-strong: #4338ca;
-  --color-primary-deep: #3730a3;
-  --color-primary-faint: #e0e7ff;
-  --color-primary-soft: #4f46e5;
-  --color-accent: #7c3aed;
-  --color-accent-soft: #6d28d9;
-  --color-accent-deep: #5b21b6;
+  --color-primary: #059669;
+  --color-primary-strong: #047857;
+  --color-primary-deep: #065f46;
+  --color-primary-faint: #d1fae5;
+  --color-primary-soft: #059669;
+  --color-accent: #0f766e;
+  --color-accent-soft: #0d9488;
+  --color-accent-deep: #115e59;
 
-  --color-success: #047857; /* emerald-700 — AA on white (5.5:1) as small text */
-  --color-success-strong: #059669; /* emerald-600 */
-  --color-success-deep: #065f46; /* emerald-800 */
-  --color-success-soft: #047857;
-  --color-success-faint: #ecfdf5;
+  --color-success: #0e7490; /* cyan-700 — AA on white */
+  --color-success-strong: #0891b2; /* cyan-600 */
+  --color-success-deep: #0e7490; /* cyan-700 */
+  --color-success-soft: #0e7490;
+  --color-success-faint: #ecfeff;
   --color-warning: #b45309;
   --color-warning-strong: #d97706;
   --color-warning-soft: #92400e;
@@ -139,8 +138,8 @@ html[data-theme='light'] {
 @media (min-width: 1024px) {
   [data-theme='light'] .app-shell-bg {
     background-image:
-      radial-gradient(60rem 30rem at 50% -10%, rgba(79, 70, 229, 0.05), transparent 70%),
-      radial-gradient(50rem 26rem at 100% 112%, rgba(124, 58, 237, 0.04), transparent 70%);
+      radial-gradient(60rem 30rem at 50% -10%, rgba(16, 185, 129, 0.05), transparent 70%),
+      radial-gradient(50rem 26rem at 100% 112%, rgba(20, 184, 166, 0.04), transparent 70%);
   }
 }
 
@@ -231,13 +230,12 @@ html, body {
 }
 
 /* Desktop-only ambient background: soft subtle radial glow.
-   Kept paint-cheap and clean without grid lines. Brand-aligned to the
-   icon gradient (indigo top -> violet bottom). */
+   Student Mint — Emerald top -> Teal bottom, liquid glass. */
 @media (min-width: 1024px) {
   .app-shell-bg {
     background-image:
-      radial-gradient(60rem 30rem at 50% -10%, rgba(99, 102, 241, 0.06), transparent 70%),
-      radial-gradient(50rem 26rem at 100% 112%, rgba(139, 92, 246, 0.05), transparent 70%);
+      radial-gradient(60rem 30rem at 50% -10%, rgba(16, 185, 129, 0.06), transparent 70%),
+      radial-gradient(50rem 26rem at 100% 112%, rgba(20, 184, 166, 0.05), transparent 70%);
     background-repeat: no-repeat, no-repeat;
     background-size: auto, auto;
     background-position: center top, center bottom;

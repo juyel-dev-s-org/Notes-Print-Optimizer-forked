@@ -4,7 +4,7 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { ChevronLeft, ChevronRight, TriangleAlert } from 'lucide-react';
 import { getPdfjsLib } from '@/lib/optimizer/pdfjsLoader';
 import type { PDFDocumentProxy } from 'pdfjs-dist';
-import { cellRect, fitInto, nupPaperSize, planSheet, type NupOptions } from '@/lib/nup/nupLayout';
+import { fitInto, nupPaperSize, planSheet, type NupOptions } from '@/lib/nup/nupLayout';
 
 export interface NupLivePreviewProps {
   /** Merged source PDF bytes (a copy is handed to pdf.js internally). */
@@ -160,7 +160,6 @@ export const NupLivePreview: React.FC<NupLivePreviewProps> = ({ mergedBytes, opt
       const row = Math.floor(slot / plan.cols);
       const canvasCellY = plan.marginTop + row * (plan.cellH + plan.gapY);
       const canvasCell = { x: plan.marginLeft + col * (plan.cellW + plan.gapX), y: canvasCellY, w: plan.cellW, h: plan.cellH };
-      const cell = cellRect(plan, slot, paperH); // keep for reference, but draw with canvasCell
       if (opts.borders) {
         ctx.strokeStyle = '#d1d5db';
         ctx.lineWidth = 1;

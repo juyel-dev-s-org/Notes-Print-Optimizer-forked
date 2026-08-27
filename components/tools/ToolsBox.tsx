@@ -56,20 +56,20 @@ export const ToolsBox: React.FC = () => {
       style={{ animationDelay: '80ms' }}
     >
       <div className="flex items-center justify-between px-1">
-        <h2 className="text-sm font-bold tracking-wide text-ink">Choose a Tool</h2>
-        <span className="text-2xs font-medium text-ink-faint">Free · No sign-up</span>
+        <h2 className="text-sm font-bold tracking-wide text-ink">Choose a Tool for Your Notes</h2>
+        <span className="inline-flex items-center gap-1 rounded-full border border-emerald-500/15 bg-emerald-500/10 px-2.5 py-1 text-[11px] font-semibold text-emerald-300">12 Free • No sign-up</span>
       </div>
 
-      {/* Search */}
+      {/* Search — student-friendly */}
       <div role="search" className="relative">
         <Search className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-ink-muted" aria-hidden="true" />
         <input
           type="search"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
-          placeholder="Search tools — image, password, whiten…"
+          placeholder="Search — PYQ, dark slides, handwritten, image to pdf…"
           aria-label="Search tools"
-          className="h-11 w-full rounded-xl border border-elevated bg-surface/80 pl-10 pr-10 text-sm text-ink placeholder:text-ink-faint transition-colors focus:border-primary/50 focus:outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-soft"
+          className="h-11 w-full rounded-xl border border-elevated bg-surface/80 pl-10 pr-10 text-sm text-ink placeholder:text-ink-faint transition-colors focus:border-emerald-500/30 focus:outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-soft"
         />
         {query && (
           <button

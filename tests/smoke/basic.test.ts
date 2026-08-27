@@ -4,7 +4,7 @@ test.describe('Cross-browser smoke tests', () => {
   test('page loads and renders header', async ({ page }) => {
     await page.goto('/');
     await expect(page.locator('header')).toBeVisible();
-    await expect(page.locator('text=Print Optimizer')).toBeVisible();
+    await expect(page.locator('header').getByText('Print Optimizer')).toBeVisible();
   });
 
   test('shows tool selection on initial load', async ({ page }) => {
