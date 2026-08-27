@@ -296,98 +296,112 @@ export function PersistentShell({ children }: { children: React.ReactNode }) {
             {/* Liquid glass glow */}
             <div aria-hidden="true" className="pointer-events-none absolute -top-20 left-1/2 h-40 w-[36rem] -translate-x-1/2 rounded-full bg-gradient-to-r from-emerald-500/10 via-teal-500/10 to-cyan-500/10 blur-3xl" />
 
-            <div className="relative px-5 py-6 sm:px-6 sm:py-7 lg:px-8">
-              {/* Top: Logo + Tagline */}
-              <div className="flex flex-col items-center gap-3 border-b border-white/[0.06] pb-6 text-center sm:flex-row sm:justify-between sm:text-left">
-                <div className="flex items-center gap-3">
-                  <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-emerald-500 via-teal-500 to-cyan-500 text-white shadow-lg shadow-emerald-500/20">
+            <div className="relative px-4 py-5 sm:px-6 sm:py-6 lg:px-8">
+              {/* Top: Logo + Tagline — fixed phone alignment, no center ugly */}
+              <div className="flex flex-row items-center justify-between gap-3 border-b border-white/[0.06] pb-5">
+                <div className="flex items-center gap-2.5 min-w-0">
+                  <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-emerald-500 via-teal-500 to-cyan-500 text-white shadow-lg shadow-emerald-500/20">
                     <span className="text-sm font-black">P</span>
                   </div>
-                  <div className="text-left">
-                    <div className="text-sm font-bold tracking-tight text-white">Print Optimizer</div>
-                    <div className="bg-gradient-to-r from-emerald-400 via-teal-400 to-cyan-400 bg-clip-text text-[11px] font-semibold text-transparent">Made for Students, by Students</div>
+                  <div className="min-w-0 text-left">
+                    <div className="text-sm font-bold tracking-tight text-white truncate">Print Optimizer</div>
+                    <div className="bg-gradient-to-r from-emerald-400 via-teal-400 to-cyan-400 bg-clip-text text-[11px] font-semibold text-transparent truncate">Made for Students, by Students</div>
                   </div>
                 </div>
-                <div className="flex items-center gap-2">
-                  <span className="hidden sm:inline-flex items-center gap-1.5 rounded-full border border-emerald-600/20 bg-emerald-600 px-3 py-1 text-[11px] font-bold text-white shadow-sm">
-                    <span className="h-1.5 w-1.5 rounded-full bg-white animate-pulse" /> 100% Offline • No Upload
+                <div className="flex items-center gap-2 shrink-0">
+                  <span className="hidden lg:inline-flex items-center gap-1.5 rounded-full border border-emerald-600/20 bg-emerald-600 px-3 py-1 text-[11px] font-bold text-white shadow-sm">
+                    <span className="h-1.5 w-1.5 rounded-full bg-white animate-pulse" /> 100% Offline
                   </span>
-                  {/* Language chooser — future i18n */}
+                  {/* Language — HI/EN, EN on */}
                   <div className="flex items-center rounded-full border border-white/10 bg-white/[0.04] p-1 text-[11px] font-semibold">
-                    <span className="rounded-full bg-white px-2.5 py-1 text-slate-900">BN</span>
-                    <span className="px-2.5 py-1 text-slate-400">EN</span>
+                    <span className="px-2.5 py-1 text-slate-400">HI</span>
+                    <span className="rounded-full bg-white px-2.5 py-1 text-slate-900 shadow-sm">EN</span>
                   </div>
                 </div>
               </div>
 
-              {/* Middle: 4 columns */}
-              <div className="grid grid-cols-2 gap-6 py-6 sm:grid-cols-4 lg:gap-8">
-                <div>
-                  <h4 className="text-xs font-bold uppercase tracking-wider text-slate-100">Tools</h4>
-                  <ul className="mt-3 space-y-1.5 text-xs text-slate-300">
+              {/* Middle: 4 columns — premium, no mismatch */}
+              <div className="grid grid-cols-2 gap-5 py-5 sm:grid-cols-4 lg:gap-6">
+                <div className="min-w-0">
+                  <h4 className="text-[11px] font-bold uppercase tracking-wider text-slate-100">Tools</h4>
+                  <ul className="mt-2.5 space-y-1.5 text-xs text-slate-300">
                     <li><Link href="/tools/dark-print/" className="hover:text-emerald-300 transition-colors">Dark Notes → Print</Link></li>
                     <li><Link href="/tools/n-up/" className="hover:text-emerald-300 transition-colors">N-up PDF</Link></li>
                     <li><Link href="/tools/merge-pdf/" className="hover:text-emerald-300 transition-colors">Merge PDF</Link></li>
                     <li><Link href="/tools/image-to-pdf/" className="hover:text-emerald-300 transition-colors">Image → PDF</Link></li>
                   </ul>
                 </div>
-                <div>
-                  <h4 className="text-xs font-bold uppercase tracking-wider text-slate-100">For Students</h4>
-                  <ul className="mt-3 space-y-1.5 text-xs text-slate-300">
+                <div className="min-w-0">
+                  <h4 className="text-[11px] font-bold uppercase tracking-wider text-slate-100">For Students</h4>
+                  <ul className="mt-2.5 space-y-1.5 text-xs text-slate-300">
                     <li className="text-slate-200">NEET • JEE • Boards</li>
                     <li>PW • Allen • Unacademy</li>
                     <li>PYQ & Handwritten</li>
-                    <li className="text-emerald-300 font-medium">Free • No sign-up</li>
                   </ul>
                 </div>
-                <div>
-                  <h4 className="text-xs font-bold uppercase tracking-wider text-slate-100">Community</h4>
-                  <ul className="mt-3 space-y-1.5 text-xs text-slate-300">
-                    <li><a href="https://github.com/juyel-dev/Notes-Print-Optimizer" target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1.5 hover:text-white transition-colors">GitHub <span className="text-[10px]">↗</span></a></li>
-                    <li><a href="https://t.me/" target="_blank" rel="noopener noreferrer" className="hover:text-white transition-colors">Telegram</a></li>
-                    <li><a href="https://x.com/" target="_blank" rel="noopener noreferrer" className="hover:text-white transition-colors">X (Twitter)</a></li>
-                    <li><a href="https://www.reddit.com/" target="_blank" rel="noopener noreferrer" className="hover:text-white transition-colors">Reddit</a></li>
+                <div className="min-w-0">
+                  <h4 className="text-[11px] font-bold uppercase tracking-wider text-slate-100">Community</h4>
+                  <ul className="mt-2.5 space-y-1.5 text-xs text-slate-300">
+                    <li><a href="https://github.com/juyel-dev/Notes-Print-Optimizer" target="_blank" rel="noopener noreferrer" className="hover:text-white transition-colors">GitHub</a></li>
+                    <li><a href="https://github.com/juyel-dev/Notes-Print-Optimizer/issues" target="_blank" rel="noopener noreferrer" className="hover:text-white transition-colors">Issues</a></li>
+                    <li><a href="https://t.me/PrintOptimizer_chat" target="_blank" rel="noopener noreferrer" className="hover:text-white transition-colors">Discussions</a></li>
+                    <li><a href="https://github.com/juyel-dev/Notes-Print-Optimizer/blob/main/CONTRIBUTING.md" target="_blank" rel="noopener noreferrer" className="hover:text-white transition-colors">Contributing</a></li>
                   </ul>
                 </div>
-                <div>
-                  <h4 className="text-xs font-bold uppercase tracking-wider text-slate-100">Legal</h4>
-                  <ul className="mt-3 space-y-1.5 text-xs text-slate-300">
-                    <li><a href="#" className="hover:text-emerald-300 transition-colors">Privacy Policy</a></li>
-                    <li><a href="#" className="hover:text-emerald-300 transition-colors">Juyel Source License v1.0</a></li>
-                    <li><a href="mailto:myself.juyel.dev@gmail.com" className="hover:text-emerald-300 transition-colors">Contact</a></li>
-                    <li className="text-slate-400">myself.juyel.dev@gmail.com</li>
+                <div className="min-w-0">
+                  <h4 className="text-[11px] font-bold uppercase tracking-wider text-slate-100">Legal</h4>
+                  <ul className="mt-2.5 space-y-1.5 text-xs text-slate-300">
+                    <li>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const btn = document.querySelector<HTMLButtonElement>('[aria-label="Toggle App Menu"]');
+                          btn?.click();
+                          setTimeout(() => {
+                            const legalHeader = document.getElementById('menu-header-legal');
+                            legalHeader?.click();
+                            legalHeader?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                          }, 300);
+                        }}
+                        className="hover:text-emerald-300 transition-colors text-left"
+                      >
+                        LEGAL
+                      </button>
+                    </li>
+                    <li>
+                      <a href="mailto:myself.juyel.dev@gmail.com" className="hover:text-emerald-300 transition-colors">Contact</a>
+                    </li>
                   </ul>
                 </div>
               </div>
 
-              {/* Bottom: Social + Love + Copyright */}
+              {/* Bottom: Social with real SVGs + Love red heart aura */}
               <div className="flex flex-col items-center gap-4 border-t border-white/[0.06] pt-5 sm:flex-row sm:justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="flex items-center gap-1.5">
-                    {[
-                      { label: 'IG', href: 'https://instagram.com' },
-                      { label: 'TG', href: 'https://t.me' },
-                      { label: 'X', href: 'https://x.com' },
-                      { label: 'RD', href: 'https://reddit.com' },
-                      { label: 'GH', href: 'https://github.com/juyel-dev/Notes-Print-Optimizer' },
-                    ].map((s) => (
-                      <a
-                        key={s.label}
-                        href={s.href}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        aria-label={s.label}
-                        className="flex h-8 w-8 items-center justify-center rounded-full border border-white/10 bg-white/[0.04] text-[11px] font-bold text-slate-300 hover:bg-emerald-500/15 hover:border-emerald-500/20 hover:text-emerald-300 transition-colors"
-                      >
-                        {s.label}
-                      </a>
-                    ))}
-                  </div>
+                <div className="flex items-center gap-1.5">
+                  {[
+                    { id: 'instagram', href: '#', label: 'Instagram', file: 'instagram.svg' },
+                    { id: 'telegram', href: 'https://t.me/PrintOptimizer_chat', label: 'Telegram', file: 'telegram.svg' },
+                    { id: 'x', href: '#', label: 'X', file: 'x.svg' },
+                    { id: 'reddit', href: '#', label: 'Reddit', file: 'reddit.svg' },
+                    { id: 'github', href: 'https://github.com/juyel-dev/Notes-Print-Optimizer', label: 'GitHub', file: 'github.svg' },
+                  ].map((s) => (
+                    <a
+                      key={s.id}
+                      href={s.href}
+                      target={s.href.startsWith('http') ? '_blank' : undefined}
+                      rel={s.href.startsWith('http') ? 'noopener noreferrer' : undefined}
+                      aria-label={s.label}
+                      className="flex h-8 w-8 items-center justify-center rounded-full border border-white/10 bg-white/[0.04] hover:bg-white hover:border-white/20 transition-colors group"
+                    >
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img src={`/icons/social/${s.file}`} alt="" aria-hidden="true" className="h-4 w-4 object-contain opacity-80 group-hover:opacity-100" loading="lazy" />
+                    </a>
+                  ))}
                 </div>
 
                 <div className="flex flex-col items-center gap-1 text-center sm:items-end sm:text-right">
-                  <p className="text-xs font-medium text-slate-200">
-                    Made with <span className="text-emerald-400">♥</span> for Students • 100% Offline • No Upload
+                  <p className="text-xs font-medium text-slate-200 text-pretty">
+                    Made with <span className="inline-flex items-center justify-center text-red-500 drop-shadow-[0_0_6px_rgba(239,68,68,0.6)] animate-pulse">♥</span> for Students • 100% Offline
                   </p>
                   <p className="text-[11px] text-slate-400">
                     © 2026 Juyel Hossain • JSL v1.0 • <span className="tabular-nums">v36</span>

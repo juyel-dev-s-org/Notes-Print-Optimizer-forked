@@ -207,9 +207,15 @@ html {
    (higher specificity) still win where a component opts out. */
 h1, h2, h3 {
   letter-spacing: -0.011em;
+  text-wrap: balance;
 }
 .font-display, [class*="font-display"] {
   letter-spacing: -0.02em;
+}
+p {
+  text-wrap: pretty;
+  overflow-wrap: break-word;
+  word-break: break-word;
 }
 
 /* Stable viewport — prevent horizontal shift without clipping hover/shadow.
