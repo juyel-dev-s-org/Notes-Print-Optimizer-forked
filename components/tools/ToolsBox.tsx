@@ -117,7 +117,7 @@ export const ToolsBox: React.FC = () => {
                 onClick={() => setActiveCategory(cat)}
                 className={`h-8 shrink-0 snap-start rounded-full border px-3.5 text-xs font-bold capitalize transition-colors ${
                   active
-                    ? 'border-primary/50 bg-primary-faint text-primary-soft'
+                    ? 'border-emerald-600 bg-emerald-600 text-white shadow-sm'
                     : 'border-elevated bg-surface text-ink-muted hover:text-ink'
                 }`}
               >

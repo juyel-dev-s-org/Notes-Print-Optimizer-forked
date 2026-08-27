@@ -337,7 +337,7 @@ export function PersistentShell({ children }: { children: React.ReactNode }) {
                     <li className="text-slate-200">NEET • JEE • Boards</li>
                     <li>PW • Allen • Unacademy</li>
                     <li>PYQ & Handwritten</li>
-                    <li className="text-emerald-300">Free • No sign-up</li>
+                    <li className="text-emerald-300 font-medium">Free • No sign-up</li>
                   </ul>
                 </div>
                 <div>
@@ -396,8 +396,9 @@ export function PersistentShell({ children }: { children: React.ReactNode }) {
               </div>
             </div>
           </div>
-          <p className="mt-3 text-center text-[10px] leading-relaxed text-slate-500">
-            Built for NEET, JEE, Boards & every student — PW, Allen, Unacademy notes, one tap to print.
+          <p className="mt-3 text-center text-[10px] leading-relaxed text-slate-600">
+            Built for NEET, JEE, Boards &amp; every student - PW, Allen, Unacademy notes, one tap to
+            print.
           </p>
         </div>
       </footer>
