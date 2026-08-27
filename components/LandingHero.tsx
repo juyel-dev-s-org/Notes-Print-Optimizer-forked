@@ -34,10 +34,10 @@ export const LandingHero: React.FC = () => {
     <div aria-hidden="true" className="pointer-events-none absolute inset-0 bg-gradient-to-b from-white/[0.02] to-transparent" />
 
     <div className="relative flex flex-col items-center gap-3.5">
-      <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-500/20 bg-emerald-500/10 px-3 py-1 text-xs font-bold tracking-wide text-emerald-300 backdrop-blur-sm">
+      <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-600/20 bg-emerald-600 px-3 py-1 text-xs font-bold tracking-wide text-white shadow-sm">
         <span className="relative flex h-1.5 w-1.5">
-          <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
-          <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-emerald-400" />
+          <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-white opacity-75" />
+          <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-white" />
         </span>
         Trusted by 50,000+ NEET • JEE • Boards Students
       </span>

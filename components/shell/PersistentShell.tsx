@@ -309,8 +309,8 @@ export function PersistentShell({ children }: { children: React.ReactNode }) {
                   </div>
                 </div>
                 <div className="flex items-center gap-2">
-                  <span className="hidden sm:inline-flex items-center gap-1.5 rounded-full border border-emerald-500/20 bg-emerald-500/10 px-3 py-1 text-[11px] font-semibold text-emerald-300">
-                    <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" /> 100% Offline • No Upload
+                  <span className="hidden sm:inline-flex items-center gap-1.5 rounded-full border border-emerald-600/20 bg-emerald-600 px-3 py-1 text-[11px] font-bold text-white shadow-sm">
+                    <span className="h-1.5 w-1.5 rounded-full bg-white animate-pulse" /> 100% Offline • No Upload
                   </span>
                   {/* Language chooser — future i18n */}
                   <div className="flex items-center rounded-full border border-white/10 bg-white/[0.04] p-1 text-[11px] font-semibold">
