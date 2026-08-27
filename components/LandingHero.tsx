@@ -67,10 +67,10 @@ export const LandingHero: React.FC = () => {
       {/* Hint chips — student-focused, liquid glass */}
       <div className="hidden w-full max-w-2xl grid-cols-4 gap-2 sm:grid">
         {heroStats.map((stat) => (
-          <div key={stat.label} className="flex flex-col items-center gap-1 rounded-xl border border-emerald-500/10 bg-white/[0.03] px-2 py-2.5 backdrop-blur-sm">
-            <stat.icon className="h-3.5 w-3.5 text-emerald-400" />
-            <span className="text-2xs font-semibold tracking-wide text-ink">{stat.label}</span>
-            <span className="hidden text-[9px] leading-none text-ink-faint sm:block">{stat.sub}</span>
+          <div key={stat.label} className="flex flex-col items-center gap-1 rounded-xl border border-emerald-600/30 bg-emerald-50 px-2 py-2.5 backdrop-blur-sm">
+            <stat.icon className="h-3.5 w-3.5 text-emerald-700" />
+            <span className="text-2xs font-semibold tracking-wide text-slate-900">{stat.label}</span>
+            <span className="hidden text-[9px] leading-none text-ink-muted sm:block">{stat.sub}</span>
           </div>
         ))}
       </div>

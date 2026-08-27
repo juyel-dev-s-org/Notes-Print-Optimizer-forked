@@ -403,7 +403,7 @@ export function PersistentShell({ children }: { children: React.ReactNode }) {
                   <p className="text-xs font-medium text-slate-200 text-pretty">
                     Made with <span className="inline-flex items-center justify-center text-red-500 drop-shadow-[0_0_6px_rgba(239,68,68,0.6)] animate-pulse">♥</span> for Students • 100% Offline
                   </p>
-                  <p className="text-[11px] text-slate-400">
+                  <p className="text-[11px] text-slate-700">
                     © 2026 Juyel Hossain • JSL v1.0 • <span className="tabular-nums">v36</span>
                   </p>
                 </div>
