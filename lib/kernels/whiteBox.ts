@@ -56,9 +56,11 @@ export type WhiteBoxHealParams = Pick<
   'invertMode' | 'bannerCropTopPct' | 'bannerCropBottomPct' | 'strokeEnhancement' | 'sharpenAmount' | 'dilationKernelSize' | 'autoWhiteBoxFix'
 >;
 
-/** A restored rectangle in CROPPED full-res coordinates (pixels) —
- *  x/y relative to the post-banner-crop render (what the editor canvas shows).
- *  For pages without banner crop this equals full-page coords. */
+/** A restored rectangle.
+ *  - Auto regions: CROPPED pixel coords (x/y relative to post-banner-crop render).
+ *  - Manual regions (after this patch): NORMALIZED 0..1 ratio (x/W, y/H, w/W, h/H)
+ *    so they survive re-render at different scale/DPR/crop. Pixel regions are
+ *    still accepted for back-compat (detected via width>=12). */
 export interface WhiteBoxRegion {
   x: number;
   y: number;
@@ -66,6 +68,21 @@ export interface WhiteBoxRegion {
   height: number;
   /** Shape of the restored area. Defaults to 'rect' when omitted (back-compat). */
   shape?: 'rect' | 'ellipse';
+}
+
+/** Manual regions are stored NORMALIZED (0..1) — grid/ratio system. */
+export function isNormalizedRegion(r: WhiteBoxRegion): boolean {
+  return r.x >= 0 && r.x <= 1 && r.y >= 0 && r.y <= 1 && r.width > 0 && r.width <= 1 && r.height > 0 && r.height <= 1 && r.width < 1 && r.height < 1;
+}
+export function normalizeRegion(r: WhiteBoxRegion, W: number, H: number): WhiteBoxRegion {
+  return { x: r.x / W, y: r.y / H, width: r.width / W, height: r.height / H, shape: r.shape };
+}
+export function denormalizeRegion(r: WhiteBoxRegion, W: number, H: number): WhiteBoxRegion {
+  if (isNormalizedRegion(r)) return { x: Math.round(r.x * W), y: Math.round(r.y * H), width: Math.round(r.width * W), height: Math.round(r.height * H), shape: r.shape };
+  return r;
+}
+export function denormalizeRegions(regions: WhiteBoxRegion[], W: number, H: number): WhiteBoxRegion[] {
+  return regions.map(r => denormalizeRegion(r, W, H));
 }
 
 /**

@@ -225,13 +225,16 @@ export class PdfExporter {
             const cTop = Math.floor(orig.height * ((p.parameters.bannerCropTopPct ?? 0) / 100));
             const cBot = Math.floor(orig.height * ((p.parameters.bannerCropBottomPct ?? 0) / 100));
             const croppedH = orig.height - cTop - cBot;
-            if (Math.abs(orig.width - img.width) <= 2 && Math.abs(croppedH - img.height) <= 2) {
-              const { compositeWhiteBoxRegions } = await import('../kernels/whiteBox');
-              // Regions are CROPPED coords (editor canvas), src is FULL → offset by cTop
-              compositeWhiteBoxRegions(img.data, orig.data, img.width, img.height, userRects, cTop);
-            } else {
-              console.warn(`[export] Dimension mismatch for manual composite page ${p.pageIndex + 1}: opt ${img.width}x${img.height} vs orig cropped ${orig.width}x${croppedH} (full ${orig.width}x${orig.height} cTop=${cTop} cBot=${cBot})`);
+            const wDiff = Math.abs(orig.width - img.width);
+            const hDiff = Math.abs(croppedH - img.height);
+            const { compositeWhiteBoxRegions, denormalizeRegions } = await import('../kernels/whiteBox');
+            if (wDiff > 2 || hDiff > 2) {
+              console.warn(`[export] Dimension mismatch for manual composite page ${p.pageIndex + 1}: opt ${img.width}x${img.height} vs orig cropped ${orig.width}x${croppedH} (full ${orig.width}x${orig.height} cTop=${cTop} cBot=${cBot}) wDiff=${wDiff} hDiff=${hDiff} — compositing anyway`);
             }
+            // Manual regions stored NORMALIZED (grid ratio) → denormalize to current img pixels
+            // Back-compat: pixel regions (width>=12) pass through unchanged
+            const pixelRects = denormalizeRegions(userRects, img.width, img.height);
+            compositeWhiteBoxRegions(img.data, orig.data, img.width, img.height, pixelRects, cTop);
           } catch (err) {
             console.warn(`[export] Manual region composite failed for page ${p.pageIndex + 1}:`, err);
           }

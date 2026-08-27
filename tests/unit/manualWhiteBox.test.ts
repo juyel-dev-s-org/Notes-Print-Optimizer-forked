@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { compositeWhiteBoxRegions } from '../../lib/kernels/whiteBox';
+import { compositeWhiteBoxRegions, normalizeRegion, denormalizeRegion, denormalizeRegions } from '../../lib/kernels/whiteBox';
 import type { WhiteBoxRegion } from '../../lib/kernels/whiteBox';
 import { workflowReducer, initialState } from '../../lib/workflow/workflowReducer';
 
@@ -44,6 +44,34 @@ describe('compositeWhiteBoxRegions — ellipse', () => {
     const region = { x: 5, y: 5, width: 10, height: 10 } as WhiteBoxRegion;
     compositeWhiteBoxRegions(dst, src, w, h, [region], 0);
     expect(dst[(7*w+7)*4]).toBe(99);
+  });
+
+  it('normalized region survives scale change (grid ratio)', () => {
+    const W0 = 100, H0 = 100;
+    const regionPx: WhiteBoxRegion = { x: 30, y: 20, width: 20, height: 10 };
+    const norm = normalizeRegion(regionPx, W0, H0);
+    expect(norm.x).toBeCloseTo(0.3);
+    expect(norm.y).toBeCloseTo(0.2);
+    // Denormalize to different size (e.g., 200x200) → 60,40,40,20
+    const den = denormalizeRegion(norm, 200, 200);
+    expect(den.x).toBe(60);
+    expect(den.y).toBe(40);
+    expect(den.width).toBe(40);
+    expect(den.height).toBe(20);
+    // Composite with denormalized still works
+    const dst = new Uint8ClampedArray(200*200*4).fill(255);
+    const src = new Uint8ClampedArray(200*200*4);
+    for (let i=0;i<src.length;i+=4){ src[i]=88; src[i+1]=88; src[i+2]=88; src[i+3]=255; }
+    compositeWhiteBoxRegions(dst, src, 200, 200, [den], 0);
+    expect(dst[(50*200+70)*4]).toBe(88);
+  });
+
+  it('denormalize passes through pixel regions (back-compat)', () => {
+    const px: WhiteBoxRegion = { x: 30, y: 20, width: 50, height: 40 };
+    const den = denormalizeRegion(px, 100, 100);
+    expect(den).toEqual(px);
+    const den2 = denormalizeRegions([px], 200, 200);
+    expect(den2[0]).toEqual(px);
   });
 });
 

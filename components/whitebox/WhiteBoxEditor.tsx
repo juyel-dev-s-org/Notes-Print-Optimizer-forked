@@ -46,20 +46,31 @@ export const WhiteBoxEditor: React.FC<Props> = ({
 }) => {
   const pageIndex = page.pageIndex;
   const [mode, setMode] = useState<Mode>('rect');
-  const [drafts, setDrafts] = useState<Draft[]>(() =>
-    manualRegions.map((r) => ({ ...r, _id: uid(), shape: r.shape ?? 'rect' })),
-  );
-  // Sync drafts when page changes (fix stale state on remount with same instance)
+  const [naturalWidth, setNaturalWidth] = useState(page.width ?? 800);
+  const [naturalHeight, setNaturalHeight] = useState(page.height ?? 1100);
+  const [isLoading, setIsLoading] = useState(true);
+  const [drafts, setDrafts] = useState<Draft[]>(() => {
+    // Manual regions may be normalized (0..1) — denormalize for canvas pixel display
+    const W = page.width ?? 800, H = page.height ?? 1100;
+    return manualRegions.map((r) => {
+      const isNorm = r.x >=0 && r.x <=1 && r.y >=0 && r.y <=1 && r.width <=1 && r.height <=1 && r.width < 1;
+      const px = isNorm ? { x: Math.round(r.x*W), y: Math.round(r.y*H), width: Math.round(r.width*W), height: Math.round(r.height*H) } : r;
+      return { ...px, _id: uid(), shape: r.shape ?? 'rect' };
+    });
+  });
+  // Sync drafts when page changes — denormalize if stored as ratio
   useEffect(() => {
-    setDrafts(manualRegions.map((r) => ({ ...r, _id: uid(), shape: r.shape ?? 'rect' })));
-  }, [page.pageIndex, manualRegions]);
+    const W = naturalWidth, H = naturalHeight;
+    setDrafts(manualRegions.map((r) => {
+      const isNorm = r.x >=0 && r.x <=1 && r.y >=0 && r.y <=1 && r.width <=1 && r.height <=1 && r.width < 1;
+      const px = isNorm ? { x: Math.round(r.x*W), y: Math.round(r.y*H), width: Math.round(r.width*W), height: Math.round(r.height*H) } : r;
+      return { ...px, _id: uid(), shape: r.shape ?? 'rect' };
+    }));
+  }, [page.pageIndex, manualRegions, naturalWidth, naturalHeight]);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [isDrawing, setIsDrawing] = useState(false);
   const drawStartRef = useRef<{ x: number; y: number } | null>(null);
   const dragHandleRef = useRef<string | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [naturalWidth, setNaturalWidth] = useState(page.width ?? 800);
-  const [naturalHeight, setNaturalHeight] = useState(page.height ?? 1100);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const optDataRef = useRef<ImageData | null>(null);
   // origDataRef removed — editor only needs optimized (whitened) image for display;
@@ -279,11 +290,18 @@ export const WhiteBoxEditor: React.FC<Props> = ({
   }, [isDrawing]);
 
   const handleApply = useCallback(() => {
+    // Store as NORMALIZED ratio (grid system) — survives crop/scale/DPR changes
     const clean: WhiteBoxRegion[] = drafts
       .filter((d) => d._id !== '__temp__' && d.width >= 12 && d.height >= 12)
-      .map(({ _id, ...r }) => r);
+      .map(({ _id, x, y, width, height, shape }) => ({
+        x: x / naturalWidth,
+        y: y / naturalHeight,
+        width: width / naturalWidth,
+        height: height / naturalHeight,
+        shape,
+      }));
     onApply(clean);
-  }, [drafts, onApply]);
+  }, [drafts, onApply, naturalWidth, naturalHeight]);
 
   const handleReset = useCallback(() => {
     setDrafts([]); setSelectedId(null);

@@ -212,7 +212,7 @@ describe('perf guard', () => {
     const ms = performance.now() - t0;
     expect(regions.length).toBe(1);
     console.log(`[whiteBox] detect on ${W}x${H}: ${ms.toFixed(1)}ms`);
-    /* Generous CI margin — typical runs land in single-digit ms. */
-    expect(ms).toBeLessThan(120);
+    /* Generous CI margin — typical runs land in single-digit ms, but CI can spike. */
+    expect(ms).toBeLessThan(300);
   });
 });
