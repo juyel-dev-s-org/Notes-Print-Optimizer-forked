@@ -323,8 +323,8 @@ export function PersistentShell({ children }: { children: React.ReactNode }) {
               {/* Middle: 4 columns */}
               <div className="grid grid-cols-2 gap-6 py-6 sm:grid-cols-4 lg:gap-8">
                 <div>
-                  <h4 className="text-xs font-bold uppercase tracking-wider text-slate-200">Tools</h4>
-                  <ul className="mt-3 space-y-1.5 text-xs text-slate-400">
+                  <h4 className="text-xs font-bold uppercase tracking-wider text-slate-100">Tools</h4>
+                  <ul className="mt-3 space-y-1.5 text-xs text-slate-300">
                     <li><Link href="/tools/dark-print/" className="hover:text-emerald-300 transition-colors">Dark Notes → Print</Link></li>
                     <li><Link href="/tools/n-up/" className="hover:text-emerald-300 transition-colors">N-up PDF</Link></li>
                     <li><Link href="/tools/merge-pdf/" className="hover:text-emerald-300 transition-colors">Merge PDF</Link></li>
@@ -332,17 +332,17 @@ export function PersistentShell({ children }: { children: React.ReactNode }) {
                   </ul>
                 </div>
                 <div>
-                  <h4 className="text-xs font-bold uppercase tracking-wider text-slate-200">For Students</h4>
-                  <ul className="mt-3 space-y-1.5 text-xs text-slate-400">
-                    <li className="text-slate-300">NEET • JEE • Boards</li>
+                  <h4 className="text-xs font-bold uppercase tracking-wider text-slate-100">For Students</h4>
+                  <ul className="mt-3 space-y-1.5 text-xs text-slate-300">
+                    <li className="text-slate-200">NEET • JEE • Boards</li>
                     <li>PW • Allen • Unacademy</li>
                     <li>PYQ & Handwritten</li>
-                    <li className="text-emerald-300/80">Free • No sign-up</li>
+                    <li className="text-emerald-300">Free • No sign-up</li>
                   </ul>
                 </div>
                 <div>
-                  <h4 className="text-xs font-bold uppercase tracking-wider text-slate-200">Community</h4>
-                  <ul className="mt-3 space-y-1.5 text-xs text-slate-400">
+                  <h4 className="text-xs font-bold uppercase tracking-wider text-slate-100">Community</h4>
+                  <ul className="mt-3 space-y-1.5 text-xs text-slate-300">
                     <li><a href="https://github.com/juyel-dev/Notes-Print-Optimizer" target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1.5 hover:text-white transition-colors">GitHub <span className="text-[10px]">↗</span></a></li>
                     <li><a href="https://t.me/" target="_blank" rel="noopener noreferrer" className="hover:text-white transition-colors">Telegram</a></li>
                     <li><a href="https://x.com/" target="_blank" rel="noopener noreferrer" className="hover:text-white transition-colors">X (Twitter)</a></li>
@@ -350,12 +350,12 @@ export function PersistentShell({ children }: { children: React.ReactNode }) {
                   </ul>
                 </div>
                 <div>
-                  <h4 className="text-xs font-bold uppercase tracking-wider text-slate-200">Legal</h4>
-                  <ul className="mt-3 space-y-1.5 text-xs text-slate-400">
+                  <h4 className="text-xs font-bold uppercase tracking-wider text-slate-100">Legal</h4>
+                  <ul className="mt-3 space-y-1.5 text-xs text-slate-300">
                     <li><a href="#" className="hover:text-emerald-300 transition-colors">Privacy Policy</a></li>
                     <li><a href="#" className="hover:text-emerald-300 transition-colors">Juyel Source License v1.0</a></li>
                     <li><a href="mailto:myself.juyel.dev@gmail.com" className="hover:text-emerald-300 transition-colors">Contact</a></li>
-                    <li className="text-slate-500">myself.juyel.dev@gmail.com</li>
+                    <li className="text-slate-400">myself.juyel.dev@gmail.com</li>
                   </ul>
                 </div>
               </div>
@@ -377,7 +377,7 @@ export function PersistentShell({ children }: { children: React.ReactNode }) {
                         target="_blank"
                         rel="noopener noreferrer"
                         aria-label={s.label}
-                        className="flex h-8 w-8 items-center justify-center rounded-full border border-white/10 bg-white/[0.04] text-[11px] font-bold text-slate-400 hover:bg-emerald-500/15 hover:border-emerald-500/20 hover:text-emerald-300 transition-colors"
+                        className="flex h-8 w-8 items-center justify-center rounded-full border border-white/10 bg-white/[0.04] text-[11px] font-bold text-slate-300 hover:bg-emerald-500/15 hover:border-emerald-500/20 hover:text-emerald-300 transition-colors"
                       >
                         {s.label}
                       </a>
@@ -386,11 +386,11 @@ export function PersistentShell({ children }: { children: React.ReactNode }) {
                 </div>
 
                 <div className="flex flex-col items-center gap-1 text-center sm:items-end sm:text-right">
-                  <p className="text-xs font-medium text-slate-300">
+                  <p className="text-xs font-medium text-slate-200">
                     Made with <span className="text-emerald-400">♥</span> for Students • 100% Offline • No Upload
                   </p>
-                  <p className="text-[11px] text-slate-500">
-                    © 2026 Juyel Hossain • JSL v1.0 • <span className="tabular-nums">v35</span>
+                  <p className="text-[11px] text-slate-400">
+                    © 2026 Juyel Hossain • JSL v1.0 • <span className="tabular-nums">v36</span>
                   </p>
                 </div>
               </div>
