@@ -77,16 +77,20 @@ export function useManualRegions({
       const { PdfExporter } = await import('../../optimizer/pdfExporter');
       const { compositeWhiteBoxRegions } = await import('../../kernels/whiteBox');
       const { memoryManager } = await import('../../optimizer/memoryManager');
-      // Load current optimized (auto-healed) and original at same scale
+      // Load current optimized (auto-healed, CROPPED) and original (FULL) at same width.
+      // Regions are CROPPED coords → offset src by banner crop.
       const opt = await PdfExporter.loadOptimizedImageData(page);
       let displayData = opt;
       if (regions.length > 0 && mergedPdfBytes) {
         const orig = await PdfExporter.loadOriginalImageData(page, mergedPdfBytes, opt.width);
-        if (Math.abs(orig.width - opt.width) <= 2 && Math.abs(orig.height - opt.height) <= 2) {
-          compositeWhiteBoxRegions(opt.data, orig.data, opt.width, opt.height, regions, 0);
+        const cTop = Math.floor(orig.height * ((page.parameters.bannerCropTopPct ?? 0) / 100));
+        const cBot = Math.floor(orig.height * ((page.parameters.bannerCropBottomPct ?? 0) / 100));
+        const croppedH = orig.height - cTop - cBot;
+        if (Math.abs(orig.width - opt.width) <= 2 && Math.abs(croppedH - opt.height) <= 2) {
+          compositeWhiteBoxRegions(opt.data, orig.data, opt.width, opt.height, regions, cTop);
           displayData = opt;
         } else {
-          console.warn(`[manualRegions] Dimension mismatch for thumbnail regen page ${page.pageIndex + 1}`);
+          console.warn(`[manualRegions] Dimension mismatch for thumbnail regen page ${page.pageIndex + 1}: opt ${opt.width}x${opt.height} vs orig cropped ${orig.width}x${croppedH} (full ${orig.width}x${orig.height} cTop=${cTop} cBot=${cBot})`);
         }
       }
       // Downscale to thumbnail (same as ProcessingEngineV2.generateThumbnail 1/5)

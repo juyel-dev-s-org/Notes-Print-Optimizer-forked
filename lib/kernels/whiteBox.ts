@@ -56,7 +56,9 @@ export type WhiteBoxHealParams = Pick<
   'invertMode' | 'bannerCropTopPct' | 'bannerCropBottomPct' | 'strokeEnhancement' | 'sharpenAmount' | 'dilationKernelSize' | 'autoWhiteBoxFix'
 >;
 
-/** A restored rectangle in FULL-RES source coordinates (pixels). */
+/** A restored rectangle in CROPPED full-res coordinates (pixels) —
+ *  x/y relative to the post-banner-crop render (what the editor canvas shows).
+ *  For pages without banner crop this equals full-page coords. */
 export interface WhiteBoxRegion {
   x: number;
   y: number;
@@ -92,18 +94,37 @@ export const WHITE_BOX_TUNING = {
 } as const;
 
 /**
- * Calculate the top crop in pixels based on profile and parameters.
- * Used to align manual regions (stored in cropped coordinates) with
- * the original full-page render during export.
+ * Calculate the top crop in pixels from the *kernel* crop param.
+ * This is the sole source of truth for banner crop — `processPage`
+ * uses `params.bannerCropTopPct` (profile detection is not applied to
+ * the kernel today; all presets emit 0). `pageHeight` must be the
+ * FULL (pre-crop) height. For manual export we pass `origFull.height`;
+ * for the heal path we pass the original `srcData` height.
+ * The helper keeps the `(profile, params, height)` signature for
+ * back-compat but deliberately ignores `profile.topBannerHeightPct`
+ * (fraction 0.05 vs percent 5) which previously yielded `0` for all pages.
  */
 export function getCropTopPx(
   profile: Pick<PageProfile, 'topBannerHeightPct'>,
   params: Pick<ProcessingParameters, 'bannerCropTopPct'>,
   pageHeight: number
 ): number {
-  // Use the profile's detected banner height percentage, fallback to params
-  const bannerPct = profile.topBannerHeightPct ?? params.bannerCropTopPct ?? 0;
-  return Math.floor(pageHeight * (bannerPct / 100));
+  const bannerPct = params.bannerCropTopPct ?? 0;
+  if (bannerPct !== 0) return Math.floor(pageHeight * (bannerPct / 100));
+  // Legacy fallback: if params is 0 but profile carries a fraction (0.05 = 5%),
+  // interpret correctly — this branch is effectively dead today (presets 0).
+  const prof = (profile as unknown as { topBannerHeightPct?: number })?.topBannerHeightPct;
+  if (typeof prof === 'number' && prof > 0 && prof < 1) return Math.floor(pageHeight * prof);
+  if (typeof prof === 'number' && prof >= 1) return Math.floor(pageHeight * (prof / 100));
+  return 0;
+}
+
+/** Convenience: crop from params alone (preferred for new callers). */
+export function getCropTopPxFromParams(
+  params: Pick<ProcessingParameters, 'bannerCropTopPct'>,
+  fullHeight: number
+): number {
+  return Math.floor(fullHeight * ((params.bannerCropTopPct ?? 0) / 100));
 }
 
 interface BlockComponent {
@@ -269,8 +290,12 @@ export function detectWhiteBoxRegions(
 /**
  * Paste original pixels back over the processed result, region by region.
  * Row-blocked memcpy for rects; per-pixel ellipse test for circular
- * selections. `cropTopPx` shifts source coordinates when the kernel cropped
- * the top (banner crop); regions fully above the crop line are skipped.
+ * selections.
+ *
+ * COORDS: `regions` are in **CROPPED** coordinates (xy relative to the
+ * post-crop dst). `cropTopPx` is the top banner crop in FULL-res pixels
+ * and is used ONLY to offset the `src` (full-page) read: `srcRow = y + cropTopPx`.
+ * When there is no banner crop `cropTopPx=0` and the copy is 1:1.
  */
 export function compositeWhiteBoxRegions(
   dst: Uint8ClampedArray,
@@ -278,11 +303,12 @@ export function compositeWhiteBoxRegions(
   srcWidth: number,
   dstHeight: number,
   regions: WhiteBoxRegion[],
-  cropTopPx: number,
+  cropTopPx: number = 0,
 ): void {
   for (const r of regions) {
-    const y0 = Math.max(0, r.y - cropTopPx);
-    const y1 = Math.min(dstHeight, r.y + r.height - cropTopPx);
+    // Cropped coords: dst y is r.y directly, src y is r.y + cropTopPx
+    const y0 = Math.max(0, r.y);
+    const y1 = Math.min(dstHeight, r.y + r.height);
     const x0 = Math.max(0, r.x);
     const x1 = Math.min(srcWidth, r.x + r.width);
     if (y1 <= y0 || x1 <= x0) continue;
@@ -292,6 +318,8 @@ export function compositeWhiteBoxRegions(
       const rowBytes = (x1 - x0) * 4;
       for (let y = y0; y < y1; y++) {
         const srcRow = (y + cropTopPx) * srcWidth;
+        // Guard src bounds (full src is taller than dst when cropped)
+        if (srcRow < 0 || srcRow * 4 + x1 * 4 > src.length) continue;
         dst.set(
           src.subarray((srcRow + x0) * 4, (srcRow + x0) * 4 + rowBytes),
           (y * srcWidth + x0) * 4,
@@ -305,7 +333,6 @@ export function compositeWhiteBoxRegions(
       const rx = (x1 - x0) / 2;
       const ry = (y1 - y0) / 2;
       if (rx <= 0 || ry <= 0) continue;
-      const rx2 = rx * rx;
       const ry2 = ry * ry;
       for (let y = y0; y < y1; y++) {
         const dy = y - cy;
@@ -317,6 +344,7 @@ export function compositeWhiteBoxRegions(
         const rxBound = Math.min(x1, Math.floor(cx + dx) + 1);
         if (rxBound <= lx) continue;
         const srcRow = (y + cropTopPx) * srcWidth;
+        if (srcRow < 0 || srcRow * 4 + rxBound * 4 > src.length) continue;
         const rowBytes = (rxBound - lx) * 4;
         dst.set(
           src.subarray((srcRow + lx) * 4, (srcRow + lx) * 4 + rowBytes),
@@ -341,20 +369,38 @@ export function processPageWithWhiteBoxHeal(
   params: WhiteBoxHealParams,
   profile: Pick<PageProfile, 'classification' | 'darkBackgroundRatio'>,
 ): KernelProcessResult & { whiteBoxRegions: WhiteBoxRegion[] } {
-  const regions = shouldHealWhiteBoxes(params, profile)
+  const rawRegions = shouldHealWhiteBoxes(params, profile)
     ? detectWhiteBoxRegions(srcData, width, height)
     : [];
   const result = processPage(srcData, width, height, params, profile);
-  if (regions.length > 0) {
-    const cropTopPx = Math.floor(height * ((params.bannerCropTopPct ?? 0) / 100));
+  if (rawRegions.length === 0) return { ...result, whiteBoxRegions: [] };
+
+  // Convert FULL-page detections to CROPPED coords for storage + composite.
+  // The kernel cropped `cropTopPx` rows from the top (and bottom), so
+  // regions must be shifted up and clipped to `result.height`.
+  const cropTopPx = Math.floor(height * ((params.bannerCropTopPct ?? 0) / 100));
+  const cropped: WhiteBoxRegion[] = [];
+  for (const r of rawRegions) {
+    let y = r.y - cropTopPx;
+    let h = r.height;
+    if (y < 0) { h += y; y = 0; }
+    if (y + h > result.height) h = result.height - y;
+    if (h <= 0 || r.width <= 0) continue;
+    const x = r.x;
+    let w = r.width;
+    if (x + w > width) w = width - x;
+    if (w <= 0) continue;
+    cropped.push({ ...r, x, y, width: w, height: h });
+  }
+  if (cropped.length > 0) {
     compositeWhiteBoxRegions(
       new Uint8ClampedArray(result.buffer),
       srcData,
       width,
       result.height,
-      regions,
+      cropped,
       cropTopPx,
     );
   }
-  return { ...result, whiteBoxRegions: regions };
+  return { ...result, whiteBoxRegions: cropped };
 }

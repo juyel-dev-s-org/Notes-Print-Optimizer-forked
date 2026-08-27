@@ -28,7 +28,30 @@ export const BeforeAfterSlider: React.FC<BeforeAfterSliderProps> = ({ page, merg
       try {
         const { PdfExporter } = await import('@/lib/optimizer/pdfExporter');
         const optimizedImageData = await PdfExporter.loadOptimizedImageData(page);
-        const originalImageData = await PdfExporter.loadOriginalImageData(page, mergedPdfBytes ?? null);
+        // Render original at SAME width as optimized → same scale, pixel-perfect
+        // alignment for the slider. Then crop to match optimized's banner crop
+        // so dark headers don't cause vertical drift.
+        let originalImageData = await PdfExporter.loadOriginalImageData(page, mergedPdfBytes ?? null, optimizedImageData.width);
+
+        // If the kernel banner-cropped, crop the original the same way for visual alignment
+        const cTop = Math.floor(originalImageData.height * ((page.parameters.bannerCropTopPct ?? 0) / 100));
+        const cBot = Math.floor(originalImageData.height * ((page.parameters.bannerCropBottomPct ?? 0) / 100));
+        const croppedH = originalImageData.height - cTop - cBot;
+        if ((cTop > 0 || cBot > 0) && croppedH > 0 && Math.abs(croppedH - optimizedImageData.height) <= 2) {
+          const cropped = new Uint8ClampedArray(optimizedImageData.width * optimizedImageData.height * 4);
+          const copyH = Math.min(croppedH, optimizedImageData.height);
+          const W = originalImageData.width;
+          for (let y = 0; y < copyH; y++) {
+            const srcRow = y + cTop;
+            const srcStart = srcRow * W * 4;
+            const dstStart = y * W * 4;
+            cropped.set(originalImageData.data.subarray(srcStart, srcStart + W * 4), dstStart);
+          }
+          originalImageData = new ImageData(cropped, optimizedImageData.width, optimizedImageData.height);
+        } else if (Math.abs(originalImageData.width - optimizedImageData.width) > 2 || Math.abs(originalImageData.height - optimizedImageData.height) > 2) {
+          // Scale mismatch (should not happen with targetWidth) — fall back to thumbnail to avoid mis-aligned slider
+          console.warn(`[slider] dimension mismatch page ${page.pageIndex + 1}: orig ${originalImageData.width}x${originalImageData.height} vs opt ${optimizedImageData.width}x${optimizedImageData.height}`);
+        }
 
         const origCanvas = document.createElement('canvas');
         origCanvas.width = originalImageData.width;

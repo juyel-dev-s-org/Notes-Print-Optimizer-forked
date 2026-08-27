@@ -129,17 +129,28 @@ describe('compositeWhiteBoxRegions', () => {
     expect(dst[outside]).toBe(255);
   });
 
-  it('shifts regions by the banner crop offset', () => {
+  it('shifts regions by the banner crop offset (cropped coords)', () => {
     const w = 40, h = 30;
     const cropTop = 5;
     const dstHeight = h - cropTop;
     const dst = new Uint8ClampedArray(w * dstHeight * 4).fill(255);
-    /* Source region at y=10 -> dst y=5 after crop. */
+    // Regions are CROPPED coords: r.y=5 means src row 10 (5+cropTop) → dst y 5
     const src = buildPage(w, h, 25, [{ x: 10, y: 10, w: 10, h: 6, lum: 77 }]);
-    compositeWhiteBoxRegions(dst, src, w, dstHeight, [{ x: 10, y: 10, width: 10, height: 6 }], cropTop);
+    compositeWhiteBoxRegions(dst, src, w, dstHeight, [{ x: 10, y: 5, width: 10, height: 6 }], cropTop);
     expect(dst[(5 * w + 12) * 4]).toBe(77);
     /* Row above the region stays whitened. */
     expect(dst[(4 * w + 12) * 4]).toBe(255);
+  });
+
+  it('cropped height exactly matches dst — manual export path', () => {
+    const w = 50, fullH = 40, cropTop = 8, cropBot = 4;
+    const dstH = fullH - cropTop - cropBot; // 28
+    const dst = new Uint8ClampedArray(w * dstH * 4).fill(255);
+    const src = buildPage(w, fullH, 20, [{ x: 5, y: 12, w: 20, h: 10, lum: 90 }]);
+    // Box at full y=12 → cropped y=4 (12-8)
+    compositeWhiteBoxRegions(dst, src, w, dstH, [{ x: 5, y: 4, width: 20, height: 10 }], cropTop);
+    expect(dst[(4 * w + 10) * 4]).toBe(90);
+    expect(dst[(15 * w + 10) * 4]).toBe(255); // below box
   });
 });
 
@@ -168,6 +179,27 @@ describe('processPageWithWhiteBoxHeal (integration)', () => {
     const out = new Uint8ClampedArray(healed.buffer);
     const probe = ((box.y + 50) * W + (box.x + 70)) * 4;
     expect(out[probe]).toBe(0); /* inverted to black */
+  });
+
+  it('banner crop: whiteBoxRegions are stored CROPPED and heal aligns', () => {
+    const W = 320, H = 240;
+    const cropTop = 24; // 10%
+    const boxFull = { x: 40, y: 50, w: 120, h: 80, lum: 255 }; // full coords
+    const src = buildPage(W, H, 30, [boxFull]);
+    const params = { ...HEAL_PARAMS, bannerCropTopPct: 10, bannerCropBottomPct: 0 };
+    const healed = processPageWithWhiteBoxHeal(src, W, H, params, DARK_PROFILE);
+    // Expect stored y = full y - cropTop
+    expect(healed.whiteBoxRegions.length).toBe(1);
+    const r = healed.whiteBoxRegions[0];
+    expect(r.y).toBeLessThan(boxFull.y); // cropped
+    expect(r.y).toBeGreaterThanOrEqual(0);
+    // Healed buffer height is cropped
+    expect(healed.height).toBe(H - cropTop);
+    const out = new Uint8ClampedArray(healed.buffer);
+    // Probe inside box in CROPPED coords: full y 50 -> cropped y 26
+    const croppedY = boxFull.y - cropTop + 10;
+    const probe = (croppedY * W + (boxFull.x + 10)) * 4;
+    expect(out[probe]).toBe(255);
   });
 });
 

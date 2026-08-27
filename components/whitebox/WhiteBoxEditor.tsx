@@ -37,7 +37,8 @@ function uid(): string {
 
 export const WhiteBoxEditor: React.FC<Props> = ({
   page,
-  mergedPdfBytes,
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  mergedPdfBytes: _mergedPdfBytes,
   autoRegions,
   manualRegions,
   onApply,
@@ -54,14 +55,15 @@ export const WhiteBoxEditor: React.FC<Props> = ({
   }, [page.pageIndex, manualRegions]);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [isDrawing, setIsDrawing] = useState(false);
-  const [drawStart, setDrawStart] = useState<{ x: number; y: number } | null>(null);
-  const [dragHandle, setDragHandle] = useState<string | null>(null);
+  const drawStartRef = useRef<{ x: number; y: number } | null>(null);
+  const dragHandleRef = useRef<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [naturalWidth, setNaturalWidth] = useState(page.width ?? 800);
   const [naturalHeight, setNaturalHeight] = useState(page.height ?? 1100);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const optDataRef = useRef<ImageData | null>(null);
-  const origDataRef = useRef<ImageData | null>(null);
+  // origDataRef removed — editor only needs optimized (whitened) image for display;
+  // original is composited at export/thumbnail time, saving ~10 MB/page.
 
   /* Lock body scroll */
   useEffect(() => {
@@ -70,7 +72,7 @@ export const WhiteBoxEditor: React.FC<Props> = ({
     return () => { document.body.style.overflow = prev; };
   }, []);
 
-  /* Load ImageData at processed scale (same as export) */
+  /* Load ImageData at processed scale (same as export) — only optimized needed for canvas */
   useEffect(() => {
     let cancelled = false;
     setIsLoading(true);
@@ -78,10 +80,8 @@ export const WhiteBoxEditor: React.FC<Props> = ({
       try {
         const { PdfExporter } = await import('@/lib/optimizer/pdfExporter');
         const opt = await PdfExporter.loadOptimizedImageData(page);
-        const orig = await PdfExporter.loadOriginalImageData(page, mergedPdfBytes ?? null, opt.width);
         if (cancelled) return;
         optDataRef.current = opt;
-        origDataRef.current = orig;
         setNaturalWidth(opt.width);
         setNaturalHeight(opt.height);
         setIsLoading(false);
@@ -90,7 +90,7 @@ export const WhiteBoxEditor: React.FC<Props> = ({
       }
     })();
     return () => { cancelled = true; };
-  }, [page, mergedPdfBytes]);
+  }, [page]);
 
   /* Draw loop — single canvas truth */
   const draw = useCallback(() => {
@@ -201,11 +201,10 @@ export const WhiteBoxEditor: React.FC<Props> = ({
     if (e.clientX < rect.left || e.clientX > rect.right || e.clientY < rect.top || e.clientY > rect.bottom) return;
     const pt = clientToPage(e.clientX, e.clientY);
     // Check handle hit first (approx 12px in page coords)
-    // Handles are at corners; detect via draft hit + handle proximity
     if (selectedId) {
       const sel = drafts.find((d) => d._id === selectedId);
       if (sel) {
-        const handleRadius = 12 * (naturalWidth / rect.width); // CSS 6px → page px
+        const handleRadius = 12 * (naturalWidth / rect.width);
         const corners: Record<string, [number, number]> = {
           nw: [sel.x, sel.y], ne: [sel.x + sel.width, sel.y],
           sw: [sel.x, sel.y + sel.height], se: [sel.x + sel.width, sel.y + sel.height],
@@ -213,7 +212,7 @@ export const WhiteBoxEditor: React.FC<Props> = ({
         for (const [h, [hx, hy]] of Object.entries(corners)) {
           if (Math.hypot(pt.x - hx, pt.y - hy) < handleRadius) {
             (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
-            setDragHandle(h);
+            dragHandleRef.current = h;
             return;
           }
         }
@@ -225,20 +224,20 @@ export const WhiteBoxEditor: React.FC<Props> = ({
       setSelectedId(hitId);
       return;
     }
-    // Start new rect
+    // Start new rect — use ref to avoid stale closure between down/move
     (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
-    setDrawStart(pt);
+    drawStartRef.current = pt;
     setIsDrawing(true);
     setSelectedId(null);
-  }, [isLoading, clientToPage, selectedId, drafts, naturalWidth]);
+  }, [isLoading, clientToPage, selectedId, drafts, naturalWidth, canvasPointToRegionHit]);
 
   const handlePointerMove = useCallback((e: React.PointerEvent) => {
+    const dragHandle = dragHandleRef.current;
     if (dragHandle && selectedId) {
       const pt = clientToPage(e.clientX, e.clientY);
       setDrafts((prev) => prev.map((d) => {
         if (d._id !== selectedId) return d;
         let { x, y, width, height } = d;
-        const x1 = x + width, y1 = y + height;
         if (dragHandle.includes('n')) y = pt.y;
         if (dragHandle.includes('s')) height = pt.y - y;
         if (dragHandle.includes('w')) x = pt.x;
@@ -249,6 +248,7 @@ export const WhiteBoxEditor: React.FC<Props> = ({
       }));
       return;
     }
+    const drawStart = drawStartRef.current;
     if (!isDrawing || !drawStart) return;
     const pt = clientToPage(e.clientX, e.clientY);
     const x = Math.min(drawStart.x, pt.x);
@@ -261,13 +261,13 @@ export const WhiteBoxEditor: React.FC<Props> = ({
       if (hasTemp) return prev.map((d) => d._id === '__temp__' ? temp : d);
       return [...prev, temp];
     });
-  }, [isDrawing, drawStart, dragHandle, selectedId, mode, clientToPage]);
+  }, [isDrawing, selectedId, mode, clientToPage]);
 
   const handlePointerUp = useCallback((e: React.PointerEvent) => {
-    if (dragHandle) { setDragHandle(null); return; }
+    if (dragHandleRef.current) { dragHandleRef.current = null; return; }
     if (!isDrawing) return;
     setIsDrawing(false);
-    setDrawStart(null);
+    drawStartRef.current = null;
     setDrafts((prev) => {
       const temp = prev.find((d) => d._id === '__temp__');
       if (!temp) return prev;
@@ -276,7 +276,7 @@ export const WhiteBoxEditor: React.FC<Props> = ({
       return [...filtered, { ...temp, _id: uid() }];
     });
     try { (e.currentTarget as HTMLElement).releasePointerCapture(e.pointerId); } catch {}
-  }, [isDrawing, dragHandle]);
+  }, [isDrawing]);
 
   const handleApply = useCallback(() => {
     const clean: WhiteBoxRegion[] = drafts

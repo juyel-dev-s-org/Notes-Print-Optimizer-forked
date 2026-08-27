@@ -7,7 +7,6 @@ import { getProcessingEngine, EngineVersion } from './engine';
 import { getPdfjsLib } from './pdfjsLoader';
 import type { PDFDocumentProxy } from 'pdfjs-dist';
 import { DocumentProfile, LayoutConfig, OptimizationMetrics, PresetMode, ProcessedPage } from './types';
-import { getCropTopPx } from '../kernels/whiteBox';
 import '../workers/init';
 
 /**
@@ -218,16 +217,20 @@ export class PdfExporter {
         const userRects = manualRegions?.[p.pageIndex];
         if (userRects && userRects.length > 0 && mergedBytes && !keepOriginal?.has(p.pageIndex)) {
           try {
-            // Render original at same scale as processed image for exact pixel alignment
+            // Render original at same width → same scale. orig is FULL-page,
+            // img is CROPPED (if banner crop >0). Compute cropped height for
+            // dimension check and pass cropTopPx so cropped regions map to
+            // full src: srcRow = y + cropTopPx.
             const orig = await this.loadOriginalImageData(p, mergedBytes, img.width);
-            // Allow 2px tolerance for rounding (pdfjs viewport Math.floor)
-            if (Math.abs(orig.width - img.width) <= 2 && Math.abs(orig.height - img.height) <= 2) {
-              const { compositeWhiteBoxRegions, getCropTopPx } = await import('../kernels/whiteBox');
-              // Manual regions are in cropped coordinates — pass cropTopPx for banner crop offset
-              const cropTopPx = getCropTopPx(p.profile, p.parameters, img.height);
-              compositeWhiteBoxRegions(img.data, orig.data, img.width, img.height, userRects, cropTopPx);
+            const cTop = Math.floor(orig.height * ((p.parameters.bannerCropTopPct ?? 0) / 100));
+            const cBot = Math.floor(orig.height * ((p.parameters.bannerCropBottomPct ?? 0) / 100));
+            const croppedH = orig.height - cTop - cBot;
+            if (Math.abs(orig.width - img.width) <= 2 && Math.abs(croppedH - img.height) <= 2) {
+              const { compositeWhiteBoxRegions } = await import('../kernels/whiteBox');
+              // Regions are CROPPED coords (editor canvas), src is FULL → offset by cTop
+              compositeWhiteBoxRegions(img.data, orig.data, img.width, img.height, userRects, cTop);
             } else {
-              console.warn(`[export] Dimension mismatch for manual composite page ${p.pageIndex + 1}: opt ${img.width}x${img.height} vs orig ${orig.width}x${orig.height}`);
+              console.warn(`[export] Dimension mismatch for manual composite page ${p.pageIndex + 1}: opt ${img.width}x${img.height} vs orig cropped ${orig.width}x${croppedH} (full ${orig.width}x${orig.height} cTop=${cTop} cBot=${cBot})`);
             }
           } catch (err) {
             console.warn(`[export] Manual region composite failed for page ${p.pageIndex + 1}:`, err);
