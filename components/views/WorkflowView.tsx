@@ -460,6 +460,8 @@ export const WorkflowView: React.FC<WorkflowUIProps> = ({ state, actions, handle
           <PhaseErrorBoundary phaseName="Complete">
             <div className="animate-enter mx-auto flex max-w-xl flex-col items-center gap-5 text-center">
               <div className="flex w-full flex-col items-center gap-3 rounded-2xl border border-success-strong/30 bg-surface/90 p-6 shadow-lg sm:p-8 sm:shadow-xl">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src="/illustrations/order-delivered.svg" alt="" aria-hidden="true" className="h-32 sm:h-40 w-auto max-w-[260px] object-contain" loading="lazy" />
                 <div className="flex h-14 w-14 items-center justify-center rounded-2xl border border-success-strong/30 bg-success-strong/20 text-success sm:h-16 sm:w-16">
                   <CheckCircle2 className="h-8 w-8 sm:h-10 sm:w-10" />
                 </div>

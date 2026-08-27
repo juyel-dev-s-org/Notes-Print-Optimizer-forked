@@ -154,22 +154,28 @@ export const NupLivePreview: React.FC<NupLivePreviewProps> = ({ mergedBytes, opt
       const srcIdx = startIdx + slot;
       if (srcIdx >= totalPages) break;
       const src = pageCanvasesRef.current[srcIdx];
-      const cell = cellRect(plan, slot, paperH);
+      // Preview canvas is top-left origin, but cellRect is PDF bottom-left.
+      // Use top-based y for canvas: marginTop + row*(cellH+gap)
+      const col = slot % plan.cols;
+      const row = Math.floor(slot / plan.cols);
+      const canvasCellY = plan.marginTop + row * (plan.cellH + plan.gapY);
+      const canvasCell = { x: plan.marginLeft + col * (plan.cellW + plan.gapX), y: canvasCellY, w: plan.cellW, h: plan.cellH };
+      const cell = cellRect(plan, slot, paperH); // keep for reference, but draw with canvasCell
       if (opts.borders) {
         ctx.strokeStyle = '#d1d5db';
         ctx.lineWidth = 1;
-        ctx.strokeRect(cell.x * k, cell.y * k, cell.w * k, cell.h * k);
+        ctx.strokeRect(canvasCell.x * k, canvasCell.y * k, canvasCell.w * k, canvasCell.h * k);
       }
       if (!src) continue; // beyond cache → border-only ghost cell
       const effW = src.width;
       const effH = src.height;
-      const fit = fitInto(effW / 72, effH / 72, cell); // canvas px → pt via 72dpi basis
+      const fit = fitInto(effW / 72, effH / 72, canvasCell);
       ctx.drawImage(src, fit.x * k, fit.y * k, fit.w * k, fit.h * k);
       if (opts.numbers) {
         ctx.fillStyle = '#6b7280';
         ctx.font = `${Math.max(8, Math.round(9 * k))}px system-ui, sans-serif`;
         ctx.textAlign = 'center';
-        ctx.fillText(String(srcIdx + 1), (cell.x + cell.w / 2) * k, (cell.y + cell.h - 3) * k);
+        ctx.fillText(String(srcIdx + 1), (canvasCell.x + canvasCell.w / 2) * k, (canvasCell.y + canvasCell.h - 3) * k);
       }
     }
   }, [phase, opts, sheetIdx, totalPages]);

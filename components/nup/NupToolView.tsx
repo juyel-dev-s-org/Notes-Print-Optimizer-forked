@@ -405,17 +405,19 @@ export const NupToolView: React.FC<NupToolViewProps> = ({ onBack }) => {
         </div>
       )}
 
-      {/* ---------------- DONE ---------------- */}
+      {/* ---------------- DONE — premium with illustration ---------------- */}
       {step === 'done' && result && (
         <section aria-label="N-up result" className="rounded-2xl border border-success/30 bg-success/5 p-4 shadow-lg">
-          <div className="flex items-center gap-3">
-            <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-success/15 text-success">
+          <div className="flex flex-col items-center gap-3 pb-2">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src="/illustrations/order-delivered.svg" alt="" aria-hidden="true" className="h-36 sm:h-44 w-auto max-w-[280px] object-contain" loading="lazy" />
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-success/15 text-success">
               <Check className="h-5 w-5" aria-hidden="true" />
-            </span>
-            <div className="min-w-0">
-              <p className="text-sm font-bold text-ink">{result.sheets} sheet{result.sheets === 1 ? '' : 's'} ready · {perSheet}-up · {paper} {orientation.toLowerCase()}</p>
-              <p className="text-xs tabular-nums text-ink-muted">{totalPages} pages → {result.sheets} sheets · {fmtBytes(result.blob.size)} · built in {(result.ms / 1000).toFixed(1)}s</p>
             </div>
+          </div>
+          <div className="text-center">
+            <p className="text-sm font-bold text-ink">{result.sheets} sheet{result.sheets === 1 ? '' : 's'} ready · {perSheet}-up · {paper} {orientation.toLowerCase()}</p>
+            <p className="text-xs tabular-nums text-ink-muted">{totalPages} pages → {result.sheets} sheets · {fmtBytes(result.blob.size)} · built in {(result.ms / 1000).toFixed(1)}s</p>
           </div>
           <div className="mt-4 flex gap-2">
             <button type="button" onClick={download}
