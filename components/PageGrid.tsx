@@ -97,9 +97,8 @@ const LazyPageCard: React.FC<{
           : 'border-surface-2 bg-surface hover:border-elevated/80 hover:shadow-sm'
       }`}
     >
-      {/* Card Header — compact premium */}
+      {/* Card Header — pen centered, no top page number */}
       <div className="flex items-center justify-between gap-1 px-2 py-1.5 bg-surface-2/60 border-b border-elevated/40">
-        {/* Keep-original — left, subtle */}
         <button
           type="button"
           onClick={() => onToggleKeepOriginalPage(idx)}
@@ -115,33 +114,30 @@ const LazyPageCard: React.FC<{
           <ImageIcon className="h-4 w-4" />
         </button>
 
-        <span className="text-[11px] font-semibold tracking-wide text-ink/80 truncate">P{idx + 1}</span>
+        <button
+          type="button"
+          onClick={() => onEditPage(page.pageIndex)}
+          aria-label={`Edit regions for page ${page.pageIndex + 1}`}
+          className="flex h-8 w-8 items-center justify-center rounded-lg text-ink-muted/70 hover:text-ink hover:bg-elevated/50 active:scale-95 transition-colors"
+          title="Edit white-box regions"
+        >
+          <Pencil className="h-3.5 w-3.5" />
+        </button>
 
-        <div className="flex items-center gap-1">
-          <button
-            type="button"
-            onClick={() => onEditPage(page.pageIndex)}
-            aria-label={`Edit regions for page ${page.pageIndex + 1}`}
-            className="flex h-8 w-8 items-center justify-center rounded-lg text-ink-muted/70 hover:text-ink hover:bg-elevated/50 active:scale-95 transition-colors"
-            title="Edit white-box regions"
-          >
-            <Pencil className="h-3.5 w-3.5" />
-          </button>
-          <button
-            type="button"
-            onClick={() => onToggleExcludePage(idx)}
-            aria-pressed={isExcluded}
-            aria-label={isExcluded ? `Include page ${idx + 1}` : `Exclude page ${idx + 1}`}
-            className="flex h-8 w-8 items-center justify-center rounded-lg active:scale-95 transition-colors text-primary-soft/80 hover:bg-elevated/50"
-            title={isExcluded ? 'Include page' : 'Exclude page'}
-          >
-            {isExcluded ? (
-              <Square className="h-4 w-4 text-ink-muted/60" />
-            ) : (
-              <CheckSquare className="h-4 w-4 text-primary-soft fill-primary/15" />
-            )}
-          </button>
-        </div>
+        <button
+          type="button"
+          onClick={() => onToggleExcludePage(idx)}
+          aria-pressed={isExcluded}
+          aria-label={isExcluded ? `Include page ${idx + 1}` : `Exclude page ${idx + 1}`}
+          className="flex h-8 w-8 items-center justify-center rounded-lg active:scale-95 transition-colors text-primary-soft/80 hover:bg-elevated/50"
+          title={isExcluded ? 'Include page' : 'Exclude page'}
+        >
+          {isExcluded ? (
+            <Square className="h-4 w-4 text-ink-muted/60" />
+          ) : (
+            <CheckSquare className="h-4 w-4 text-primary-soft fill-primary/15" />
+          )}
+        </button>
       </div>
 
       {/* Thumbnail — premium inset */}
@@ -180,7 +176,7 @@ const LazyPageCard: React.FC<{
         )}
       </div>
 
-      {/* Card Footer — minimal */}
+      {/* Card Footer — minimal, original tag only on top overlay */}
       <div className="flex items-center justify-between px-2 py-1.5 bg-surface border-t border-surface-2/60 min-h-[28px]">
         <span className="text-[11px] font-medium text-ink-muted/60 truncate">P{idx + 1}</span>
         <span className="flex items-center gap-1">
@@ -198,11 +194,6 @@ const LazyPageCard: React.FC<{
               title="Manual edits"
             >
               +{manualCount}
-            </span>
-          )}
-          {isKeptOriginal && (
-            <span className="rounded-full bg-accent/10 px-1.5 py-0.5 text-[10px] font-semibold text-accent-soft border border-accent/20">
-              Original
             </span>
           )}
         </span>

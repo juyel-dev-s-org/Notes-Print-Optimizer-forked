@@ -22,7 +22,6 @@ type Mode = 'rect' | 'ellipse';
 
 interface Props {
   page: import('@/lib/optimizer/types').ProcessedPage;
-  mergedPdfBytes: Uint8Array | null;
   autoRegions: WhiteBoxRegion[];
   manualRegions: WhiteBoxRegion[];
   onApply: (regions: WhiteBoxRegion[]) => void;
@@ -37,7 +36,6 @@ function uid(): string {
 
 export const WhiteBoxEditor: React.FC<Props> = ({
   page,
-  mergedPdfBytes: _mergedPdfBytes,
   autoRegions,
   manualRegions,
   onApply,
@@ -135,15 +133,16 @@ export const WhiteBoxEditor: React.FC<Props> = ({
       }
     }
     ctx.restore();
-    // Manual drafts
+    // Manual drafts — lighter premium fill
     for (const d of drafts) {
       const isSelected = d._id === selectedId;
       const isTemp = d._id === '__temp__';
       ctx.save();
-      ctx.strokeStyle = isSelected ? 'rgba(37, 99, 235, 1)' : 'rgba(37, 99, 235, 0.9)';
-      ctx.lineWidth = isSelected ? 3 : 2;
-      ctx.fillStyle = isSelected ? 'rgba(37, 99, 235, 0.18)' : 'rgba(37, 99, 235, 0.12)';
-      if (isTemp) ctx.globalAlpha = 0.6;
+      ctx.strokeStyle = isSelected ? 'rgba(59, 130, 246, 0.95)' : 'rgba(59, 130, 246, 0.75)';
+      ctx.lineWidth = isSelected ? 2.5 : 1.5;
+      // Lighter fill — was deep blue 0.18, now soft sky 0.09
+      ctx.fillStyle = isSelected ? 'rgba(147, 197, 253, 0.14)' : 'rgba(147, 197, 253, 0.08)';
+      if (isTemp) ctx.globalAlpha = 0.55;
       if (d.shape === 'ellipse') {
         ctx.beginPath();
         ctx.ellipse(d.x + d.width / 2, d.y + d.height / 2, d.width / 2, d.height / 2, 0, 0, Math.PI * 2);
@@ -152,15 +151,17 @@ export const WhiteBoxEditor: React.FC<Props> = ({
         ctx.fillRect(d.x, d.y, d.width, d.height);
         ctx.strokeRect(d.x, d.y, d.width, d.height);
       }
-      // Handles for selected — 8 handles (4 corners + 4 edges) + move
+      // Handles for selected — bigger & clearer (production)
         if (isSelected && !isTemp) {
           ctx.fillStyle = 'rgba(37, 99, 235, 1)';
           ctx.strokeStyle = 'white';
-          ctx.lineWidth = 1.5;
-          const hs = 7;
+          ctx.lineWidth = 2;
+          const hs = 9;
           const hx = [d.x, d.x + d.width / 2, d.x + d.width];
           const hy = [d.y, d.y + d.height / 2, d.y + d.height];
-          // Corners
+          // Corners — larger circles with shadow
+          ctx.shadowColor = 'rgba(0,0,0,0.25)';
+          ctx.shadowBlur = 4;
           const corners: [number, number][] = [
             [d.x, d.y], [d.x + d.width, d.y], [d.x, d.y + d.height], [d.x + d.width, d.y + d.height],
           ];
@@ -169,19 +170,29 @@ export const WhiteBoxEditor: React.FC<Props> = ({
             ctx.arc(cx, cy, hs / 2, 0, Math.PI * 2);
             ctx.fill(); ctx.stroke();
           }
-          // Edges (midpoints) — small squares
+          ctx.shadowBlur = 0;
+          // Edges — squares 8px
+          const edgeSize = 8;
           const edges: [number, number][] = [
             [hx[1], hy[0]], [hx[1], hy[2]], [hx[0], hy[1]], [hx[2], hy[1]],
           ];
           for (const [ex, ey] of edges) {
-            ctx.fillRect(ex - hs / 2, ey - hs / 2, hs, hs);
-            ctx.strokeRect(ex - hs / 2, ey - hs / 2, hs, hs);
+            ctx.fillRect(ex - edgeSize / 2, ey - edgeSize / 2, edgeSize, edgeSize);
+            ctx.strokeRect(ex - edgeSize / 2, ey - edgeSize / 2, edgeSize, edgeSize);
           }
-          // Center move dot
+          // Center move dot — bigger 6px, white with blue border, clearly visible
           ctx.beginPath();
-          ctx.arc(d.x + d.width / 2, d.y + d.height / 2, 3, 0, Math.PI * 2);
-          ctx.fillStyle = 'rgba(255,255,255,0.9)';
-          ctx.fill(); ctx.strokeStyle = 'rgba(37,99,235,1)'; ctx.stroke();
+          ctx.arc(d.x + d.width / 2, d.y + d.height / 2, 5, 0, Math.PI * 2);
+          ctx.fillStyle = 'white';
+          ctx.fill();
+          ctx.strokeStyle = 'rgba(37,99,235,1)';
+          ctx.lineWidth = 2;
+          ctx.stroke();
+          // Inner dot
+          ctx.beginPath();
+          ctx.arc(d.x + d.width / 2, d.y + d.height / 2, 2, 0, Math.PI * 2);
+          ctx.fillStyle = 'rgba(37,99,235,1)';
+          ctx.fill();
         }
       ctx.restore();
     }
@@ -455,9 +466,9 @@ export const WhiteBoxEditor: React.FC<Props> = ({
         )}
       </div>
 
-      <div className="border-t border-amber-900/20 bg-[#451A03]/95 backdrop-blur-sm px-3 py-2.5 text-center">
-        <p className="text-xs font-bold leading-tight text-[#FACC15]">পেজের উপর টেনে বক্স আঁকুন • বক্সে ট্যাপ করে সিলেক্ট করুন</p>
-        <p className="mt-0.5 text-[11px] font-medium leading-tight text-amber-200/85">কোনা/ধার ধরে টেনে সাইজ • ভেতরে ধরে সরান • তীর চিহ্নে নিখুঁত করুন</p>
+      <div className="border-t border-amber-900/30 bg-[#451A03]/90 backdrop-blur-sm px-4 py-3 text-center">
+        <p className="text-xs font-bold leading-tight text-[#FACC15]">Drag on the page to draw a box • Tap a box to select</p>
+        <p className="mt-1 text-[11px] font-medium leading-tight text-[#FACC15]/90">Drag corners or edges to resize • Drag inside to move • Use arrow keys to nudge</p>
       </div>
     </div>
   );
