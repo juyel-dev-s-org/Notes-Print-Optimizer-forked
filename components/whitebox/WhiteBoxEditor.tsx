@@ -37,7 +37,6 @@ function uid(): string {
 
 export const WhiteBoxEditor: React.FC<Props> = ({
   page,
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   mergedPdfBytes: _mergedPdfBytes,
   autoRegions,
   manualRegions,
@@ -71,6 +70,7 @@ export const WhiteBoxEditor: React.FC<Props> = ({
   const [isDrawing, setIsDrawing] = useState(false);
   const drawStartRef = useRef<{ x: number; y: number } | null>(null);
   const dragHandleRef = useRef<string | null>(null);
+  const moveOffsetRef = useRef<{ dx: number; dy: number } | null>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const optDataRef = useRef<ImageData | null>(null);
   // origDataRef removed — editor only needs optimized (whitened) image for display;
@@ -152,21 +152,37 @@ export const WhiteBoxEditor: React.FC<Props> = ({
         ctx.fillRect(d.x, d.y, d.width, d.height);
         ctx.strokeRect(d.x, d.y, d.width, d.height);
       }
-      // Handles for selected
-      if (isSelected && !isTemp) {
-        ctx.fillStyle = 'rgba(37, 99, 235, 1)';
-        ctx.strokeStyle = 'white';
-        ctx.lineWidth = 2;
-        const hs = 8;
-        const pts = [
-          [d.x, d.y], [d.x + d.width, d.y], [d.x, d.y + d.height], [d.x + d.width, d.y + d.height],
-        ];
-        for (const [hx, hy] of pts) {
+      // Handles for selected — 8 handles (4 corners + 4 edges) + move
+        if (isSelected && !isTemp) {
+          ctx.fillStyle = 'rgba(37, 99, 235, 1)';
+          ctx.strokeStyle = 'white';
+          ctx.lineWidth = 1.5;
+          const hs = 7;
+          const hx = [d.x, d.x + d.width / 2, d.x + d.width];
+          const hy = [d.y, d.y + d.height / 2, d.y + d.height];
+          // Corners
+          const corners: [number, number][] = [
+            [d.x, d.y], [d.x + d.width, d.y], [d.x, d.y + d.height], [d.x + d.width, d.y + d.height],
+          ];
+          for (const [cx, cy] of corners) {
+            ctx.beginPath();
+            ctx.arc(cx, cy, hs / 2, 0, Math.PI * 2);
+            ctx.fill(); ctx.stroke();
+          }
+          // Edges (midpoints) — small squares
+          const edges: [number, number][] = [
+            [hx[1], hy[0]], [hx[1], hy[2]], [hx[0], hy[1]], [hx[2], hy[1]],
+          ];
+          for (const [ex, ey] of edges) {
+            ctx.fillRect(ex - hs / 2, ey - hs / 2, hs, hs);
+            ctx.strokeRect(ex - hs / 2, ey - hs / 2, hs, hs);
+          }
+          // Center move dot
           ctx.beginPath();
-          ctx.arc(hx, hy, hs / 2, 0, Math.PI * 2);
-          ctx.fill(); ctx.stroke();
+          ctx.arc(d.x + d.width / 2, d.y + d.height / 2, 3, 0, Math.PI * 2);
+          ctx.fillStyle = 'rgba(255,255,255,0.9)';
+          ctx.fill(); ctx.strokeStyle = 'rgba(37,99,235,1)'; ctx.stroke();
         }
-      }
       ctx.restore();
     }
   }, [naturalWidth, naturalHeight, autoRegions, drafts, selectedId]);
@@ -211,21 +227,34 @@ export const WhiteBoxEditor: React.FC<Props> = ({
     const rect = canvas.getBoundingClientRect();
     if (e.clientX < rect.left || e.clientX > rect.right || e.clientY < rect.top || e.clientY > rect.bottom) return;
     const pt = clientToPage(e.clientX, e.clientY);
-    // Check handle hit first (approx 12px in page coords)
+    // Check handle hit first — 8 handles (corners + edges) + move
     if (selectedId) {
       const sel = drafts.find((d) => d._id === selectedId);
       if (sel) {
-        const handleRadius = 12 * (naturalWidth / rect.width);
-        const corners: Record<string, [number, number]> = {
-          nw: [sel.x, sel.y], ne: [sel.x + sel.width, sel.y],
-          sw: [sel.x, sel.y + sel.height], se: [sel.x + sel.width, sel.y + sel.height],
+        const isTouch = e.pointerType === 'touch';
+        const base = isTouch ? 18 : 12;
+        const handleRadius = base * (naturalWidth / rect.width);
+        const hx = [sel.x, sel.x + sel.width / 2, sel.x + sel.width];
+        const hy = [sel.y, sel.y + sel.height / 2, sel.y + sel.height];
+        const handles: Record<string, [number, number]> = {
+          nw: [hx[0], hy[0]], n: [hx[1], hy[0]], ne: [hx[2], hy[0]],
+          w: [hx[0], hy[1]], e: [hx[2], hy[1]],
+          sw: [hx[0], hy[2]], s: [hx[1], hy[2]], se: [hx[2], hy[2]],
         };
-        for (const [h, [hx, hy]] of Object.entries(corners)) {
-          if (Math.hypot(pt.x - hx, pt.y - hy) < handleRadius) {
+        for (const [h, [hx_, hy_]] of Object.entries(handles)) {
+          if (Math.hypot(pt.x - hx_, pt.y - hy_) < handleRadius) {
             (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
             dragHandleRef.current = h;
             return;
           }
+        }
+        // Inside selected region → move whole box
+        const inside = pt.x >= sel.x && pt.x <= sel.x + sel.width && pt.y >= sel.y && pt.y <= sel.y + sel.height;
+        if (inside) {
+          (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
+          moveOffsetRef.current = { dx: pt.x - sel.x, dy: pt.y - sel.y };
+          dragHandleRef.current = 'move';
+          return;
         }
       }
     }
@@ -246,15 +275,33 @@ export const WhiteBoxEditor: React.FC<Props> = ({
     const dragHandle = dragHandleRef.current;
     if (dragHandle && selectedId) {
       const pt = clientToPage(e.clientX, e.clientY);
+      if (dragHandle === 'move' && moveOffsetRef.current) {
+        const { dx, dy } = moveOffsetRef.current;
+        setDrafts((prev) => prev.map((d) => {
+          if (d._id !== selectedId) return d;
+          let nx = pt.x - dx;
+          let ny = pt.y - dy;
+          // Clamp inside canvas
+          nx = Math.max(0, Math.min(naturalWidth - d.width, nx));
+          ny = Math.max(0, Math.min(naturalHeight - d.height, ny));
+          return { ...d, x: nx, y: ny };
+        }));
+        return;
+      }
       setDrafts((prev) => prev.map((d) => {
         if (d._id !== selectedId) return d;
         let { x, y, width, height } = d;
-        if (dragHandle.includes('n')) y = pt.y;
+        if (dragHandle.includes('n')) { const ny = pt.y; height = height + (y - ny); y = ny; }
         if (dragHandle.includes('s')) height = pt.y - y;
-        if (dragHandle.includes('w')) x = pt.x;
+        if (dragHandle.includes('w')) { const nx = pt.x; width = width + (x - nx); x = nx; }
         if (dragHandle.includes('e')) width = pt.x - x;
         if (width < 0) { x = x + width; width = -width; }
         if (height < 0) { y = y + height; height = -height; }
+        // Clamp
+        x = Math.max(0, Math.min(naturalWidth - width, x));
+        y = Math.max(0, Math.min(naturalHeight - height, y));
+        width = Math.min(width, naturalWidth - x);
+        height = Math.min(height, naturalHeight - y);
         return { ...d, x, y, width, height };
       }));
       return;
@@ -272,10 +319,10 @@ export const WhiteBoxEditor: React.FC<Props> = ({
       if (hasTemp) return prev.map((d) => d._id === '__temp__' ? temp : d);
       return [...prev, temp];
     });
-  }, [isDrawing, selectedId, mode, clientToPage]);
+  }, [isDrawing, selectedId, mode, clientToPage, naturalWidth, naturalHeight]);
 
   const handlePointerUp = useCallback((e: React.PointerEvent) => {
-    if (dragHandleRef.current) { dragHandleRef.current = null; return; }
+    if (dragHandleRef.current) { dragHandleRef.current = null; moveOffsetRef.current = null; return; }
     if (!isDrawing) return;
     setIsDrawing(false);
     drawStartRef.current = null;
@@ -284,7 +331,10 @@ export const WhiteBoxEditor: React.FC<Props> = ({
       if (!temp) return prev;
       const filtered = prev.filter((d) => d._id !== '__temp__');
       if (temp.width < 12 || temp.height < 12) return filtered;
-      return [...filtered, { ...temp, _id: uid() }];
+      // Auto-select new box
+      const nid = uid();
+      setTimeout(() => setSelectedId(nid), 0);
+      return [...filtered, { ...temp, _id: nid }];
     });
     try { (e.currentTarget as HTMLElement).releasePointerCapture(e.pointerId); } catch {}
   }, [isDrawing]);
@@ -312,6 +362,30 @@ export const WhiteBoxEditor: React.FC<Props> = ({
     setDrafts((prev) => prev.filter((d) => d._id !== selectedId));
     setSelectedId(null);
   }, [selectedId]);
+
+  // Keyboard nudge for selected region — production polish
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (!selectedId || isDrawing) return;
+      const step = e.shiftKey ? 10 : 2;
+      let dx = 0, dy = 0;
+      if (e.key === 'ArrowLeft') dx = -step;
+      else if (e.key === 'ArrowRight') dx = step;
+      else if (e.key === 'ArrowUp') dy = -step;
+      else if (e.key === 'ArrowDown') dy = step;
+      else if (e.key === 'Delete' || e.key === 'Backspace') { handleDeleteSelected(); return; }
+      else return;
+      e.preventDefault();
+      setDrafts((prev) => prev.map((d) => {
+        if (d._id !== selectedId) return d;
+        const nx = Math.max(0, Math.min(naturalWidth - d.width, d.x + dx));
+        const ny = Math.max(0, Math.min(naturalHeight - d.height, d.y + dy));
+        return { ...d, x: nx, y: ny };
+      }));
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [selectedId, isDrawing, naturalWidth, naturalHeight, handleDeleteSelected]);
 
   return (
     <div className="fixed inset-0 z-50 flex flex-col bg-bg/95 backdrop-blur-sm">
@@ -381,8 +455,9 @@ export const WhiteBoxEditor: React.FC<Props> = ({
         )}
       </div>
 
-      <div className="border-t border-surface-2 bg-surface px-3 py-2 text-center text-xs text-ink-muted">
-        Drag on the page to draw a box. Tap a box to select & resize. Circle clips to an ellipse inside the same bounds.
+      <div className="border-t border-amber-900/20 bg-[#451A03]/95 backdrop-blur-sm px-3 py-2.5 text-center">
+        <p className="text-xs font-bold leading-tight text-[#FACC15]">পেজের উপর টেনে বক্স আঁকুন • বক্সে ট্যাপ করে সিলেক্ট করুন</p>
+        <p className="mt-0.5 text-[11px] font-medium leading-tight text-amber-200/85">কোনা/ধার ধরে টেনে সাইজ • ভেতরে ধরে সরান • তীর চিহ্নে নিখুঁত করুন</p>
       </div>
     </div>
   );

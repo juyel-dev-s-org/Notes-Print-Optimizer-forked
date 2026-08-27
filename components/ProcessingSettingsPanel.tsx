@@ -176,54 +176,54 @@ export const ProcessingSettingsPanel: React.FC<ProcessingSettingsPanelProps> = (
   const anyToggleOn = Object.values(toggles).some(Boolean);
 
   return (
-    <div className="rounded-2xl border border-surface-2 bg-surface/90 shadow-xl overflow-hidden">
-      {/* -- Toggle Header -- */}
+    <div className="rounded-2xl border border-surface-2 bg-surface/80 shadow-lg overflow-hidden">
+      {/* -- Toggle Header — compact premium */}
       <button
         type="button"
         onClick={() => setIsOpen(!isOpen)}
         aria-expanded={isOpen}
         aria-controls="processing-settings-body"
-        className="flex w-full items-center justify-between px-4 py-3 text-left hover:bg-surface-2/50 transition-colors"
+        className="flex w-full items-center justify-between px-3 py-2.5 text-left hover:bg-surface-2/40 transition-colors"
       >
-        <div className="flex items-center gap-2.5">
-          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-warning-strong/20 text-warning border border-warning-strong/30">
-            <SlidersHorizontal className="h-4 w-4" />
+        <div className="flex items-center gap-2">
+          <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-warning-strong/15 text-warning border border-warning-strong/20">
+            <SlidersHorizontal className="h-3.5 w-3.5" />
           </div>
-          <div>
-            <span className="block text-xs font-bold text-ink sm:text-sm">
+          <div className="text-left">
+            <span className="block text-[11px] font-bold text-ink leading-tight">
               Processing Settings
             </span>
-            <span className="block text-2xs text-ink-muted">
-              Toggle &amp; fine-tune individual parameters
+            <span className="block text-[10px] text-ink-muted leading-tight">
+              Fine-tune • preview single page
             </span>
           </div>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1.5">
           {isDirty && (
-            <span className="rounded-full bg-warning-strong/20 px-2 py-0.5 text-[9px] font-bold text-warning-soft border border-warning-strong/30">
+            <span className="rounded-full bg-warning-strong/15 px-1.5 py-0.5 text-[9px] font-bold text-warning-soft border border-warning-strong/20">
               Modified
             </span>
           )}
           {isOpen ? (
-            <ChevronUp className="h-4 w-4 text-ink-muted" />
+            <ChevronUp className="h-3.5 w-3.5 text-ink-muted" />
           ) : (
-            <ChevronDown className="h-4 w-4 text-ink-muted" />
+            <ChevronDown className="h-3.5 w-3.5 text-ink-muted" />
           )}
         </div>
       </button>
 
-      {/* -- Collapsible Body -- */}
+      {/* -- Collapsible Body — sleek */}
       {isOpen && (
-        <div id="processing-settings-body" className="border-t border-surface-2 px-4 py-4 space-y-4 animate-in fade-in slide-in-from-top-1 duration-200">
-          {/* Preset Selector */}
-          <div className="flex flex-col gap-1.5">
-            <label className="text-2xs font-semibold text-ink-muted uppercase tracking-wider">
+        <div id="processing-settings-body" className="border-t border-surface-2/60 px-3 py-3 space-y-3 animate-in fade-in slide-in-from-top-1 duration-200">
+          {/* Preset Selector — compact */}
+          <div className="flex flex-col gap-1">
+            <label className="text-[10px] font-semibold text-ink-muted uppercase tracking-wider">
               Preset Base
             </label>
             <select
               value={params.preset}
               onChange={(e) => handlePresetChange(e.target.value as ProcessingParameters['preset'])}
-              className="w-full rounded-lg border border-elevated bg-bg px-3 py-2 text-xs font-bold text-ink focus:outline-none focus:border-primary"
+              className="w-full rounded-lg border border-elevated bg-bg px-2.5 py-1.5 text-[11px] font-semibold text-ink focus:outline-none focus:border-primary"
             >
               {Object.entries(PRESET_LABELS).map(([value, label]) => (
                 <option key={value} value={value}>
@@ -233,8 +233,8 @@ export const ProcessingSettingsPanel: React.FC<ProcessingSettingsPanelProps> = (
             </select>
           </div>
 
-          {/* -- Parameter Toggle + Slider Rows -- */}
-          <div className="flex flex-col gap-2.5">
+          {/* -- Parameter Toggle + Slider Rows — compact */}
+          <div className="flex flex-col gap-2">
             {SLIDERS.map((slider) => {
               const isOn = toggles[slider.toggleKey];
               const value = (params[slider.key] as number) ?? slider.min;
@@ -242,20 +242,20 @@ export const ProcessingSettingsPanel: React.FC<ProcessingSettingsPanelProps> = (
               return (
                 <div
                   key={slider.key}
-                  className={`flex flex-col gap-2 rounded-xl border p-3 transition-colors duration-200 ${
+                  className={`flex flex-col gap-1.5 rounded-xl border px-2.5 py-2 transition-colors duration-150 ${
                     isOn
-                      ? 'border-primary/40 bg-primary-faint/20'
-                      : 'border-surface-2 bg-bg/60'
+                      ? 'border-primary/30 bg-primary-faint/15'
+                      : 'border-surface-2 bg-bg/50'
                   }`}
                 >
-                  {/* Row: Icon + Label + Tooltip + Toggle */}
+                  {/* Row: Icon + Label + Tooltip + Toggle — compact */}
                   <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-1.5">
-                      <span className={isOn ? 'text-primary-soft' : 'text-ink-muted'}>
+                    <div className="flex items-center gap-1">
+                      <span className={isOn ? 'text-primary-soft' : 'text-ink-muted/70'}>
                         {slider.icon}
                       </span>
                       <span
-                        className={`text-[11px] font-bold ${
+                        className={`text-[11px] font-semibold leading-tight ${
                           isOn ? 'text-ink' : 'text-ink-muted'
                         }`}
                       >
@@ -268,9 +268,9 @@ export const ProcessingSettingsPanel: React.FC<ProcessingSettingsPanelProps> = (
                       />
                     </div>
 
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-1.5">
                       {isOn && (
-                        <span className="rounded-md bg-primary/20 px-2 py-0.5 text-[11px] font-bold text-primary-soft border border-primary/30 tabular-nums">
+                        <span className="rounded-md bg-primary/15 px-1.5 py-0.5 text-[10px] font-bold text-primary-soft border border-primary/20 tabular-nums">
                           {value}{slider.unit}
                         </span>
                       )}
@@ -295,12 +295,12 @@ export const ProcessingSettingsPanel: React.FC<ProcessingSettingsPanelProps> = (
                     />
                   </div>
 
-                  {/* OFF hint */}
+                  {/* OFF hint — compact */}
                   {!isOn && (
-                    <p className="text-xs text-ink-muted leading-tight">
+                    <p className="text-[11px] text-ink-muted/70 leading-tight">
                       {slider.toggleKey === 'strokeDilation'
-                        ? 'OFF — Raw PDF preserved. No morphology applied.'
-                        : 'OFF — Using preset default value.'}
+                        ? 'OFF — Raw PDF as is'
+                        : 'OFF — preset default'}
                     </p>
                   )}
                 </div>
@@ -308,24 +308,24 @@ export const ProcessingSettingsPanel: React.FC<ProcessingSettingsPanelProps> = (
             })}
           </div>
 
-          {/* -- Auto white-box heal (standalone switch, no slider) -- */}
+          {/* -- Auto white-box heal — compact */}
           <div
-            className={`flex items-center justify-between rounded-xl border p-3 transition-colors duration-200 ${
+            className={`flex items-center justify-between rounded-xl border px-2.5 py-2 transition-colors duration-150 ${
               toggles.autoWhiteBoxFix
-                ? 'border-accent/40 bg-accent/10'
-                : 'border-surface-2 bg-bg/60'
+                ? 'border-accent/30 bg-accent/8'
+                : 'border-surface-2 bg-bg/50'
             }`}
           >
-            <div className="flex items-center gap-1.5">
-              <span className={toggles.autoWhiteBoxFix ? 'text-accent-soft' : 'text-ink-muted'}>
+            <div className="flex items-center gap-1">
+              <span className={toggles.autoWhiteBoxFix ? 'text-accent-soft' : 'text-ink-muted/70'}>
                 <Wand2 className="h-3.5 w-3.5" />
               </span>
-              <span className={`text-[11px] font-bold ${toggles.autoWhiteBoxFix ? 'text-ink' : 'text-ink-muted'}`}>
+              <span className={`text-[11px] font-semibold ${toggles.autoWhiteBoxFix ? 'text-ink' : 'text-ink-muted'}`}>
                 Auto-fix white boxes
               </span>
               <InfoTooltip
                 title="Auto-fix white boxes"
-                content="Dark pages with big white notes or question boxes: the box is kept exactly as the original scan instead of turning into a black block. Turn off if you prefer full whitening everywhere."
+                content="Big white notes on dark pages stay as original — not black. Turn off for full whitening."
                 position="top"
               />
             </div>
@@ -336,42 +336,41 @@ export const ProcessingSettingsPanel: React.FC<ProcessingSettingsPanelProps> = (
             />
           </div>
 
-          {/* -- Preview note -- */}
-          <p className="text-center text-[9px] text-ink-muted italic">
-            Preview updates only the selected page.
+          <p className="text-center text-[10px] text-ink-muted/70 italic leading-tight">
+            Preview updates only selected page
           </p>
 
-          {/* -- Action Buttons -- */}
-          <div className="flex items-center gap-2 pt-1">
+          {/* -- Action Buttons — compact */}
+          <div className="flex items-center gap-2">
             <button
               type="button"
               onClick={handleReset}
-              className="flex h-10 items-center gap-1.5 rounded-xl border border-elevated bg-surface-2 px-3.5 text-[11px] font-bold text-ink-muted hover:bg-elevated hover:text-ink transition-colors"
+              className="flex h-8 items-center gap-1 rounded-lg border border-elevated bg-surface-2 px-2.5 text-[11px] font-semibold text-ink-muted hover:bg-elevated hover:text-ink transition-colors"
             >
-              <RotateCcw className="h-3.5 w-3.5" />
-              <span>Reset Defaults</span>
+              <RotateCcw className="h-3 w-3" />
+              <span>Reset</span>
             </button>
 
             <button
               type="button"
               onClick={handleReprocessAll}
               disabled={isProcessing || isPreviewProcessing}
-              className={`flex h-10 flex-1 items-center justify-center gap-2 rounded-xl px-4 text-xs font-bold transition-all ${
+              className={`flex h-8 flex-1 items-center justify-center gap-1.5 rounded-lg px-3 text-[11px] font-bold transition-all ${
                 !isProcessing && !isPreviewProcessing
-                  ? 'bg-primary-strong text-white hover:bg-primary shadow-lg shadow-primary-faint/30 active:scale-[0.98]'
+                  ? 'bg-primary-strong text-white hover:bg-primary shadow-md shadow-primary-faint/20 active:scale-[0.98]'
                   : 'bg-surface-2 text-ink-muted cursor-not-allowed border border-elevated'
               }`}
             >
               {isProcessing ? (
                 <>
-                  <span className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-white/30 border-t-white" />
+                  <span className="h-3 w-3 animate-spin rounded-full border-2 border-white/30 border-t-white" />
                   <span>Re-processing...</span>
                 </>
               ) : (
                 <>
-                  <RefreshCw className={`h-3.5 w-3.5 ${isPreviewProcessing ? 'animate-spin' : ''}`} />
+                  <RefreshCw className={`h-3 w-3 ${isPreviewProcessing ? 'animate-spin' : ''}`} />
                   <span>
-                    {isPreviewProcessing ? 'Preview...' : 'Re-process All Pages'}
+                    {isPreviewProcessing ? 'Preview...' : 'Re-process All'}
                   </span>
                 </>
               )}
@@ -379,8 +378,8 @@ export const ProcessingSettingsPanel: React.FC<ProcessingSettingsPanelProps> = (
           </div>
 
           {!isDirty && !anyToggleOn && (
-            <p className="text-center text-[9px] text-ink-muted">
-              Enable a toggle above to override preset defaults, then tap &ldquo;Re-process All&rdquo; to apply to every page.
+            <p className="text-center text-[10px] text-ink-muted/60 leading-tight">
+              Toggle on to override preset, then Re-process All
             </p>
           )}
         </div>

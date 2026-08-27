@@ -17,6 +17,7 @@ interface PageGridProps {
   onToggleKeepOriginalPage: (index: number) => void;
   manualWhiteBoxRegions: Record<number, WhiteBoxRegion[]>;
   onEditPage: (index: number) => void;
+  mergedPdfBytes?: Uint8Array | null;
 }
 
 // Lazy loaded & RAM-virtualized page item card
@@ -31,9 +32,11 @@ const LazyPageCard: React.FC<{
   onToggleExcludePage: (index: number) => void;
   onToggleKeepOriginalPage: (index: number) => void;
   onEditPage: (index: number) => void;
-}> = ({ page, idx, isSelected, isExcluded, isKeptOriginal, manualCount, onSelectPage, onToggleExcludePage, onToggleKeepOriginalPage, onEditPage }) => {
+  mergedPdfBytes?: Uint8Array | null;
+}> = ({ page, idx, isSelected, isExcluded, isKeptOriginal, manualCount, onSelectPage, onToggleExcludePage, onToggleKeepOriginalPage, onEditPage, mergedPdfBytes }) => {
   const [isVisible, setIsVisible] = useState(false);
   const cardRef = useRef<HTMLDivElement>(null);
+  const [originalThumb, setOriginalThumb] = useState<string | null>(null);
 
   useEffect(() => {
     const observer = new IntersectionObserver(
@@ -48,68 +51,100 @@ const LazyPageCard: React.FC<{
     return () => observer.disconnect();
   }, []);
 
-  const inkSaved = Math.max(0, Math.round(page.inkCoverageBeforePct - page.inkCoverageAfterPct));
+  // When kept as original, lazily generate original thumbnail for preview
+  useEffect(() => {
+    if (!isKeptOriginal || !mergedPdfBytes || !isVisible) return;
+    if (originalThumb) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const { PdfExporter } = await import('@/lib/optimizer/pdfExporter');
+        const orig = await PdfExporter.loadOriginalImageData(page, mergedPdfBytes, page.width);
+        // Downscale to same thumbnail size as whitened (1/5)
+        const tw = Math.max(1, Math.round(orig.width / 5));
+        const th = Math.max(1, Math.round(orig.height / 5));
+        const srcCanvas = document.createElement('canvas');
+        srcCanvas.width = orig.width;
+        srcCanvas.height = orig.height;
+        srcCanvas.getContext('2d')!.putImageData(orig, 0, 0);
+        const thumbCanvas = document.createElement('canvas');
+        thumbCanvas.width = tw;
+        thumbCanvas.height = th;
+        thumbCanvas.getContext('2d')!.drawImage(srcCanvas, 0, 0, tw, th);
+        const blob = await new Promise<Blob>((res) => thumbCanvas.toBlob((b) => res(b || new Blob()), 'image/jpeg', 0.6));
+        if (cancelled) return;
+        const url = URL.createObjectURL(blob);
+        setOriginalThumb(url);
+      } catch {}
+    })();
+    return () => { cancelled = true; };
+  }, [isKeptOriginal, isVisible, mergedPdfBytes, page, originalThumb]);
+
+  useEffect(() => {
+    return () => {
+      if (originalThumb) URL.revokeObjectURL(originalThumb);
+    };
+  }, [originalThumb]);
 
   return (
     <div
       ref={cardRef}
       className={`group relative flex flex-col rounded-xl border transition-all overflow-hidden ${
         isExcluded
-          ? 'border-surface-2 bg-surface/40 opacity-40'
+          ? 'border-surface-2 bg-surface/40 opacity-30'
           : isSelected
-          ? 'border-primary bg-primary-faint/60 ring-2 ring-primary shadow-md'
-          : 'border-surface-2 bg-surface hover:border-elevated hover:shadow-md'
+          ? 'border-primary/50 bg-primary-faint/40 ring-1 ring-primary/30 shadow-sm'
+          : 'border-surface-2 bg-surface hover:border-elevated/80 hover:shadow-sm'
       }`}
     >
-      {/* Card Header: keep-original (left) · Page N · exclude (right) */}
-      <div className="flex items-center justify-between px-1 py-2 bg-surface-2/80 border-b border-elevated/60 text-xs">
-        {/* Keep-original tick (LEFT) — pinned pages print their untouched scan */}
+      {/* Card Header — compact premium */}
+      <div className="flex items-center justify-between gap-1 px-2 py-1.5 bg-surface-2/60 border-b border-elevated/40">
+        {/* Keep-original — left, subtle */}
         <button
           type="button"
           onClick={() => onToggleKeepOriginalPage(idx)}
           aria-pressed={isKeptOriginal}
           aria-label={isKeptOriginal ? `Use whitened page ${idx + 1}` : `Keep page ${idx + 1} original`}
-          className={`flex h-11 w-11 items-center justify-center rounded-md transition-transform active:scale-95 ${
+          className={`flex h-8 w-8 items-center justify-center rounded-lg transition-all active:scale-95 ${
             isKeptOriginal
-              ? 'text-accent-soft bg-accent/15 hover:bg-accent/25'
-              : 'text-ink-faint hover:bg-elevated/60'
+              ? 'text-accent-soft bg-accent/12 ring-1 ring-accent/20'
+              : 'text-ink-faint/70 hover:text-ink-muted hover:bg-elevated/50'
           }`}
-          title={isKeptOriginal ? 'Keeping original — tap to whiten' : 'Black/white box here? Keep the original scan'}
+          title={isKeptOriginal ? 'Showing original — tap for whitened' : 'Tap to keep original scan (for sticky notes)'}
         >
-          <ImageIcon className="h-5 w-5" />
+          <ImageIcon className="h-4 w-4" />
         </button>
 
-        <span className="font-bold text-ink truncate px-0.5">Page {idx + 1}</span>
+        <span className="text-[11px] font-semibold tracking-wide text-ink/80 truncate">P{idx + 1}</span>
 
-        <div className="flex items-center gap-0.5">
+        <div className="flex items-center gap-1">
           <button
             type="button"
             onClick={() => onEditPage(page.pageIndex)}
             aria-label={`Edit regions for page ${page.pageIndex + 1}`}
-            className="flex h-11 w-11 items-center justify-center rounded-md text-ink-muted hover:bg-elevated/60 hover:text-ink active:scale-95 transition-transform"
+            className="flex h-8 w-8 items-center justify-center rounded-lg text-ink-muted/70 hover:text-ink hover:bg-elevated/50 active:scale-95 transition-colors"
             title="Edit white-box regions"
           >
-            <Pencil className="h-4 w-4" />
+            <Pencil className="h-3.5 w-3.5" />
           </button>
-          {/* Exclude Checkbox with enlarged touch area */}
           <button
             type="button"
             onClick={() => onToggleExcludePage(idx)}
             aria-pressed={isExcluded}
             aria-label={isExcluded ? `Include page ${idx + 1}` : `Exclude page ${idx + 1}`}
-            className="flex h-11 w-11 items-center justify-center rounded-md text-primary-soft hover:bg-elevated/60 active:scale-95 transition-transform"
+            className="flex h-8 w-8 items-center justify-center rounded-lg active:scale-95 transition-colors text-primary-soft/80 hover:bg-elevated/50"
             title={isExcluded ? 'Include page' : 'Exclude page'}
           >
             {isExcluded ? (
-              <Square className="h-5 w-5 text-ink-muted" />
+              <Square className="h-4 w-4 text-ink-muted/60" />
             ) : (
-              <CheckSquare className="h-5 w-5 text-primary-soft fill-primary/20" />
+              <CheckSquare className="h-4 w-4 text-primary-soft fill-primary/15" />
             )}
           </button>
         </div>
       </div>
 
-      {/* Thumbnail Image with IntersectionObserver lazy loading */}
+      {/* Thumbnail — premium inset */}
       <div
         role="button"
         tabIndex={0}
@@ -122,58 +157,55 @@ const LazyPageCard: React.FC<{
             onSelectPage(idx);
           }
         }}
-        className="relative h-32 sm:h-36 w-full cursor-pointer overflow-hidden bg-bg flex items-center justify-center p-1.5"
+        className="relative h-28 sm:h-32 w-full cursor-pointer overflow-hidden bg-bg flex items-center justify-center p-2"
       >
         {isVisible ? (
           /* eslint-disable-next-line @next/next/no-img-element */
           <img
-            src={page.thumbnailDataUrl}
+            src={isKeptOriginal && originalThumb ? originalThumb : page.thumbnailDataUrl}
             alt={`Slide ${idx + 1}`}
-            className="max-h-full max-w-full object-contain shadow-sm"
+            className="max-h-full max-w-full object-contain rounded-sm shadow-sm"
           />
         ) : (
-          <div className="h-full w-full bg-surface-2/60 animate-pulse rounded-md" />
+          <div className="h-full w-full bg-surface-2/50 animate-pulse rounded-md" />
         )}
 
-        {/* Hover / Tap overlay button */}
-        <div aria-hidden="true" className="pointer-events-none absolute inset-0 bg-bg/70 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-1 text-ink backdrop-blur-2xs">
-          <Eye className="h-4 w-4 text-primary-soft" />
-          <span className="text-[11px] font-bold">Inspect</span>
+        {/* Hover overlay — subtle */}
+        <div aria-hidden="true" className="pointer-events-none absolute inset-0 bg-bg/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-1 text-ink backdrop-blur-[1px]">
+          <Eye className="h-3.5 w-3.5 text-primary-soft" />
+          <span className="text-[10px] font-semibold tracking-wide">View</span>
         </div>
+        {isKeptOriginal && (
+          <span className="pointer-events-none absolute left-1.5 top-1.5 rounded-full bg-accent/90 px-1.5 py-0.5 text-[9px] font-bold text-white shadow-sm">Original</span>
+        )}
       </div>
 
-      {/* Card Footer Badges */}
-      <div className="flex items-center justify-between gap-1 p-2 text-2xs bg-surface border-t border-surface-2">
-        <span className="truncate rounded-sm bg-surface-2 px-1.5 py-0.5 font-medium text-ink-muted max-w-[80px]">
-          {page.profile.classification.replace('_', ' ')}
-        </span>
-        {isKeptOriginal ? (
-          <span className="font-bold text-accent-soft bg-accent/10 border border-accent/25 px-1.5 py-0.5 rounded-sm">
-            Original
-          </span>
-        ) : (
-          <span className="flex items-center gap-1">
-            {(page.whiteBoxRegions?.length ?? 0) > 0 && (
-              <span
-                className="font-bold text-accent-soft bg-accent/10 border border-accent/25 px-1.5 py-0.5 rounded-sm"
-                title="White boxes auto-kept from the original scan"
-              >
-                {page.whiteBoxRegions!.length} fixed
-              </span>
-            )}
-            {manualCount > 0 && (
-              <span
-                className="font-bold text-primary-soft bg-primary/10 border border-primary/25 px-1.5 py-0.5 rounded-sm"
-                title="Manually marked regions"
-              >
-                +{manualCount} edit
-              </span>
-            )}
-            <span className="font-bold text-success bg-success-strong/10 border border-success-strong/20 px-1.5 py-0.5 rounded-sm">
-              -{inkSaved}% Ink
+      {/* Card Footer — minimal */}
+      <div className="flex items-center justify-between px-2 py-1.5 bg-surface border-t border-surface-2/60 min-h-[28px]">
+        <span className="text-[11px] font-medium text-ink-muted/60 truncate">P{idx + 1}</span>
+        <span className="flex items-center gap-1">
+          {(page.whiteBoxRegions?.length ?? 0) > 0 && (
+            <span
+              className="rounded-full bg-accent/8 px-1.5 py-0.5 text-[10px] font-semibold text-accent-soft border border-accent/15"
+              title="Auto-kept white boxes"
+            >
+              {page.whiteBoxRegions!.length} auto
             </span>
-          </span>
-        )}
+          )}
+          {manualCount > 0 && (
+            <span
+              className="rounded-full bg-primary/8 px-1.5 py-0.5 text-[10px] font-semibold text-primary-soft border border-primary/15"
+              title="Manual edits"
+            >
+              +{manualCount}
+            </span>
+          )}
+          {isKeptOriginal && (
+            <span className="rounded-full bg-accent/10 px-1.5 py-0.5 text-[10px] font-semibold text-accent-soft border border-accent/20">
+              Original
+            </span>
+          )}
+        </span>
       </div>
     </div>
   );
@@ -190,6 +222,7 @@ export const PageGrid: React.FC<PageGridProps> = ({
   onToggleKeepOriginalPage,
   manualWhiteBoxRegions,
   onEditPage,
+  mergedPdfBytes,
 }) => {
   const activeCount = pages.length - excludedPages.size;
   const keptCount = keepOriginalPages.size;
@@ -256,6 +289,7 @@ export const PageGrid: React.FC<PageGridProps> = ({
             onToggleExcludePage={onToggleExcludePage}
             onToggleKeepOriginalPage={onToggleKeepOriginalPage}
             onEditPage={onEditPage}
+            mergedPdfBytes={mergedPdfBytes}
           />
         ))}
       </div>

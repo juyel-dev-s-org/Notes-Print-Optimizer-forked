@@ -270,6 +270,7 @@ export const WorkflowView: React.FC<WorkflowUIProps> = ({ state, actions, handle
                 onToggleKeepOriginalPage={onToggleKeepOriginalPage}
                 manualWhiteBoxRegions={manualWhiteBoxRegions}
                 onEditPage={handleEditPage}
+                mergedPdfBytes={mergedPdfBytes}
               />
               {editingPage && (
                 <WhiteBoxEditor
