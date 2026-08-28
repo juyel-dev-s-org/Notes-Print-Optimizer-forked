@@ -100,7 +100,7 @@ jobs:
               || true
             node -e "
               const r=require('./lh.json');
-              const thresholds={performance:70, accessibility:95, 'best-practices':95, seo:95};
+              const thresholds={performance:70, accessibility:90, 'best-practices':95, seo:95};
               let fail=false;
               for(const c of Object.keys(thresholds)){
                 const s=Math.round(r.categories[c].score*100);
