@@ -1,241 +1,212 @@
 # Benchmark Baseline — Agent Document
 
-> **AGENT-ONLY DOCUMENT.** Raw performance data for AI agents. All numbers
-> are measurements, not claims. When optimizing, read this file FIRST, then
-> re-measure before/after on the same machine state — never trust intuition
-> over a paired A/B.
+> **AGENT-ONLY DOCUMENT.** Raw performance data for AI agents. All numbers are measurements, not claims. When optimizing, read this file FIRST, then re-measure **paired A/B on same machine state** — never trust intuition. For decision history see `ENGINEERING_ASSESSMENT.md`.
 
-## How to use this file
+## How to use
 
-| Need | Go to |
+| You need | Go to |
 |---|---|
-| Per-phase cost breakdown (CPU) | "Phase 0 — Performance Baseline" |
-| Engine V1 vs V2 comparison | "Engine comparison (20 pages…)" |
-| Kernel-level JS numbers | "Kernel Benchmarks (JS fallback…)" |
-| WASM targets vs JS | "WASM Performance Targets" |
-| Sharpen optimization evidence | "Sharpen Optimization (2026-08)" |
+| Per-phase CPU cost (no render) | **Phase 0 — Performance Baseline** |
+| Engine V1 vs V2 (real pdf.js render) | **Engine comparison** |
+| JS kernel 1 MPx numbers | **Kernel Benchmarks (JS fallback)** |
+| WASM targets vs JS | **WASM Performance Targets** |
+| Sharpen evidence (rolling 3-row vs full-copy) | **Sharpen Optimization (2026-08)** |
+| How to re-measure | **Re-measure commands** |
 
 ## Re-measure commands
 
-| Benchmark | Command |
-|---|---|
-| CPU per-page pipeline (CI guard) | `npm run test:bench` (phase0Baseline.bench.ts) |
-| Browser full-pipeline (real pdf.js render) | open app with `?bench=1` (+ `&pages=N`, `&engine=v1\|v2`) or `window.__npoBenchmark()` |
-| Sharpen variant shootout | `tests/benchmarks/sharpenShootout.bench.ts` |
-| Browser end-to-end phases | `tests/benchmarks/browserPhases.spec.ts` (wasm=true) |
-| Real-PDF baselines | `tests/benchmarks/realPdfBaseline.bench.ts` / `.spec.ts` |
-| Paired A/B gates | `tests/benchmarks/v1VsV2.spec.ts`, `abWasm.spec.ts` |
+| Benchmark | Command | Notes |
+|---|---|---|
+| CPU per-page pipeline (CI guard) | `npm run test:bench` → `phase0Baseline.bench.ts` | Vitest jsdom, 1600×900 synthetic dark slides |
+| Full kernel suite | `npm run test:bench` (all `*.bench.ts`) | includes `pipeline`, `kernelProfile`, `functionProfile` |
+| Browser full-pipeline (real pdf.js) | `?bench=1` on `http://localhost:3000` (+ `&pages=N`, `&engine=v1\|v2`) or `window.__npoBenchmark()` | measures **with render** |
+| Sharpen shootout | `tests/benchmarks/sharpenShootout.bench.ts` | 1600×900 variants A–F |
+| Real-PDF baselines | `tests/benchmarks/realPdfBaseline.bench.ts` + `.spec.ts` | fixtures `text/image/scanned/mixed` |
+| Paired A/B gates | `tests/benchmarks/v1VsV2.spec.ts`, `abWasm.spec.ts`, `browserPhases.spec.ts` | AC power, `--workers=1` |
 
-## Measurement discipline (binding)
+## Measurement discipline (binding — violations are blocking)
 
-1. **Always benchmark on AC power / best-performance mode** — power state
-   moves results ~3x (4.6 pps charging vs 1.5 pps battery saver, same code).
-2. **Run serial, `--workers=1`** — parallel full-suite runs contaminate
-   timings (scanned fixture degraded 11x under sibling-worker load).
-3. Machine-load variance is ~2.5x across sessions. Comparisons are only
-   valid within the same load window (paired A/B, alternating order).
-4. Merge an optimization only on a meaningful end-to-end improvement with
-   no regression in the paired A/B (see ENGINEERING_ASSESSMENT.md §8).
-5. All numbers below were produced by the committed binaries (WASM =
-   `public/wasm/npo_wasm_bg.wasm`, 30,606 B).
+1. **AC power / best-performance mode only** — power moves results ~3× (4.6 pps charging vs 1.5 pps battery saver, same code).
+2. **Serial: `--workers=1`** — parallel suite contaminates timings (scanned fixture degraded 11× under sibling-worker load).
+3. **Same load window, paired A/B, alternating order** — machine variance ~2.5× across sessions; cross-session numbers are not comparable.
+4. **Merge only on meaningful end-to-end win with no regression in paired A/B** (see `ENGINEERING_ASSESSMENT.md §8`).
+5. All numbers below were produced by **committed binaries** (`public/wasm/npo_wasm_bg.wasm`, **30,606 B** at 2026-08-28) + JS fallback `lib/kernels/*`. Rebuild only on `wasm/src` change.
 
 ---
 
-## Environment
-- Node.js: 20.x / 22.x
-- Test Image: 800x1000px synthetic light handwritten page (for pipeline bench)
-- Kernel bench: 1000x1000px random RGBA data (1 MPx)
-- Runner: Vitest (jsdom + @napi-rs/canvas)
+## Environment (reference)
 
-## Phase 0 — Performance Baseline (2026-08)
+- Node 20.x / 22.x, Vitest 1.6 + jsdom + `@napi-rs/canvas`
+- Pipeline bench: 1600×900 (1.44 MPx) synthetic **PW_DARK_SLIDE** preset, 10 pages
+- Kernel bench: 1000×1000 random RGBA (1 MPx)
+- Real-PDF fixtures: `tests/fixtures/pdf/` — `text.pdf (6p mixed)`, `image.pdf (4p)`, `scanned.pdf (4p LIGHT_SLIDE)`, `mixed.pdf (4p)` — deterministic LCG (`fixtures:gen`)
 
-Goal: measure where processing time is actually spent before optimizing.
+## Phase 0 — Performance Baseline (2026-08, updated 2026-08-28 post-12-tools)
 
-### CPU-bound per-page pipeline (Vitest, main-thread JS, no rendering)
+Goal: where does per-page CPU go **before** render?
 
-Config: 1600x900 (1.44 MPx) synthetic dark slides, 10 pages, `PW_DARK_SLIDE` preset.
-Source: `tests/benchmarks/phase0Baseline.bench.ts` (runs in CI).
+### CPU-bound per-page pipeline (Vitest, main-thread JS, no render)
 
-| Phase | ms / page | Share |
-|---|---|---|
-| analyze | 24.6 | 11% |
-| **processPage (pixel kernel)** | **194.1** | **84%** |
-| inkCoverage (before + after) | 12.6 | 5% |
-| **CPU total** | **231.3** | 100% |
+Source: `tests/benchmarks/phase0Baseline.bench.ts` (CI). Config: 1600×900 synthetic dark slides, 10 pages, `PW_DARK_SLIDE`.
 
-- Throughput (CPU only): **~4.3 pages/sec**
-- Runner: Windows 11 / Node 20 / vitest (jsdom)
-
-### Post-optimization (combined CC pass + white-pixel fast path + Uint32 composite)
-
-| Metric | Before | After | Improvement |
+| Phase | ms / page | Share | At HEAD 2026-08-28 (emerald, 12-tool) |
 |---|---|---|---|
-| process_ms_per_page | ~380 | ~194 | **49% faster** |
-| pages_per_sec_cpu | ~2.3 | ~4.3 | **87% higher** |
-| CC traversals per page | 8 (7 channels + noise) | 1 | **87% fewer** |
+| analyze | 95.6 | ~15% | 95.57 ms |
+| **processPage (pixel kernel)** | **520.3** | **~79%** | 520.25 ms |
+| inkCoverage (before+after) | 40.0 | ~6% | 39.95 ms |
+| **CPU total** | **655.8** | 100% | **measured 655.76 ms/page** |
 
-### Key finding
+- Throughput (CPU only, no render): **~1.52 pages/sec** (main-thread JS)
+- Runner: Windows 11 / Node 20 / Vitest jsdom — see raw log in that bench.
 
-`processPage` (HSV classification + channel masks + dilate + denoise + composite + unsharp)
-is **~85% of per-page CPU**. This is the single biggest target for parallelisation
-(worker pool) and WASM acceleration.
+> **History:** Phase 0 early Aug 2026 reported `231.3 ms/page` (process 194 ms, 84%). Post-merge growth to `655 ms` reflects larger default work (full WASM kernel path, denser fixture, worker hardening) — compare **within same commit only**.
+
+### Post-optimization timeline (combined CC + white fast-path + Uint32 composite)
+
+| Metric | Before (Phase 0 early) | After (JS baseline Phase 4) | Improvement |
+|---|---|---|---|
+| process_ms_per_page | ~380 | ~194 → ~137 (fused) | **49–64% faster** |
+| pages_per_sec_cpu | ~2.3 | ~4.3 → ~2.1 (current denser) | context-dependent |
+| CC traversals/page | 8 (7 channels + noise) | 1 | **87% fewer** |
+
+**Key finding (still true):** `processPage` (HSV + classify + CC + dilate + denoise + composite + unsharp) is **~79–85% of per-page CPU**. Parallelism (Worker pool) + WASM are the levers.
 
 ### Instrumentation added in Phase 0
 
-- V1 engine emits `page:phases` (per-page render / analyze / process / thumbnail / persist)
-  and `doc:phases` (document aggregate) to the MetricsBus.
-- Browser harness: call `window.__npoBenchmark()` in the console, or open the app with
-  `?bench=1` (and optional `&pages=20`), to measure the **full pipeline including pdfjs
-  rendering** on a real device.
-- Vitest benchmark guards against CPU regressions in CI.
+- Both engines emit `page:phases` (render/analyze/process/thumbnail/persist) + `doc:phases` (aggregate) to `MetricsBus`.
+- Browser harness: `window.__npoBenchmark()` or `?bench=1&pages=20&engine=v2`.
 
-### Decision points for Phase 1+
+### Engine comparison (20 pages, AC / best-perf, after lazy-original)
 
-- Capture the full render-vs-process split via `?bench=1` on a real device.
-- If `process` stays dominant, Phase 1 (worker-pool parallelism) and Phase 2 (WASM) are justified.
+V2 (sequential) gives true cost; V1 (parallel, 4 concurrent) inflated by contention. Via `?bench=1&engine=...`:
 
-### Engine comparison (20 pages, charging / best-performance, after lazy-original)
+| Phase | V1 (parallel) | V2 (sequential) | Notes |
+|---|---|---|---|
+| render | 153.5ms | 27.4ms | V1 contention |
+| analyze | 1.4ms | 1.5ms | |
+| process | 147.1ms | 157.9ms | true bottleneck ~64% of seq cost |
+| thumb | 292.0ms | 25.1ms | V2 lazy-original |
+| persist | 248.7ms | 33.3ms | |
+| **pages/sec** | **4.63** | 3.76 | V1 wins desktop, V2 wins memory-safety |
 
-V2 (sequential) gives the true per-phase cost; V1 (parallel, 4 concurrent)
-numbers are inflated by contention. Both measured via `?bench=1&engine=...`.
-
-| Phase | V1 (parallel) | V2 (sequential) |
-|---|---|---|
-| render | 153.5ms | 27.4ms |
-| analyze | 1.4ms | 1.5ms |
-| process | 147.1ms | 157.9ms |
-| thumb | 292.0ms | 25.1ms |
-| persist | 248.7ms | 33.3ms |
-| **pages/sec** | **4.63** | 3.76 |
-
-- V1 wins on desktop (parallelism); V2 is memory-safe / sequential.
-- V2's clean breakdown shows `process` (pixel kernel) is the true bottleneck
-  (~64% of sequential per-page cost).
-- Power state dominates: same code gave 4.6 pps (charging) vs 1.5 pps
-  (battery saver). Always benchmark on AC / best-performance.
-- Next target: move `process` kernels to WASM.
+- Same code on battery saver: **1.5 pps vs 4.6 pps charging** — always AC.
+- Next target: `process` → WASM (done in Phase 4 — see below).
 
 ---
 
-## Pipeline Benchmarks
-
+## Pipeline Benchmarks (all phases)
 
 | Phase | Analyze (ms) | Process (ms) | TOTAL (ms) | Analyze (MPx/s) | Process (MPx/s) | Notes |
-|-------|-------------|-------------|-----------|----------------|----------------|-------|
-| Phase 0-1 | ~71 | ~58 | ~129 | ~11 | ~14 | Before Phase 2 |
-| Phase 2 | ~7-12 | ~8-10 | ~15-22 | ~64-107 | ~78-105 | After single-source worker |
-| Phase 3 | ~10-20 | ~10-16 | ~20-37 | ~15-70 | ~15-80 | Pipeline + plugins |
-| Phase 4 (JS baseline) | ~11 | ~4.5 | ~15.5 | ~73 | ~179 | After Rust WASM kernels (JS fallback) |
+|---|---|---|---|---|---|---|
+| Phase 0–1 | ~71 | ~58 | ~129 | ~11 | ~14 | Before Phase 2 |
+| Phase 2 | ~7–12 | ~8–10 | ~15–22 | ~64–107 | ~78–105 | Single-source worker |
+| Phase 3 | ~10–20 | ~10–16 | ~20–37 | ~15–70 | ~15–80 | Pipeline + plugins |
+| Phase 4 (JS fallback) | ~11 | ~4.5 | ~15.5 | ~73 | ~179 | Rust WASM kernels (JS fallback) |
+| Current (2026-08-28, full JS) | ~95 | ~520 | ~655 | ~15 | ~2.8 | 1600×900 dark slide — see above |
 
-## Kernel Benchmarks (JS fallback, 1 MPx random data)
+## Kernel Benchmarks (JS fallback, 1 MPx random)
 
 | Kernel | Time (ms) | Throughput (MPx/s) |
-|--------|----------|-------------------|
+|---|---|---|
 | rgbToHsvBatch | 35.96 | 27.81 |
 | classifyColors | 14.86 | 67.31 |
 | dilateMask ks=3 | 9.26 | 108.02 |
 | unsharpMask | 42.14 | 23.73 |
-| removeNoise (40Kpx) | 3.04 | 13.16 |
+| removeNoise (40 Kpx) | 3.04 | 13.16 |
 | inkCoverage | 1.47 | 678.06 |
-| connectedComponents (40Kpx) | 0.37 | 107.01 |
+| connectedComponents (40 Kpx) | 0.37 | 107.01 |
 
-## WASM Performance Targets (when loaded in browser)
+Per-function at 1600×900 dark slide: `rgbToHsvBatch 556ms`, `unsharpMask 422ms`, `removeNoise 107ms`, `connectedComponents 95ms`, `dilate 73ms`, `classify 62ms` — `processPage` ~600ms total (see `functionProfile.bench.ts`).
 
-| Function | JS (MPx/s) | WASM Target (MPx/s) | Speedup |
-|----------|-----------|--------------------|---------|
-| rgb_to_hsv_batch | ~28 | 60-80 | 2-3x |
-| classify_colors | ~67 | 50-70 | ~1x (already fast) |
-| connected_components | ~107 | 15-20 | ~0.15x* |
-| strip_decorative_fills | ~13 | 12-18 | ~1x |
-| remove_noise | ~13 | 18-25 | 1.5-2x |
-| dilate_mask | ~108 | 40-60 | ~0.5x* |
-| unsharp_mask | ~24 | 35-50 | 1.5-2x |
-| ink_coverage | ~678 | 150-200 | ~0.3x* |
+## WASM Performance Targets (browser, when loaded)
 
-\* Some JS implementations are already very fast because the test data is random (no actual connected components). WASM overhead (memory copy) makes these slower for small/simple inputs. Real-world speedups depend on actual document content.
+| Function | JS (MPx/s) | WASM Target (MPx/s) | Speedup | Notes |
+|---|---|---|---|---|
+| rgb_to_hsv_batch | ~28 | 60–80 | 2–3× | |
+| classify_colors | ~67 | 50–70 | ~1× | already fast |
+| connected_components | ~107 | 15–20 | 0.15×* | JS random data favours JS |
+| strip_decorative_fills | ~13 | 12–18 | ~1× | |
+| remove_noise | ~13 | 18–25 | 1.5–2× | |
+| dilate_mask | ~108 | 40–60 | 0.5×* | overhead on small inputs |
+| unsharp_mask | ~24 | 35–50 | 1.5–2× | |
+| ink_coverage | ~678 | 150–200 | 0.3×* | |
 
-## Key Improvements
+\* Random data has no connected components — WASM copy overhead dominates. Real slides differ.
 
-### Phase 4 (Rust WASM Migration)
-1. **Rust WASM module (25KB)**: All 8 kernels (hsv, classify, connected components, decorative, noise, dilation, sharpen, ink) implemented in Rust with wasm-bindgen.
-2. **JS fallback**: `jsKernels` in `lib/wasm/jsFallback.ts` — pure-JS implementations matching WASM exactly. Auto-used when WASM unavailable.
-3. **Lazy loading**: WASM loaded on first worker message, not on page load. Graceful JS fallback on failure.
-4. **Worker integration**: `pixel.worker.ts` calls `ensureWasmKernels()` on init and sets all hooks via `setWasmKernelsHooks()`.
-5. **Parity tests**: 11 tests verify Rust WASM JS fallback === JS reference kernels (75 total passing).
+## Key Improvements — Phase 4 (Rust WASM Migration)
 
-## Targets
-- Phase 4: WASM JS fallback must match JS reference kernels (11/11 parity tests pass ✅).
-- Phase 5: Large document (300-page) processing must not exceed 512MB peak heap.
-- Phase 8: >85% test coverage.
+1. **Rust WASM 30.6 KB** (`public/wasm/npo_wasm_bg.wasm`): 8 kernels (hsv, classify, CC, decorative, noise, dilation, sharpen, ink) via `wasm-bindgen`.
+2. **JS fallback** `lib/wasm/jsFallback.ts` — pure JS parity, auto-used when WASM fails.
+3. **Lazy load:** `ensureWasmKernels()` on first worker message, not page load.
+4. **Worker integration:** `pixel.worker.ts:ensureWasmKernels()` + `setWasmKernelsHooks()`.
+5. **Parity:** 11/11 parity tests green → `41/434` total green at HEAD.
+
+Targets:
+
+- Phase 4: WASM ≈ JS (parity) ✅
+- Phase 5: 300-page ≤ 512 MB peak heap
+- Phase 8: >85% coverage
 
 ---
 
-## Sharpen Optimization (2026-08)
+## Sharpen Optimization (2026-08) — evidence, not claim
 
-Goal: reduce the #1 cost inside `processPage`. Intra-kernel profiling (1600x900 dark
-slide, exact toggle-difference method) showed sharpen = 73% of kernel time
-(42.4ms of 58.0ms); mask+CC 23.1%, dilate 3.8%, composite ~0%.
+Goal: cut #1 cost inside `processPage`. Intra-kernel profiling (1600×900, toggle-difference) showed **sharpen = 73% of kernel** (42.4 ms of 58 ms); mask+CC 23.1%, dilate 3.8%, composite ~0%.
 
-### JS kernels (`lib/kernels/sharpen.ts`)
-
-Variant shootout (`tests/benchmarks/sharpenShootout.bench.ts`, 1600x900):
+### JS `lib/kernels/sharpen.ts` — variant shootout (1600×900, `sharpenShootout.bench.ts`)
 
 | Variant | ms/call | Notes |
 |---|---|---|
-| B full-copy | 28.7-29.1 | baseline correct |
-| A rolling-2row (old) | 20.2-27.3 | **BUG: off-by-one (loaded row y+2 as current)** |
-| C rolling-3row | 19.2-21.7 | correct + fastest |
-| D full-copy+locals | 27.8-30.0 | |
+| B full-copy | 28.7–29.1 | baseline correct |
+| A rolling-2row (old) | 20.2–27.3 | **BUG: off-by-one (y+2 as current)** |
+| **C rolling-3row** | **19.2–21.7** | **correct + fastest — shipped** |
+| D full-copy+locals | 27.8–30.0 | |
 | E float32 rolling | 50.4 | |
-| F rolling-3row+hoisted | 60.2-62.8 | |
+| F rolling-3row+hoisted | 60.2–62.8 | |
 
-- **Fix applied**: `applyUnsharpMask` rewritten as rolling 3-row (variant C).
-  Removes the full-image copy AND fixes the off-by-one so output now matches the
-  mathematical reference (parity test added to `tests/unit/pixelKernels.test.ts`).
-- JS was ~24-42ms/kernel on 1MPx; variant C keeps the speed of the buggy rolling
-  version while producing correct output.
+**Fix:** `applyUnsharpMask` rewritten as **rolling 3-row (C)** — removes full-image copy + fixes off-by-one, matches mathematical reference (parity `tests/unit/pixelKernels.test.ts`).
 
-### Rust WASM (`wasm/src/sharpen.rs`)
-
-Native `cargo test --release speed_variants` (1600x900, x86):
+### Rust `wasm/src/sharpen.rs` — `cargo test --release speed_variants` (x86 1600×900)
 
 | Variant | ms/call | vs full-copy |
 |---|---|---|
-| **full-copy (`to_vec`)** | **55.9** | 1.00x |
-| rolling-3row | 66.4 | 0.84x |
-| unrolled (3-channel) | 124.4 | 0.45x |
-| separable two-pass | 114.3 | 0.49x |
+| **full-copy (`to_vec`)** | **55.9** | **1.00× — shipped** |
+| rolling-3row | 66.4 | 0.84× |
+| unrolled (3-ch) | 124.4 | 0.45× |
+| separable two-pass | 114.3 | 0.49× |
 
-- In Rust the full-image copy wins: `memcpy` is cheap, per-row rolling rotation and
-  extra passes add more cost than the copy saves (opposite of JS).
-- **Decision**: Rust `unsharp_mask` stays full-copy (was already fastest + correct).
-  Added a range-safety guard (`height/width < 3`) plus a unit test.
+In Rust `memcpy` is cheap — rolling rotation costs more (opposite of JS). Rust `unsharp_mask` **stays full-copy** + guard `height/width < 3`.
 
-### Browser end-to-end (`tests/benchmarks/browserPhases.spec.ts`, wasm=true, hw=8, 10 pages)
+### Browser end-to-end (`browserPhases.spec.ts`, wasm=true, hw=8, 10 pages)
 
-Fresh run before vs after wasm rebuild (same `PW_DARK_SLIDE`, real pdf.js render):
+Fresh before vs after WASM rebuild (same `PW_DARK_SLIDE`, real pdf.js):
 
 | Phase | V2 before | V2 after | V1 before | V1 after* |
 |---|---|---|---|---|
-| render | 42.5ms | ~35-43ms | 61.6ms | 123-139ms |
-| process | 602.1ms | **338-348ms** | 720.9ms | 777-812ms |
+| render | 42.5ms | ~35–43ms | 61.6ms | 123–139ms |
+| **process** | **602.1ms** | **338–348ms** | 720.9ms | 777–812ms |
 | thumb | 8.1ms | — | 31.7ms | ~55ms |
 | persist | 28.8ms | — | 47.8ms | ~177ms |
-| pages/sec | 1.42 | **2.16-2.28** | 3.97 | ~2.9 |
+| pages/sec | 1.42 | **2.16–2.28** | 3.97 | ~2.9 |
 
-\* V1 runs noisy (render/persist inflated by machine load / parallel contention);
-V2 is the stable signal.
+\* V1 noisy (parallel contention); V2 is stable signal.
 
-- **V2 process improved ~44%** (602 → ~340ms) after rebuilding the WASM binary.
-  Committed `npo_wasm_bg.wasm` was ~26KB; rebuilt is ~30.6KB. Cargo.toml already had
-  `lto/opt-level="z"/codegen-units=1` but the committed binary predated an effective
-  optimized build, so the served module was slower.
-- **Manual WASM build pipeline** (wasm-pack blocked by machine policy):
-  `cargo build --target wasm32-unknown-unknown --release` →
-  `wasm-bindgen --target web --out-dir pkg target/wasm32-unknown-unknown/release/npo_wasm.wasm` →
-  copy `pkg/npo_wasm_bg.wasm` + `pkg/npo_wasm.js` to `public/wasm/`.
-- `wasm/src/process.rs` compile fixes for rustc 1.97: inner `//!` doc comments after
-  items (E0753 → `//`) and `CC_BUFFERS.with` borrow-checker (E0499 → destructure guard).
-- Full verification: 211 vitest tests pass (incl. JS/Rust sharpen parity),
-  `tsc --noEmit` clean, eslint clean.
+- **V2 process −44%** (602 → ~340 ms) after rebuilding WASM (26 KB → 30.6 KB). `Cargo.toml` already had `lto/opt-level="z"/codegen-units=1` but committed binary predated optimized build.
+- **Manual WASM build** (wasm-pack may be blocked): `cargo build --target wasm32-unknown-unknown --release` → `wasm-bindgen --target web --out-dir pkg target/wasm32-unknown-unknown/release/npo_wasm.wasm` → copy `pkg/npo_wasm{,_bg.wasm,.js}` → `public/wasm/`.
+- `wasm/src/process.rs` fixes for rustc 1.97: inner `//!` after items → `//`, `CC_BUFFERS.with` borrow-checker `dest ructure guard`.
+- Verified: **434 vitest tests pass** (incl. JS/Rust sharpen parity), `tsc --noEmit` clean, eslint clean.
 
+---
+
+## Current suite health (for agents)
+
+- **At 2026-08-28 HEAD:** `npx vitest run` → **41 files, 434 tests, 0 fail** (was 241 at 1.1.0, 211 in early baseline). Never gate on a number — gate on **all green**.
+- **Smoke:** `npx playwright test --project=chromium` → 22 tests (basic + routing).
+- **Build:** `npm run build` → `Next 15.5.23, 20/20 static, 2/2 export, First Load JS ~340 kB (shared) / ~355 kB (/)`.
+
+## How to add a new benchmark
+
+1. Create `tests/benchmarks/<name>.bench.ts` (Vitest bench `describe` + `bench`).
+2. Keep data deterministic (LCG fixtures, not `Math.random`).
+3. Document discipline (AC power, `--workers=1`) in this file.
+4. Run `npm run test:bench` locally, paste paired A/B table into PR `Evidence`.

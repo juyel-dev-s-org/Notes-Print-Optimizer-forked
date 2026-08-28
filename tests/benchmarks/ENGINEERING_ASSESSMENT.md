@@ -1,9 +1,8 @@
-# Engineering Assessment — Agent Document (50 Q&A, 2026-08-18)
+# Engineering Assessment — Agent Document (50 Q&A, 2026-08-18, updated 2026-08-28)
 
-> **AGENT-ONLY DOCUMENT.** Complete engineering assessment of the optimizer
-> pipeline. Every claim below is backed by a measurement; cite this file
-> when making engine/performance decisions. Do not repeat claims without
-> the evidence here.
+> **AGENT-ONLY DOCUMENT — AI-first.** Complete engineering assessment of the optimizer pipeline (original 2026-08-18, measurements remain valid). Every claim below is backed by a measurement; cite this file when making engine/performance decisions. Do not repeat claims without the evidence here.
+
+> **Update 2026-08-28 (12-tool suite):** Suite is now **434 tests / 41 files** (was `228` at 2026-08-18, `241` at 1.1.0); `public/sw.js` `v11 → v37`; brand `Indigo/Violet → Emerald/Mint/Teal/Cyan`; 12 tools via `lib/tools/registry.ts` (categories `pdf/image/security/text/utility`). Core pipeline numbers (§1 Q1–Q5) still describe the **dark-print** engine (V2) — they remain the bottleneck (~79% `processPage`). N-up vector/layout and text/utility tools are outside this assessment's scope. When evaluating new tools, use `BASELINE.md` (updated 2026-08-28) for current numbers and `lib/tools/registry.ts` contract before citing this file.
 
 ## How to use this file
 

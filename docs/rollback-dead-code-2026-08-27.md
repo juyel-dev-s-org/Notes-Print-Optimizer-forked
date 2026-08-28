@@ -1,8 +1,32 @@
 # Rollback — Dead Code Removal (2026-08-27)
 
+> **AGENT-ONLY DOCUMENT — AI-first backup.** This file stores exact code deleted on 2026-08-27 so any agent can restore it byte-for-byte via `git show`. Human note in Bengali below is the original. Do not delete this file — it is the rollback source of truth. For full architecture see `README.md §7`.
+
 এই ডকুমেন্টে 2026-08-27 তারিখে মোছা “মরা কোড” এর ব্যাকআপ রাখা হলো। ভুল করে দরকারি কিছু মুছে গেলে এখান থেকে কপি-পেস্ট করে ফেরানো যাবে।
 
 > **নীতি:** শুধু সেই কোড মোছা হয়েছে যা `rg` (ripgrep) + `tsc` + `vitest` + `build` দিয়ে নিশ্চিতভাবে কোথাও `import` / `dynamic import()` / `string` রেফারেন্স নেই। `RESERVED` প্যারামিটার, `console.warn`, `MetricsBus` — এগুলো রাখা হয়েছে।
+
+**AI quick-restore:**
+
+```bash
+git log --oneline -- docs/rollback-dead-code-2026-08-27.md
+git show <commit>:path/to/file > path/to/file
+# or revert whole commit:
+git revert <commit-hash>
+```
+
+| # | Deleted export | File | Why dead | Restore via |
+|---|---|---|---|---|
+| 1 | `normalizeRegion` | `lib/kernels/whiteBox.ts:77` | only definition, no import | paste above `denormalizeRegion` |
+| 2 | `mergedPdfBytes` prop | `components/whitebox/WhiteBoxEditor.tsx` + `WorkflowView.tsx:278` | editor now only `opt` image (saves ~10 MB) | re-add prop |
+| 3 | `WorkerType 'render'` | `lib/workers/protocol.ts:1` | no `render.worker.ts` | add `'render'` union |
+| 4 | `workerUrls` Map + `registerWorkerUrl` | `lib/workers/WorkerManager.ts:16,30` | only definition, production uses `registerWorkerFactory` | restore Map+method |
+| 5 | `CANCEL`/`GET_BUFFER_STATS`/`BUFFER_STATS` | `protocol.ts`, `pixel.worker.ts:75-86`, `pool.ts:62-64` | never `postMessage`d, dummy `0,0` | restore lines |
+| 6 | `DevMetricsPanel` | `components/shared/MetricsPanel.tsx` (81L) | `return null` in prod, no import | `git show HEAD:components/shared/MetricsPanel.tsx` |
+| 7 | `CheckpointManager` | `lib/pipeline/checkpoint/CheckpointManager.ts` (128L) + `lib/pipeline/index.ts:2` | no import, flag `pipeline.checkpoint_resume` never checked | `git show` restore |
+| 8 | `BenchmarkHarness` | `lib/optimizer/perf/benchmark.ts` | only `tests/benchmarks` imports | `git show` or move to `tests/` |
+
+**Agent note (2026-08-28):** 12-tool suite added after this date (`lib/tools/registry.ts` 12 entries, `public/sw.js v37`). New dead-code removals must append to **this file** with same structure — never delete old entries.
 
 ---
 

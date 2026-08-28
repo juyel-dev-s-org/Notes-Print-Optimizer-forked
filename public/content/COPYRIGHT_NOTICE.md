@@ -1,10 +1,10 @@
 # Copyright Notice
 
-**Notes Print Optimizer**
+**Print Optimizer — Notes Print Optimizer (12-tool suite)**
 
 Copyright (c) 2026 **Juyel Hossain**. All Rights Reserved.
 
-This software and its source code, design, and documentation are the intellectual property of Juyel Hossain and are protected under the **Juyel Source License (JSL) v1.0**.
+This software and its source code, design, documentation, and 12-tool suite (`lib/tools/registry.ts`) are the intellectual property of Juyel Hossain and are protected under the **Juyel Source License (JSL) v1.0**.
 
 ## You may
 
@@ -12,22 +12,29 @@ This software and its source code, design, and documentation are the intellectua
 
 ## You may not
 
-- Use this software commercially without prior written permission.
+- Use this software commercially without prior written permission (including SaaS offering of any of the 12 tools, bundling, or revenue-generating use).
 - Remove attribution or misrepresent authorship.
 - Claim this software as your own.
 
 ## Attribution
 
-All copies and derivative works must clearly credit the original author: **Juyel Hossain**.
+All copies and derivative works must clearly credit the original author: **Juyel Hossain** — see `LICENSE` at repository root.
 
 ## Third-party components
 
-This project makes use of open-source libraries (such as Next.js, React, PDF.js, and pdf-lib), each under their own licenses. Their respective notices are preserved in the project dependencies.
+This project uses open-source libraries, each under its own license. Notices are preserved in dependencies:
+
+- Next.js, React, TypeScript, Tailwind CSS
+- PDF.js (Mozilla), pdf-lib
+- Rust + wasm-pack + `wasm-bindgen`
+- `qrcode`, `qr-code-styling`, `html5-qrcode`, `lucide-react`, `motion`
+
+For full list see `package.json` and `wasm/Cargo.toml`.
 
 ## Contact
 
-For licensing or commercial enquiries, email [myself.juyel.dev@gmail.com](mailto:myself.juyel.dev@gmail.com).
+For licensing or commercial enquiries: [myself.juyel.dev@gmail.com](mailto:myself.juyel.dev@gmail.com) — also see **JSL License** in Legal.
 
 ---
 
-*© 2026 Juyel Hossain. All Rights Reserved.*
+*© 2026 Juyel Hossain. All Rights Reserved. Product: Print Optimizer v1.2 (sw.js v37, 12 tools, Emerald theme).*

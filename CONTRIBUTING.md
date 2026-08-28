@@ -1,43 +1,38 @@
 # Contributing — Agent Workflow
 
-> **AGENT-ONLY DOCUMENT.** Written for AI coding agents. Follow the rules
-> here verbatim when making changes to this project. Do not show this file
-> to end users.
+> **AGENT-ONLY DOCUMENT.** For AI coding agents. Follow verbatim. Do not show to end users. Human overview: `README.md §2`.
 
 ## 1. Repository roles (non-negotiable)
 
 | Repo | Role | Branch |
 |---|---|---|
-| `juyel-dev/Notes-Print-Optimizer` | **Production** (live users) | `main` (protected) |
-| `juyel-dev-s-org/Notes-Print-Optimizer-forked` | **Development / testing / preview** | `main` + feature branches |
+| `juyel-dev/Notes-Print-Optimizer` | **Production** (live users) | `main` (protected — `ci` strict, admins enforced) |
+| `juyel-dev-s-org/Notes-Print-Optimizer-forked` | **Development / preview** | `main` + feature branches |
 
 Rules:
 
-1. All development happens in the **fork** — commits, experiments, fixes.
-2. The **production repo is never modified directly**. Its `main` is
-   protected and updated ONLY via a merged PR from the fork.
-3. Every push to fork `main` auto-deploys a preview:
-   `https://juyel-dev-s-org.github.io/Notes-Print-Optimizer-forked/`
-4. A `develop` branch exists in production for historical reasons — do NOT
-   use it.
+1. All work in **fork** — commits, experiments, fixes.
+2. **Production `main` never direct-pushed.** Only via merged PR `fork:main → prod:main`.
+3. Every push to fork `main` auto-deploys Vercel preview (see PR comment). Production URL: `https://print-optimizer.vercel.app/` (Vercel git integration).
+4. `develop` branch exists historically — **do NOT use**.
+5. Base path is opt-in (`NEXT_PUBLIC_BASE_PATH`) — never inferred.
 
 ## 2. Day-to-day flow (agent checklist)
 
-1. Work in the fork. For non-trivial work use a feature branch:
-   `git checkout -b feature/<name>`
-2. Run the verification gate before committing:
-   - `npx tsc --noEmit`
-   - `npm run lint`
-   - `npm run test` (241/241 at HEAD)
-   - `npm run build`
-3. Commit with a conventional message (section 5), push to fork `main`.
-4. Verify the preview URL on desktop and mobile (0 console errors, no
-   horizontal overflow).
-5. Create the PR:
-   `gh pr create -R juyel-dev/Notes-Print-Optimizer --base main --head juyel-dev-s-org:main`
-6. Wait for checks (ci / lighthouse / budget) → merge:
-   `gh pr merge -R juyel-dev/Notes-Print-Optimizer --merge --delete-branch=false`
-7. Confirm production deploy completes and the live site is updated.
+1. Branch in fork for non-trivial work: `git checkout -b feat/<name>` or `fix/<name>`.
+2. **Gate before commit** (see `README.md §4`):
+   ```
+   npx tsc --noEmit
+   npm run lint
+   npm run test        # ALL green — no hardcoded count (434 at 2026-08-28)
+   npm run build       # must produce out/ 20/20 static 2/2 export
+   ```
+3. Commit conventional (`feat:` `fix:` `perf:` `docs:` `chore:` `test:` `refactor:`) — one logical change per commit. Push to fork.
+4. Verify preview on desktop + mobile: 0 console errors, no horizontal overflow, font loaded (`tests/smoke` criteria).
+5. PR: `gh pr create -R juyel-dev/Notes-Print-Optimizer --base main --head juyel-dev-s-org:main` (or feature branch). Fill template in `.github/PULL_REQUEST_TEMPLATE.md`.
+6. Wait for `ci` + `lighthouse` + `budget` green (`mergeStateStatus CLEAN`) → merge:
+   `gh pr merge -R juyel-dev/Notes-Print-Optimizer --merge --delete-branch=false` (docs-only may use `--rebase`).
+7. Confirm production Vercel deploy green → verify live URLs (`/`, `/tools/<slug>/`, `/offline/`).
 
 ## 3. Local setup
 
@@ -46,73 +41,86 @@ git clone https://github.com/juyel-dev-s-org/Notes-Print-Optimizer-forked.git
 cd Notes-Print-Optimizer-forked
 npm ci
 npm run dev      # http://localhost:3000
+# serve export:
+npm run build && npx serve out -l 4180 --no-clipboard
 ```
+
+Node 20+ (`.nvmrc`), npm 10+. Rust only for `npm run build:wasm`.
 
 ## 4. Code guidelines
 
-- TypeScript strict mode is on — do not loosen it.
-- Functional React components with hooks; small focused components.
-- Tailwind CSS for styling (no inline styles).
-- Follow the existing folder structure (see README §5).
+- **TS strict** — do not loosen. No `any` without justification (see `eslint.config.mjs` warn).
+- Functional React + hooks; small focused components.
+- **Tailwind v4** only — no inline styles, no CSS modules.
+- Follow existing folder structure (`README.md §7`):
 
-Placement rules:
+| What | Where | Notes |
+|---|---|---|
+| New tool definition | `lib/tools/registry.ts` | single source — see `README.md §5` |
+| Search / category logic | `lib/tools/search.ts` + `lib/tools/registry.ts:getToolCategories` | |
+| Tool card UI | `components/tools/ToolsBox.tsx`, `ToolCard.tsx` | `labelMap` must cover all 5 categories |
+| Tool view (per tool) | `components/<tool>/` (e.g. `nup/`, `qrgen/`, `protect/`) | |
+| Image kernels | `lib/kernels/` (JS) or `wasm/src/` (Rust) | keep parity tests green |
+| Pipeline plugins | `lib/plugins/` / `lib/pipeline/` | |
+| Business logic | `lib/services/` | |
+| Workers | `lib/workers/` (`pixel.worker.ts`, `compose.worker.ts`, `pool.ts`, `protocol.ts`) | |
+| Shared UI hooks | `lib/ui/` (`useDialogFocus`) | |
+| PWA hooks | `lib/pwa/` | |
+| Menu / content | `lib/menu/` + `public/content/*.md` | human-friendly markdown |
+| SEO / site | `lib/site.ts`, `app/layout.tsx`, `app/sitemap.ts` | never hardcode domain |
 
-| What | Where |
-|---|---|
-| Pipeline plugins | `lib/plugins/` |
-| Image kernels | `lib/kernels/` (JS) or `wasm/src/` (Rust) |
-| UI components | `components/` |
-| Services (business logic) | `lib/services/` |
-| Workers | `lib/workers/` |
-| Shared UI hooks | `lib/ui/` |
-| User-facing markdown docs | `public/content/` (human-readable — keep human format) |
+**Adding a tool — mandatory checklist (atomic):**
 
-Testing layout:
+- [ ] `TOOL_REGISTRY` entry with unique `seoTitle`/`seoDescription`, alias, keywords, gradient `emerald/teal` family
+- [ ] `public/sw.js:TOOL_ROUTES` + `VERSION` bump (`v37` → `v38`…)
+- [ ] `CATEGORY_ORDER` / `ToolsBox.tsx:labelMap` if new category
+- [ ] OG card `print-optimizer/og/<slug>.png` 1200×630 in `juyel-dev/image`
+- [ ] `tests/unit/siteContract.test.ts` passes (frozen names)
+- [ ] Human docs: `public/content/ABOUT.md`, `FAQ.md`, `USER_GUIDE.md`, `WHATS_NEW.md`, root `CHANGELOG.md`
 
-| Suite | Location |
-|---|---|
-| Unit | `tests/unit/` |
-| Integration | `tests/integration/` |
-| Stress | `tests/stress/` |
-| Benchmarks | `tests/benchmarks/` |
-| E2E smoke (Playwright) | `tests/smoke/` |
-| PDF fixtures + goldens | `tests/fixtures/pdf/` |
+## 5. Testing layout
 
-All PRs must pass `npm run test` and `npm run build`.
+| Suite | Location | Command |
+|---|---|---|
+| Unit | `tests/unit/` (26 suites) | `npm run test` |
+| Integration | `tests/integration/` | |
+| Stress | `tests/stress/` | |
+| Benchmarks | `tests/benchmarks/` (`BASELINE.md`, `ENGINEERING_ASSESSMENT.md`) | `npm run test:bench` |
+| E2E smoke | `tests/smoke/` (Playwright) | `npm run test:smoke` |
+| Fixtures + goldens | `tests/fixtures/pdf/` (`pdfGoldens.json` byte-exact) | `fixtures:gen`, `PDF_UPDATE_GOLDENS=1` |
 
-## 5. Commit conventions
+All PRs must pass `npm run test` **all green** and `npm run build`.
 
-- `feat:` new feature
+## 6. Commit conventions
+
+- `feat:` new feature (tool, capability)
 - `fix:` bug fix
-- `docs:` documentation
-- `chore:` maintenance
-- `perf:` performance improvement
+- `docs:` documentation (no behavior change)
+- `chore:` maintenance, deps, CI
+- `perf:` performance (attach paired A/B numbers)
 - `test:` tests
-- `refactor:` refactoring
+- `refactor:` refactoring (no behavior change)
 
-Keep one logical change per commit. Do not mix unrelated changes.
+Keep one logical change per commit. Never mix.
 
-## 6. Hard constraints (violations are blocking)
+## 7. Hard constraints (blocking)
 
 - **Never push to production directly** — PR only.
-- **Never regenerate goldens** without intent (`PDF_UPDATE_GOLDENS=1`) and
-  justification; goldens are byte-exact acceptance criteria.
-- **Never commit secrets** (tokens, credentials, private URLs).
-- **Never rename PWA icon files** back to pre-`-v2` names — that would
-  resurrect stale-cache icon serving.
-- **Do not change engine defaults** (V2) without a paired A/B on real PDF
-  fixtures (see tests/benchmarks/ENGINEERING_ASSESSMENT.md §8).
-- **Do not introduce server-side processing** — the product is static-only.
-- **Never edit `out/`** — it is build output, regenerated by `npm run build`.
+- **Never regen goldens** without `PDF_UPDATE_GOLDENS=1` + justification; goldens are byte-exact acceptance.
+- **Never commit secrets** (tokens, private URLs).
+- **Never reuse PWA icon filenames** — `-v2` cache-busted, always generate via `scripts/apply-icon-art.mjs`.
+- **Never change engine default** (`pw-pixel-v2` sequential) without paired A/B on real fixtures (`ENGINEERING_ASSESSMENT.md §8` — V1 2.4× slower / 11× mem).
+- **Static-only invariant:** no server PDF processing (`SECURITY.md`).
+- **Never edit `out/`** — build output.
+- **Always bump `public/sw.js:VERSION`** when precache changes.
+- **Never rename `TOOL_REGISTRY.slug`** without major-version + redirect plan.
 
-## 7. Reporting issues
+## 8. Reporting issues
 
-- File issues on the production repo issue tracker (fork has issues
-  disabled).
-- Include browser, OS, device, PDF page count, expected vs actual behavior.
-- Attach sample PDFs only if small.
+- File on production tracker (`juyel-dev/Notes-Print-Optimizer` — fork has issues disabled).
+- Use `.github/ISSUE_TEMPLATE/bug_report.md` — fill `Tool` field among 12.
+- Include browser, OS, device, PDF pages, expected vs actual, console verbatim, minimal repro PDF if small.
 
-## 8. License
+## 9. License
 
-By contributing you agree that contributions are licensed under the Juyel
-Source License (JSL) v1.0.
+Contributions licensed under JSL v1.0. See `LICENSE` and `public/content/JSL_LICENSE.md`.
