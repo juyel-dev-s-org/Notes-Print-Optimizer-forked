@@ -116,17 +116,6 @@ export function process_page(rgba, width, height, invert_mode_smart, is_dark, di
 }
 
 /**
- * @param {Uint8Array} mask
- * @param {number} width
- * @param {number} height
- */
-export function remove_noise(mask, width, height) {
-    var ptr0 = passArray8ToWasm0(mask, wasm.__wbindgen_export);
-    var len0 = WASM_VECTOR_LEN;
-    wasm.remove_noise(ptr0, len0, addHeapObject(mask), width, height);
-}
-
-/**
  * @param {Uint8Array} rgba
  * @param {number} pixel_count
  * @returns {Float32Array}
@@ -145,17 +134,6 @@ export function rgb_to_hsv_batch(rgba, pixel_count) {
     } finally {
         wasm.__wbindgen_add_to_stack_pointer(16);
     }
-}
-
-/**
- * @param {Uint8Array} mask
- * @param {number} width
- * @param {number} height
- */
-export function strip_decorative_fills(mask, width, height) {
-    var ptr0 = passArray8ToWasm0(mask, wasm.__wbindgen_export);
-    var len0 = WASM_VECTOR_LEN;
-    wasm.strip_decorative_fills(ptr0, len0, addHeapObject(mask), width, height);
 }
 
 /**

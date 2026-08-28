@@ -1,8 +1,6 @@
 mod hsv;
 mod classify;
 mod connected;
-mod decorative;
-mod noise;
 mod mask_ops;
 mod sharpen;
 mod ink;
@@ -28,16 +26,6 @@ pub fn classify_fused(rgba: &[u8], pixel_count: u32) -> Vec<u8> {
 #[wasm_bindgen]
 pub fn connected_components(mask: &[u8], width: u32, height: u32) -> Vec<i32> {
     connected::connected_components(mask, width as usize, height as usize)
-}
-
-#[wasm_bindgen]
-pub fn strip_decorative_fills(mask: &mut [u8], width: u32, height: u32) {
-    decorative::strip_decorative_fills(mask, width as usize, height as usize);
-}
-
-#[wasm_bindgen]
-pub fn remove_noise(mask: &mut [u8], width: u32, height: u32) {
-    noise::remove_noise(mask, width as usize, height as usize);
 }
 
 #[wasm_bindgen]
