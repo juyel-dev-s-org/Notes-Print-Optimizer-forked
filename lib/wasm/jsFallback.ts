@@ -81,42 +81,6 @@ export const jsKernels: IWasmKernels = {
     return labels;
   },
 
-  stripDecorativeFills(mask: Uint8Array, w: number, h: number): void {
-    const tp = w * h;
-    const labels = this.connectedComponents(mask, w, h);
-    let cl = 0;
-    for (let i = 0; i < tp; i++) if (labels[i] > cl) cl = labels[i];
-    const sMinX = new Int32Array(cl + 1).fill(w);
-    const sMinY = new Int32Array(cl + 1).fill(h);
-    const sMaxX = new Int32Array(cl + 1).fill(-1);
-    const sMaxY = new Int32Array(cl + 1).fill(-1);
-    const sArea = new Int32Array(cl + 1);
-    for (let i = 0; i < tp; i++) {
-      const l = labels[i]; if (l === 0) continue;
-      const cx = i % w, cy = (i / w) | 0;
-      if (cx < sMinX[l]) sMinX[l] = cx; if (cx > sMaxX[l]) sMaxX[l] = cx;
-      if (cy < sMinY[l]) sMinY[l] = cy; if (cy > sMaxY[l]) sMaxY[l] = cy;
-      sArea[l]++;
-    }
-    const drop = new Uint8Array(cl + 1);
-    for (let lb = 1; lb <= cl; lb++) {
-      const cw = sMaxX[lb] - sMinX[lb] + 1, ch = sMaxY[lb] - sMinY[lb] + 1;
-      if (sArea[lb] >= 200 && cw / Math.max(ch, 1) > 2.2 && cw / w > 0.20 && sMinY[lb] / h < 0.15 && sArea[lb] > cw * ch * 0.3) drop[lb] = 1;
-    }
-    for (let i = 0; i < tp; i++) { if (labels[i] > 0 && drop[labels[i]] === 1) mask[i] = 0; }
-  },
-
-  removeNoise(mask: Uint8Array, w: number, h: number): void {
-    const tp = w * h;
-    const labels = this.connectedComponents(mask, w, h);
-    let cl = 0;
-    for (let i = 0; i < tp; i++) if (labels[i] > cl) cl = labels[i];
-    const sArea = new Int32Array(cl + 1);
-    for (let i = 0; i < tp; i++) { const l = labels[i]; if (l > 0) sArea[l]++; }
-    const minA = Math.max(6, (tp / 600000) | 0);
-    for (let i = 0; i < tp; i++) { const l = labels[i]; if (l > 0 && sArea[l] < minA) mask[i] = 0; }
-  },
-
   dilateMask(mask: Uint8Array, w: number, h: number, ks: number): void {
     const copy = new Uint8Array(mask);
     const off = (ks / 2) | 0;

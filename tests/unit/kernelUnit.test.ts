@@ -6,7 +6,6 @@ import { applyMaskDilation, setDilationHook } from '../../lib/kernels/maskOps';
 import { applyUnsharpMask, setUnsharpHook } from '../../lib/kernels/sharpen';
 import { detectBanners } from '../../lib/kernels/bannerDetection';
 import { calculateInkCoverage } from '../../lib/kernels/inkCoverage';
-import { stripDecorativeFills, removeNoise } from '../../lib/kernels/noise';
 import { setWasmKernelsHooks, clearWasmKernelsHooks, setWasmHooks, processPage, createImageDataFromBuffer } from '../../lib/kernels/processPage';
 import type { IWasmKernels } from '../../lib/wasm/types';
 
@@ -160,31 +159,6 @@ describe('calculateInkCoverage', () => {
     const cov = calculateInkCoverage(data);
     expect(cov).toBeGreaterThan(35);
     expect(cov).toBeLessThan(65);
-  });
-});
-
-describe('stripDecorativeFills', () => {
-  it('removes wide top banner but keeps center content', () => {
-    const w = 50, h = 50;
-    const mask = new Uint8Array(w * h);
-    for (let i = 0; i < w * h; i++) { const y = Math.floor(i / w); if (y < 5) mask[i] = 1; }
-    mask[12 * w + 25] = 1;
-    stripDecorativeFills(mask, w, h);
-    const topRemains = Array.from(mask.slice(0, 5 * w)).filter(v => v === 1).length;
-    expect(topRemains).toBe(0);
-    expect(mask[12 * w + 25]).toBe(1);
-  });
-});
-
-describe('removeNoise', () => {
-  it('removes small isolated pixels but keeps large clusters', () => {
-    const w = 50, h = 50;
-    const mask = new Uint8Array(w * h);
-    mask[w + 25] = 1;
-    for (let y = 20; y < 30; y++) for (let x = 20; x < 30; x++) mask[y * w + x] = 1;
-    removeNoise(mask, w, h);
-    expect(mask[w + 25]).toBe(0);
-    for (let y = 20; y < 30; y++) expect(mask[y * w + 20]).toBe(1);
   });
 });
 

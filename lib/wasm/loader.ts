@@ -52,12 +52,6 @@ async function loadWasm(): Promise<IWasmKernels | null> {
       connectedComponents(mask: Uint8Array, w: number, h: number) {
         return exports.connected_components(mask, w, h);
       },
-      stripDecorativeFills(mask: Uint8Array, w: number, h: number) {
-        exports.strip_decorative_fills(mask, w, h);
-      },
-      removeNoise(mask: Uint8Array, w: number, h: number) {
-        exports.remove_noise(mask, w, h);
-      },
       dilateMask(mask: Uint8Array, w: number, h: number, ks: number) {
         exports.dilate_mask(mask, w, h, ks);
       },

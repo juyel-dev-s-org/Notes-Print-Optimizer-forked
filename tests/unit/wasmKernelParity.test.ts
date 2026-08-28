@@ -99,28 +99,6 @@ describe('Rust WASM vs JS Fallback Parity', () => {
     expect(wasm).toBe(js);
   });
 
-  it('removeNoise should match jsKernels', () => {
-    const w = 20, h = 20;
-    const jsMask = randomMask(w, h);
-    const wasmMask = new Uint8Array(jsMask);
-    jsKernels.removeNoise(jsMask, w, h);
-    wasmKernels.removeNoise(wasmMask, w, h);
-    for (let y = 0; y < h; y++) {
-      expect(Array.from(wasmMask.slice(y * w, (y + 1) * w))).toEqual(
-        Array.from(jsMask.slice(y * w, (y + 1) * w))
-      );
-    }
-  });
-
-  it('stripDecorativeFills should match jsKernels', () => {
-    const w = 40, h = 40;
-    const jsMask = new Uint8Array(w * h);
-    const wasmMask = new Uint8Array(w * h);
-    for (let x = 0; x < w; x++) { jsMask[x] = 1; wasmMask[x] = 1; }
-    jsKernels.stripDecorativeFills(jsMask, w, h);
-    wasmKernels.stripDecorativeFills(wasmMask, w, h);
-    expect(Array.from(wasmMask)).toEqual(Array.from(jsMask));
-  });
 });
 
 describe('getKernels / isWasmLoaded API', () => {

@@ -15,7 +15,6 @@ const REGRESSION_THRESHOLDS: Record<string, number> = {
   classifyColors: 5,
   dilateMask: 5,
   unsharpMask: 2,
-  removeNoise: 0.5,
   inkCoverage: 10,
   connectedComponents: 5,
 };
@@ -132,16 +131,6 @@ describe('Kernel Benchmarks (JS fallback)', () => {
     benchmark.endStage('unsharpMask', PIXELS);
     benchmark.printSummary();
     checkRegression('unsharpMask', benchmark.getResults());
-  });
-
-  it('removeNoise', () => {
-    const mask = randomMask(200, 200);
-    benchmark.reset();
-    benchmark.startStage('removeNoise');
-    jsKernels.removeNoise(mask, 200, 200);
-    benchmark.endStage('removeNoise', 40000);
-    benchmark.printSummary();
-    checkRegression('removeNoise', benchmark.getResults());
   });
 
   it('inkCoverage', () => {

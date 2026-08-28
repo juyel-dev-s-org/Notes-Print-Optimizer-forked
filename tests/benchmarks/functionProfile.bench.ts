@@ -53,7 +53,6 @@ describe('Per-function kernel timing (JS fallback, 1600x900 dark slide)', () => 
     timings.push({ name: 'classifyColors (HSV -> 7 channels)', ms: avg(() => jsKernels.classifyColors(hsv, PIXELS)) });
     timings.push({ name: 'connectedComponents', ms: avg(() => jsKernels.connectedComponents(mask, PAGE_W, PAGE_H)) });
     timings.push({ name: 'dilateMask ks=3', ms: avg(() => jsKernels.dilateMask(new Uint8Array(mask), PAGE_W, PAGE_H, 3)) });
-    timings.push({ name: 'removeNoise', ms: avg(() => jsKernels.removeNoise(new Uint8Array(mask), PAGE_W, PAGE_H)) });
     timings.push({ name: 'unsharpMask', ms: avg(() => jsKernels.unsharpMask(new Uint8ClampedArray(src), PAGE_W, PAGE_H, 0.5)) });
     timings.push({ name: 'inkCoverage', ms: avg(() => jsKernels.inkCoverage(src, PIXELS, 240)) });
 
@@ -61,7 +60,7 @@ describe('Per-function kernel timing (JS fallback, 1600x900 dark slide)', () => 
     console.log('=== PER-FUNCTION KERNEL TIMING (per page, 1600x900) ===');
     for (const t of timings) console.log(`  ${t.name}: ${t.ms.toFixed(2)}ms`);
     console.log('=== END ===');
-    expect(timings.length).toBe(7);
+    expect(timings.length).toBe(6);
   });
 
   it('times processPage sub-stages by param toggling (exact, derived)', () => {
