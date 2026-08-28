@@ -107,8 +107,15 @@ export const ToolsBox: React.FC = () => {
         >
           {(['all', ...categories] as const).map((cat) => {
             const active = activeCategory === cat;
-            const label =
-              cat === 'all' ? 'All' : cat === 'pdf' ? 'PDF Tools' : cat === 'image' ? 'Image Tools' : 'Security Tools';
+            const labelMap: Record<string, string> = {
+              all: 'All',
+              pdf: 'PDF Tools',
+              image: 'Image Tools',
+              security: 'Security Tools',
+              utility: 'Utility Tools',
+              text: 'Text Tools',
+            };
+            const label = labelMap[cat as string] ?? String(cat);
             return (
               <button
                 key={cat}
