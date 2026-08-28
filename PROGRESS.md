@@ -102,3 +102,31 @@ one completes, instead of just dropping it.
 - [ ] lib/kernels/whiteBox.ts (white-box heal — most bug-prone area per git history, 8+ fix commits)
 - [ ] lib/workflow/workflowReducer.ts (central state machine)
 - [ ] lib/wasm/loader.ts + wasm/src/*.rs (JS/WASM parity)
+
+## Day 1 continued — whiteBox.ts + workflowReducer.ts: clean
+
+**`lib/kernels/whiteBox.ts`** (423L) — read fully, line by line. This is the
+most mature file in the repo (8+ historical fix commits on coordinate bugs).
+Verified: width is never altered by crop (only height, top/bottom banner
+crop) so the single `srcWidth` stride shared between src/dst in
+`compositeWhiteBoxRegions` is a valid assumption, not a latent bug. Bounds
+checks, ellipse math, region crop-shift math all check out. No new bug found
+— converged after past iterations. `isNormalizedRegion`'s value-range
+heuristic (distinguishing 0..1 normalized coords from pixel coords by range)
+is a bit fragile/implicit typing (a `unit: 'px'|'ratio'` tag would be more
+robust) but works correctly given realistic region sizes — noted as a
+low-priority maintainability smell, not a bug.
+
+**`lib/workflow/workflowReducer.ts`** (277L) — read fully. Standard, clean
+reducer. All updates immutable (proper spread/new Set), no shared mutable
+state, no bugs found.
+
+## Status: solid pass complete on the highest-risk core (engine, kernels,
+reducer). 2 real bugs found so far (#2 memcpy overhead, #3 dropped preview
+update), both logged, neither fixed yet (per incremental-strategy agreement).
+
+## Next up (unchanged)
+- [ ] lib/wasm/loader.ts + wasm/src/*.rs — JS/WASM parity risk
+- [ ] lib/workflow/hooks/* (remaining hooks not yet read)
+- [ ] components/* UI/UX + accessibility pass
+- [ ] lib/nup/*, lib/protect/*, lib/tomerge/*, lib/tosplit/* (per-tool logic)
