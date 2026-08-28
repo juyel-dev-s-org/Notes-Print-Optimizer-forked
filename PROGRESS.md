@@ -130,3 +130,47 @@ update), both logged, neither fixed yet (per incremental-strategy agreement).
 - [ ] lib/workflow/hooks/* (remaining hooks not yet read)
 - [ ] components/* UI/UX + accessibility pass
 - [ ] lib/nup/*, lib/protect/*, lib/tomerge/*, lib/tosplit/* (per-tool logic)
+
+## Day 2 — Finding #4 (dead code disguised as tested/live, JS + Rust/WASM)
+
+**Scope:** `lib/kernels/noise.ts` (JS `stripDecorativeFills`/`removeNoise`),
+`wasm/src/decorative.rs` + `wasm/src/noise.rs` (Rust equivalents, `#[wasm_bindgen]`
+exported), wired through `lib/wasm/loader.ts`, `lib/wasm/jsFallback.ts`,
+`lib/wasm/types.ts` (full `IWasmKernels` interface entries).
+
+**Full scenario:** `processPage.ts` used to call `stripDecorativeFills` +
+`removeNoise` as 7+ separate passes. It was refactored into one combined
+BFS pass (`removeDecorativeAndNoise`, the function read on Day 1) — the
+file's own comment says so explicitly: *"Single CC pass replaces 7+ separate
+stripDecorativeFills + removeNoise calls"*. But the OLD standalone functions
+(JS + their Rust/WASM twins) were never deleted. Repo-wide search confirms:
+**zero production call sites** — the only callers left are
+`tests/unit/kernelUnit.test.ts`, `tests/unit/wasmKernelParity.test.ts`,
+`tests/benchmarks/*.bench.ts`.
+
+**Why this matters more than typical dead code:** the test suite makes it
+LOOK alive and maintained (dedicated parity tests, benchmarks, "434 tests
+passing"), so a future reader (human or AI) sees green tests and assumes
+this path matters — same trap as the fabricated rollback doc (Day 1), just
+subtler: here the tests are real and passing, but exercise dead production
+code, not dead test code. Anyone touching `noise.ts` or the Rust files "to
+fix a bug" would be optimizing/debugging something that never runs for a
+real user.
+
+**Cost:** small WASM binary bloat (2 extra exported functions in a 31KB
+`.wasm`, precached by the service worker for every visitor — not huge in
+isolation, but adds up), plus ongoing test/maintenance burden for dead paths.
+
+**Not urgent to fix** (zero user-facing risk), but a clean candidate for a
+batched cleanup PR later: delete the JS functions + Rust functions + their
+tests together, OR keep them explicitly marked `@deprecated` if there's a
+reason to preserve as a fallback (need to ask Juyel before deleting Rust
+code — requires `wasm-pack` rebuild access, which AGENT.md notes is
+"currently blocked on dev machines by Application Control policy").
+
+## Confirmed clean on this pass
+- `lib/wasm/loader.ts` (113L) — feature-detection/fallback chain (classify_fused
+  vs rgbToHsvBatch+classifyColors) is real defensive design, not dead: a PWA
+  with SW-cached old .wasm binaries + freshly updated JS could hit the older
+  binary lacking `classify_fused`, so the fallback path is reachable in
+  practice even though the current binary always has it. Good design, keeping.
