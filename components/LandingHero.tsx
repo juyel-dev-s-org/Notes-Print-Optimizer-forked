@@ -34,10 +34,10 @@ export const LandingHero: React.FC = () => {
     <div aria-hidden="true" className="pointer-events-none absolute inset-0 bg-gradient-to-b from-white/[0.02] to-transparent" />
 
     <div className="relative flex flex-col items-center gap-3.5">
-      <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-600/20 bg-emerald-600 px-3 py-1 text-xs font-bold tracking-wide text-white shadow-sm">
+      <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-700/20 bg-white px-3 py-1 text-xs font-bold tracking-wide text-emerald-800 shadow-sm">
         <span className="relative flex h-1.5 w-1.5">
-          <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-white opacity-75" />
-          <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-white" />
+          <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-500 opacity-75" />
+          <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-emerald-600" />
         </span>
         Trusted by 50,000+ NEET • JEE • Boards Students
       </span>
@@ -67,10 +67,10 @@ export const LandingHero: React.FC = () => {
       {/* Hint chips — student-focused, liquid glass */}
       <div className="hidden w-full max-w-2xl grid-cols-4 gap-2 sm:grid">
         {heroStats.map((stat) => (
-          <div key={stat.label} className="flex flex-col items-center gap-1 rounded-xl border border-emerald-600/30 bg-emerald-50 px-2 py-2.5 backdrop-blur-sm">
+          <div key={stat.label} className="flex flex-col items-center gap-1 rounded-xl border border-emerald-700/20 bg-white px-2 py-2.5 shadow-sm">
             <stat.icon className="h-3.5 w-3.5 text-emerald-700" />
             <span className="text-2xs font-semibold tracking-wide text-slate-900">{stat.label}</span>
-            <span className="hidden text-[9px] leading-none text-ink-muted sm:block">{stat.sub}</span>
+            <span className="hidden text-[9px] leading-none text-slate-600 sm:block">{stat.sub}</span>
           </div>
         ))}
       </div>

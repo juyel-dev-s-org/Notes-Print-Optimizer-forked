@@ -57,7 +57,7 @@ export const ToolsBox: React.FC = () => {
     >
       <div className="flex items-center justify-between px-1">
         <h2 className="text-sm font-bold tracking-wide text-ink">Choose a Tool for Your Notes</h2>
-        <span className="inline-flex items-center gap-1 rounded-full border border-emerald-600/20 bg-emerald-600 px-2.5 py-1 text-[11px] font-bold text-white shadow-sm">12 Free • No sign-up</span>
+        <span className="inline-flex items-center gap-1 rounded-full border border-emerald-700/20 bg-white px-2.5 py-1 text-[11px] font-bold text-emerald-800 shadow-sm">12 Free • No sign-up</span>
       </div>
 
       {/* Search — student-friendly */}
