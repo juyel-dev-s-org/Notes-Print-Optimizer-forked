@@ -12,8 +12,9 @@ const heroStats = [
 
 /**
  * Best-practice hero — Print Optimizer is now multi-tool (merge / whiten / enhance).
- * Aurora Dark gradient (#243BFF → #5B35FF → #A12CFF) stays as brand, but copy is
- * generic. No dark-slides-only messaging. CTA points to ToolsBox (not Upload).
+ * Emerald/teal/cyan is the current brand gradient (see --color-primary in
+ * globals.css); copy is generic, no dark-slides-only messaging. CTA points
+ * to ToolsBox (not Upload).
  */
 export const LandingHero: React.FC = () => {
   const scrollToTools = () => {

@@ -106,7 +106,7 @@ export const metadata: Metadata = {
     other: [
       {
         rel: 'mask-icon',
-        color: '#243BFF',
+        color: '#10b981', // emerald-500 — matches --color-primary in globals.css
         url: `${withBase('/icon-maskable-v2.svg')}`,
       },
     ],

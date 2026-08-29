@@ -134,7 +134,7 @@ export const Header: React.FC<HeaderProps> = ({
               className="text-[17px] font-bold tracking-[-0.02em] sm:text-[18px] lg:text-[19px]"
               style={{ fontFamily: 'var(--font-display)' }}
             >
-              <span className="bg-gradient-to-r from-[#5B8CFF] via-[#8B6BFF] to-[#C14DFF] bg-clip-text text-transparent">
+              <span className="bg-gradient-to-r from-emerald-400 via-teal-400 to-cyan-400 bg-clip-text text-transparent">
                 Print
               </span>{' '}
               <span className="text-ink">Optimizer</span>
