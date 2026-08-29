@@ -80,15 +80,28 @@ export async function buildNup(
   });
 
   // Rotation matrices so rotated scans land upright when embedded.
+  //
+  // These map the *original* (unrotated) page's [0,W]x[0,H] content box into
+  // placement space, matching PDF Form XObject semantics: BBox clips in the
+  // original page's own coordinate system, then Matrix transforms the
+  // clipped result. Derived from a clockwise rotation by `rot` degrees
+  // (matching the /Rotate spec, "clockwise when displayed"), then translated
+  // to keep the transformed content in the positive quadrant:
+  //   rot=90:  (x,y) -> (y, W-x)         => [0,-1,1,0,0,W]
+  //   rot=180: (x,y) -> (W-x, H-y)       => [-1,0,0,-1,W,H]
+  //   rot=270: (x,y) -> (H-y, x)         => [0,1,-1,0,H,0]
+  // (W,H are the ORIGINAL page's width/height, before any swap for display.)
   const out = await PDFDocument.create();
   const font = await out.embedFont(StandardFonts.Helvetica);
   const embeddedAll = await out.embedPages(
     srcPages,
     undefined,
     srcPages.map((p) => {
+      const { width: W, height: H } = p.getSize();
       const rot = ((p.getRotation().angle % 360) + 360) % 360;
-      if (rot === 90) return [0, 0, 1, 0, 0, 1] as [number, number, number, number, number, number];
-      if (rot === 270) return [0, -1, 1, 0, 0, 0] as [number, number, number, number, number, number];
+      if (rot === 90) return [0, -1, 1, 0, 0, W] as [number, number, number, number, number, number];
+      if (rot === 180) return [-1, 0, 0, -1, W, H] as [number, number, number, number, number, number];
+      if (rot === 270) return [0, 1, -1, 0, H, 0] as [number, number, number, number, number, number];
       return undefined;
     }),
   );
@@ -108,7 +121,18 @@ export async function buildNup(
       const emb = embeddedAll[srcIdx];
       const eff = effSizes[srcIdx];
       const fit = fitInto(eff.width, eff.height, cell);
-      page.drawPage(emb, { x: fit.x, y: fit.y, width: fit.w, height: fit.h });
+      // NOTE: don't use drawPage's `width`/`height` options here — pdf-lib
+      // computes xScale = width / embeddedPage.width internally, but
+      // embeddedPage.width/height always reflects the page's pre-rotation
+      // size (see the Matrix comment above), not `eff`. Passing xScale/yScale
+      // directly (relative to `eff`, the actual post-rotation visual extent)
+      // avoids that mismatch and keeps this correct for all four rotations.
+      page.drawPage(emb, {
+        x: fit.x,
+        y: fit.y,
+        xScale: fit.w / eff.width,
+        yScale: fit.h / eff.height,
+      });
       if (opts.borders) {
         page.drawRectangle({
           x: cell.x, y: cell.y, width: cell.w, height: cell.h,
