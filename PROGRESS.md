@@ -324,3 +324,28 @@ fully verified clean (merge/split, zip writer, images converter/reducer).
       Day 1 — finish it + any siblings not yet covered)
 - [ ] components/* UI/UX + a11y pass (still completely untouched — this is
       the other half of what Juyel originally asked for)
+
+## Day 3 — components/qrgen/QrGenToolView.tsx: spot-checked, clean
+
+First real components/ file audited (UI/UX pass just starting). Checked
+the highest-risk logic (not styling yet): WiFi QR field escaping (WIFI:T:…
+spec — S: and P: both correctly escaped via escapeWifi, verified against
+the standard's required escape set \;,":  — initially misread this as a
+bug from an incomplete grep, caught it on full-context re-read before
+reporting, worth noting as a reminder to always read full context, not
+grep fragments), SVG/PNG download blob lifecycle (revokeObjectURL correctly
+sequenced after a.click(), not a race), WCAG contrast ratio formula (exact
+standard formula, threshold 3:1 reasonable for QR scan-reliability — not
+text-contrast 4.5:1, appropriately different purpose), and QR capacity
+limits table (2953/2331/1663/1273 for L/M/Q/H — matches real QR Version 40
+byte-mode capacities exactly). No bugs found in this pass; full visual/a11y
+styling review of this and other components still pending.
+
+## Next up
+- [ ] Continue components/ pass: visual/a11y review (not just logic) of
+      QrGenToolView, WhiteBoxEditor, NupToolView, WorkflowView, and other
+      large components — this is the part of Juyel's original ask
+      (UI/UX/design/colour/typography) not yet really started; everything
+      so far has been logic/correctness auditing.
+- [ ] lib/workflow/hooks/useSessionFlow.ts, useWorkflowRuntime.ts (skimmed,
+      not fully read)
