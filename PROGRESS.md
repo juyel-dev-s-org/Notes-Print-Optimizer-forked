@@ -244,3 +244,30 @@ severity (fully blank vs. subtly wrong) and gave confidence in the fix.
       same "actually run it" scrutiny given what nup/ turned up)
 - [ ] remaining lib/workflow/hooks/*
 - [ ] components/* UI/UX + a11y pass
+
+## Day 3 — Finding #6 CLOSED: Protect tool assembly-permission inversion (security bug, commit 1fcbeb5)
+
+`allowAssembly: !locks.modifying ? false : true` was backwards — logically
+equivalent to `locks.modifying` unnegated, opposite sense of every sibling
+permission. Confirmed via real /P bit readback from the actual encrypted
+output (not mocked): locking "Prevent modifying" left page assembly
+(insert/delete/rotate/reorder pages) OPEN; leaving it unlocked blocked
+assembly. Backwards both ways on a security feature.
+
+Root cause of it shipping unnoticed: the existing mocked test asserted on
+allowPrinting/allowCopying/allowModifying but never checked allowAssembly.
+Fixed the gap + added an unmocked end-to-end test reading real permission
+bits (tests/unit/protectPermissions.test.ts).
+
+Also fixed while in the file: generateOwnerPassword() had a modulo-bias
+flaw (byte % 62 over 256 possible values — 'A'-'H' ~25% overrepresented).
+Switched to rejection sampling.
+
+Full suite: 438/438.
+
+## Next up
+- [ ] lib/tomerge/*, lib/tosplit/* (same rigor: build a small real PDF,
+      run the actual service function, verify actual output — not just
+      read the code and reason about it)
+- [ ] remaining lib/workflow/hooks/*
+- [ ] components/* UI/UX + a11y pass
