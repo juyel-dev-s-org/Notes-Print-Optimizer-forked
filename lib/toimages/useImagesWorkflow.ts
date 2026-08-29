@@ -8,9 +8,11 @@ import { isLikelyPdfFile, UploadService } from '@/lib/services/UploadService';
 import { ExportService } from '@/lib/services/ExportService';
 import { sanitizeBaseName } from '../shared/filename';
 import {
+  capPageRange,
   DPI_PRESETS,
   INITIAL_IMAGES_STATE,
   imagesReducer,
+  MAX_CONVERT_PAGES,
   resolveRange,
   type DpiPresetId,
   type ImagesFormat,
@@ -18,8 +20,6 @@ import {
 } from './imagesReducer';
 import { FORMAT_EXT, ImagesConverter } from './imagesConverter';
 import { buildZip } from './zipWriter';
-
-const MAX_PAGES = 200;
 
 export function useImagesWorkflow() {
   const [state, dispatch] = useReducer(imagesReducer, INITIAL_IMAGES_STATE);
@@ -62,12 +62,15 @@ export function useImagesWorkflow() {
     if (!state.source || state.isBusy) return;
 
     const range = resolveRange(state.rangeMode, state.rangeFrom, state.rangeTo, state.pageCount);
-    let total = range ? range.end - range.start + 1 : 0;
-    if (total <= 0) {
+    if (!range) {
       dispatch({ type: 'CONVERT_ERROR', error: 'Check the selected page range.' });
       return;
     }
-    if (total > MAX_PAGES) total = MAX_PAGES; // hard mobile memory guard
+    // hard mobile memory guard — must cap the ACTUAL page range sent to the
+    // converter, not just the number shown on the progress bar, or a large
+    // document still gets fully rendered/encoded before being discarded.
+    const capped = capPageRange(range, MAX_CONVERT_PAGES);
+    const total = capped.total;
 
     const preset = DPI_PRESETS.find((p) => p.id === state.dpi) ?? DPI_PRESETS[1];
     const controller = new AbortController();
@@ -82,8 +85,8 @@ export function useImagesWorkflow() {
           dpi: preset.dpi,
           format: state.format,
           quality: state.quality,
-          fromPage: range!.start,
-          toPage: range!.end,
+          fromPage: capped.start,
+          toPage: capped.end,
         },
         ({ index, blob, thumbDataUrl }) => {
           // index is the absolute 0-based page — names stay traceable to the document.
@@ -97,7 +100,7 @@ export function useImagesWorkflow() {
         controller.signal,
       );
       if (controller.signal.aborted) return;
-      dispatch({ type: 'CONVERT_COMPLETE', results: results.slice(0, MAX_PAGES) });
+      dispatch({ type: 'CONVERT_COMPLETE', results: results.slice(0, MAX_CONVERT_PAGES) });
     } catch (err) {
       abortRef.current = null;
       if (err instanceof Error && err.message === 'Processing cancelled.') return;

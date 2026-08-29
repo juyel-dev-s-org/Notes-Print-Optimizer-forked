@@ -7,6 +7,28 @@ import { sanitizeBaseName } from '../shared/filename';
 // Canonical implementation lives in lib/shared; re-exported for compatibility.
 export { resolveRange } from '../shared/range';
 
+export const MAX_CONVERT_PAGES = 200;
+
+export interface CappedRange {
+  start: number;
+  end: number;
+  total: number;
+  wasCapped: boolean;
+}
+
+/**
+ * Clamps a resolved page range to at most `maxPages`, keeping `start` fixed
+ * and pulling `end` in. This is the actual mobile-memory guard for PDF to
+ * Images — `total` here must be the same number used both for the progress
+ * bar AND the real `fromPage`/`toPage` sent to the converter, or a large
+ * document gets fully rendered before the excess is silently discarded.
+ */
+export function capPageRange(range: { start: number; end: number }, maxPages: number): CappedRange {
+  const fullTotal = range.end - range.start + 1;
+  const total = Math.min(fullTotal, maxPages);
+  return { start: range.start, end: range.start + total - 1, total, wasCapped: total < fullTotal };
+}
+
 export type ImagesStep = 'upload' | 'options' | 'done';
 export type ImagesFormat = 'image/jpeg' | 'image/png' | 'image/webp';
 

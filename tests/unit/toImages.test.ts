@@ -5,8 +5,10 @@
 import { describe, expect, it } from 'vitest';
 import { buildZip, crc32 } from '@/lib/toimages/zipWriter';
 import {
+  capPageRange,
   INITIAL_IMAGES_STATE,
   imagesReducer,
+  MAX_CONVERT_PAGES,
   resolveRange,
 } from '@/lib/toimages/imagesReducer';
 import { buildPageImageName, sanitizeBaseName } from '@/lib/shared/filename';
@@ -132,6 +134,30 @@ describe('imagesReducer & naming', () => {
 
   it('sanitizeBaseName strips hostile characters', () => {
     expect(sanitizeBaseName('bad:name?.pdf')).toBe('badname.pdf');
+  });
+});
+
+describe('capPageRange (Finding #7 — mobile memory guard)', () => {
+  it('leaves a range under the cap untouched', () => {
+    const r = capPageRange({ start: 1, end: 50 }, MAX_CONVERT_PAGES);
+    expect(r).toEqual({ start: 1, end: 50, total: 50, wasCapped: false });
+  });
+
+  it('caps a large "all pages" range so `end` never exceeds the guard', () => {
+    // The historical bug: only the *displayed* total was capped, while
+    // fromPage/toPage sent to the converter still spanned the full 500
+    // pages — the guard never actually limited the work done.
+    const r = capPageRange({ start: 1, end: 500 }, MAX_CONVERT_PAGES);
+    expect(r.total).toBe(200);
+    expect(r.end).toBe(200); // NOT 500
+    expect(r.wasCapped).toBe(true);
+  });
+
+  it('keeps `start` fixed when capping a mid-document custom range', () => {
+    const r = capPageRange({ start: 50, end: 400 }, MAX_CONVERT_PAGES);
+    expect(r.start).toBe(50);
+    expect(r.end).toBe(249); // 50 + 200 - 1
+    expect(r.total).toBe(200);
   });
 });
 
