@@ -295,3 +295,32 @@ straightforward array/index logic that's already well tested.
 - [ ] remaining lib/workflow/hooks/* (useOptimization.ts already partially
       read Day 1 — finish it + siblings)
 - [ ] components/* UI/UX + a11y pass (still completely untouched)
+
+## Day 3 — Finding #7 CLOSED: PDF-to-Images memory guard never capped actual work (commit cea85a1)
+
+`if (total > MAX_PAGES) total = MAX_PAGES;` only capped the progress-bar
+display; `fromPage`/`toPage` sent to the converter still used the full
+uncapped range. A 500-page "all pages" conversion would render+encode all
+500 pages (exactly the memory pressure the guard exists to prevent on
+low-RAM phones) before discarding everything past page 200 in
+CONVERT_COMPLETE. Confirmed with a standalone reproduction of the exact
+logic before touching the real file.
+
+Fix: extracted capPageRange() (pure, testable, mirrors resolveRange's
+style) and threaded the CAPPED start/end into the actual convert() call.
+3 new tests. Full suite 441/441.
+
+Also fully verified clean this session: zipWriter.ts (byte-layout checked
+against APPNOTE.TXT by hand AND round-tripped through real `unzip -t` /
+extraction — CRC, timestamps, subdirs, Unicode names+content all correct),
+imagesConverter.ts, imagesReducer.ts, DPI preset resolution.
+
+## Day 3 final tally: 4 real bugs found+fixed (#4 dead code, #5 nup blank
+pages, #6 protect permission inversion, #7 memory guard no-op), 3 areas
+fully verified clean (merge/split, zip writer, images converter/reducer).
+
+## Next up
+- [ ] remaining lib/workflow/hooks/* (useOptimization.ts partially read
+      Day 1 — finish it + any siblings not yet covered)
+- [ ] components/* UI/UX + a11y pass (still completely untouched — this is
+      the other half of what Juyel originally asked for)
