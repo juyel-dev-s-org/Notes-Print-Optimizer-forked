@@ -201,3 +201,23 @@ No repo-side fix needed.
 - [ ] lib/nup/*, lib/protect/*, lib/tomerge/*, lib/tosplit/* (per-tool logic)
 - [ ] remaining lib/workflow/hooks/*
 - [ ] components/* UI/UX + a11y pass
+
+## Day 2 — full suite run on Juyel's machine (post dev-deps fix)
+422/423 tests pass, 3 test files. Confirms Finding #4 fix is safe (no
+regressions from removing stripDecorativeFills/removeNoise).
+
+New (unrelated) observations, not fixed yet:
+- **`join is not a function`** in `tests/fixtures/pdfRender.ts:21` — breaks
+  `pdfGolden.test.ts` and `realPdfBaseline.bench.ts` entirely (can't even
+  load). Likely a Node v26 ESM/CJS interop issue with the `path` import
+  (this is a brand-new Node major version, possible breaking change in
+  built-in module resolution). Needs investigation — not touched today,
+  out of scope of the WASM cleanup.
+- `connectedComponents` perf benchmark: 4.55 vs threshold 5.0 MP/s on this
+  machine. Not a regression (kernel untouched today) — raw speed variance
+  between machines. Threshold may need per-machine calibration, or ignore.
+
+## Next up (unchanged)
+- [ ] lib/nup/*, lib/protect/*, lib/tomerge/*, lib/tosplit/* (per-tool logic)
+- [ ] remaining lib/workflow/hooks/*
+- [ ] components/* UI/UX + a11y pass
