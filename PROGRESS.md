@@ -349,3 +349,34 @@ styling review of this and other components still pending.
       so far has been logic/correctness auditing.
 - [ ] lib/workflow/hooks/useSessionFlow.ts, useWorkflowRuntime.ts (skimmed,
       not fully read)
+
+## Day 3 — Finding #8 CLOSED (partially, commit 2f752eb) + visually verified
+
+Header.tsx logo-text gradient and app/layout.tsx mask-icon color were
+leftover pre-rebrand "Aurora" blue/violet, clashing with the actual emerald
+brand (--color-primary in globals.css, "main brand" per its own comment).
+LandingHero.tsx's comment still falsely claimed Aurora "stays as brand".
+
+Fixed the CSS-level mismatch (Header text gradient, mask-icon meta color,
+stale comment). Verified by actually running `npm run dev` on Juyel's
+machine and screenshotting localhost:3000: "Print" text is now emerald,
+matching the hero headline — confirmed visually, not just by reading code.
+
+**Deliberately NOT touched, flagged for Juyel instead:**
+- `components/AppLogo.tsx` renders a raster PNG (`public/icon-192-v2.png`)
+  — the violet icon glyph is baked into that image file, shared with the
+  PWA install icon/favicon. This is now the ONLY remaining brand mismatch,
+  and arguably MORE visible after this fix (before, the icon+text were both
+  "wrong" together; now the icon is isolated as the odd one out next to
+  emerald text). Regenerating brand artwork is a design decision, not a
+  code fix — needs Juyel's call on the new icon design, or I can attempt an
+  emerald recolor of the existing glyph shape if he wants me to try.
+- `app/manifest.ts` theme_color (#4338ca indigo) has an explicit comment
+  defending it as intentional for PWA install-icon legibility in both
+  light/dark. Left alone rather than overriding a reasoned prior decision.
+
+## Next up
+- [ ] Ask Juyel: regenerate AppLogo/PWA icon artwork in emerald? (design
+      decision, not proceeding without input)
+- [ ] Continue UI/a11y pass on other large components (WhiteBoxEditor,
+      NupToolView, WorkflowView, ProcessingSettingsPanel)
