@@ -100,6 +100,7 @@ describe('ProtectionService', () => {
         allowPrinting: false,
         allowCopying: true,
         allowModifying: false,
+        allowAssembly: false,
       }),
     );
   });
