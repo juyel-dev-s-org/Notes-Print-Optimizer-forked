@@ -271,3 +271,27 @@ Full suite: 438/438.
       read the code and reason about it)
 - [ ] remaining lib/workflow/hooks/*
 - [ ] components/* UI/UX + a11y pass
+
+## Day 3 — tomerge/, tosplit/, shared/range.ts, shared/chunks.ts: clean
+
+Read fully: mergeService.ts, mergeReducer.ts, splitService.ts,
+useSplitWorkflow.ts, shared/range.ts (resolveRange), shared/chunks.ts
+(planChunks/planEvenChunks). All correct — 1-based/0-based conversions
+consistent, chunk math verified against the documented example (23÷4 →
+6·6·6·5), validation guards complete (f<1, t<1, f>t, t>pageCount all
+checked). split.test.ts already has good rigor (geometry-based page-order
+proof, roundtrip-every-page-once test) — this area was already solid
+before I got here. No changes made.
+
+## Day 3 summary: 3 real bugs found and fixed this session (#4, #5, #6),
+2 tool areas (nup, protect) had genuine defects; 2 areas (merge, split)
+were already solid. Confirms the audit shouldn't assume uniform risk —
+concentrate scrutiny where the code is doing something non-trivial
+(coordinate transforms, permission-bit math), not uniformly re-verify
+straightforward array/index logic that's already well tested.
+
+## Next up
+- [ ] lib/toimages/*, lib/topdf-image/* or equivalent (not yet mapped)
+- [ ] remaining lib/workflow/hooks/* (useOptimization.ts already partially
+      read Day 1 — finish it + siblings)
+- [ ] components/* UI/UX + a11y pass (still completely untouched)
