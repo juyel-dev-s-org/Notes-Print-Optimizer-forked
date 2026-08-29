@@ -221,3 +221,26 @@ New (unrelated) observations, not fixed yet:
 - [ ] lib/nup/*, lib/protect/*, lib/tomerge/*, lib/tosplit/* (per-tool logic)
 - [ ] remaining lib/workflow/hooks/*
 - [ ] components/* UI/UX + a11y pass
+
+## Day 2 — Finding #5 CLOSED (fix landed, commit 463b09e)
+
+N-up rotation bug (90/270 → fully blank output, 180 → upside-down) — see
+the detailed write-up above. Fixed with correct rotation matrices +
+xScale/yScale (not width/height, which divides by pdf-lib's always-
+pre-rotation embeddedPage.width/height — a subtlety worth remembering for
+any future PDF-embedding work in this codebase).
+
+Added tests/unit/nupRotation.test.ts (7 tests) — first test coverage of
+buildNup() with an actually-rotated source page. Full suite 436/436.
+
+This is now the pattern going forward for any "found a bug" claim: build
+a minimal repro, run the REAL app code (not reimplemented logic), render/
+inspect actual output, THEN fix + add a regression test that would have
+caught it. Pure math/theory review found the smell; only running it proved
+severity (fully blank vs. subtly wrong) and gave confidence in the fix.
+
+## Next up
+- [ ] lib/protect/*, lib/tomerge/*, lib/tosplit/* (per-tool logic — apply
+      same "actually run it" scrutiny given what nup/ turned up)
+- [ ] remaining lib/workflow/hooks/*
+- [ ] components/* UI/UX + a11y pass
