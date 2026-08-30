@@ -48,6 +48,15 @@
   --color-danger-soft: #fca5a5; /* red-300 */
   --color-danger-faint: #450a0a; /* red-950 */
 
+  /* Highlight — decorative accent for badges/promo/streaks, deliberately
+     separate from --color-warning (which means "something needs your
+     attention"). Rose family: warm enough to interrupt the emerald wash
+     without reading as an error or caution state. */
+  --color-highlight: #fb7185; /* rose-400 */
+  --color-highlight-strong: #f43f5e; /* rose-500 */
+  --color-highlight-soft: #fda4af; /* rose-300 */
+  --color-highlight-faint: #4c0519; /* rose-950 */
+
   --color-ink: #f1f5f9; /* slate-100 primary text */
   --color-ink-muted: #94a3b8; /* slate-400 secondary text */
   --color-ink-faint: #7e8ca8; /* WCAG-AA (5.3:1 on surface) tertiary text */
@@ -115,6 +124,11 @@
   --color-danger-deep: #991b1b;
   --color-danger-soft: #b91c1c;
   --color-danger-faint: #fef2f2;
+
+  --color-highlight: #e11d48; /* rose-600 — AA on white */
+  --color-highlight-strong: #be123c; /* rose-700 */
+  --color-highlight-soft: #e11d48;
+  --color-highlight-faint: #fff1f2; /* rose-50 */
 
   --color-ink: #10192e;
   --color-ink-muted: #475569;

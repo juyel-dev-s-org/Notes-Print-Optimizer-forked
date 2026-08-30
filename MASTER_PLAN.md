@@ -23,15 +23,16 @@ new paint color.
 **The actual system:**
 - **Brand (emerald→teal→cyan gradient)** — stays exactly where it is:
   logo, primary CTAs, active states, headline accents.
-- **NEW: a warm accent (amber/coral, ~`#F59E0B`→`#FB7185`)** — used
-  *sparingly* for things that must visually interrupt the green wash:
-  streaks/achievements, "new" badges, the sponsor banner, urgent
-  countdown widgets. This single addition does more for "looks premium"
-  than any hue swap would.
-- **Semantic colors separated from brand** — success/warning/danger/info
-  get their own tokens instead of reusing brand-emerald for "success" and
-  a random red for "danger" ad hoc per component (checked: this
-  inconsistency exists today).
+- **CORRECTED after checking:** an amber "warning" token already exists
+  in the codebase (`--color-warning`, used ~30 places for validation/
+  alert messages) — I was wrong to plan "adding" an amber accent as if it
+  didn't exist. What's actually missing is a *decorative* highlight color
+  for non-warning moments (badges, streaks, the sponsor banner) — reusing
+  the warning token there would be a real mistake: showing "caution amber"
+  on a "you earned a badge" moment sends the wrong emotional signal. The
+  real fix is a new, distinct **`--color-highlight`** token (coral/rose,
+  ~`#FB7185`), kept semantically separate from warning even though both
+  are "warm."
 - **One elevation/shadow scale**, defined once, reused everywhere instead
   of every component inventing its own glass-blur values (the footer,
   hero, and cards each currently hand-roll slightly different
